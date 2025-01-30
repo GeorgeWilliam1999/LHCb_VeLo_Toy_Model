@@ -1,0 +1,7 @@
+README.md
+setup.py
+LHCB_Velo_Toy_Models.egg-info/PKG-INFO
+LHCB_Velo_Toy_Models.egg-info/SOURCES.txt
+LHCB_Velo_Toy_Models.egg-info/dependency_links.txt
+LHCB_Velo_Toy_Models.egg-info/requires.txt
+LHCB_Velo_Toy_Models.egg-info/top_level.txt

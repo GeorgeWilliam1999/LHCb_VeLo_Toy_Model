@@ -1,0 +1,23 @@
+Metadata-Version: 2.2
+Name: LHCB_Velo_Toy_Models
+Version: 0.1.0
+Summary: A quantum signal processing toolkit for Hamiltonians
+Home-page: https://github.com/GeorgeWilliam1999/LHCb_VeLo_Toy_Model
+Author: George William Scriven
+Author-email: george.w.scriven@gmail.com
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: numpy
+Requires-Dist: scipy
+Requires-Dist: matplotlib
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
