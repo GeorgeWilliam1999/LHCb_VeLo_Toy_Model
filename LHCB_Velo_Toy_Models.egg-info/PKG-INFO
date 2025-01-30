@@ -1,7 +1,7 @@
 Metadata-Version: 2.2
 Name: LHCB_Velo_Toy_Models
 Version: 0.1.0
-Summary: A quantum signal processing toolkit for Hamiltonians
+Summary: A simulation framework for the LHCb VELO detector
 Home-page: https://github.com/GeorgeWilliam1999/LHCb_VeLo_Toy_Model
 Author: George William Scriven
 Author-email: george.w.scriven@gmail.com
@@ -10,6 +10,7 @@ Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
 Requires-Python: >=3.10
 Description-Content-Type: text/markdown
+License-File: LICENSE.txt
 Requires-Dist: numpy
 Requires-Dist: scipy
 Requires-Dist: matplotlib

@@ -1,5 +1,5 @@
 import numpy as np
-import utils.state_vector_machine.state_event_model as em
+import LHCB_Velo_Toy_Models.state_event_model as em
 import dataclasses
 from itertools import count
 

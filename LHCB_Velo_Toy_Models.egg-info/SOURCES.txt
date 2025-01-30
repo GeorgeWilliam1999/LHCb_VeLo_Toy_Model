@@ -1,5 +1,10 @@
+LICENSE.txt
 README.md
 setup.py
+LHCB_Velo_Toy_Models/__init__.py
+LHCB_Velo_Toy_Models/multi_scattering_generator.py
+LHCB_Velo_Toy_Models/state_event_generator.py
+LHCB_Velo_Toy_Models/state_event_model.py
 LHCB_Velo_Toy_Models.egg-info/PKG-INFO
 LHCB_Velo_Toy_Models.egg-info/SOURCES.txt
 LHCB_Velo_Toy_Models.egg-info/dependency_links.txt

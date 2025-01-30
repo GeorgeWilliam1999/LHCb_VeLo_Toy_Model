@@ -4,14 +4,14 @@ collision events parameterized by the LHCb state vector (x, y, tx, ty, p/q).
 """
 
 import numpy as np
-import LHCB_Velo_Toy_Models.state_event_model.state_event_model as em
+import LHCB_Velo_Toy_Models.state_event_model as em
 import dataclasses
 from itertools import count
 from abc import ABC, abstractmethod
 import matplotlib.animation as animation
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
-from LHCB_Velo_Toy_Models.detector_geometries.geometries import *
+from LHCB_Velo_Toy_Models.state_event_model import *
 
 # -------------------------------------------------------------------------
 # StateEventGenerator class
