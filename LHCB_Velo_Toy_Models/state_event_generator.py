@@ -203,8 +203,8 @@ class StateEventGenerator:
                     # Update particle state by propagating in z
                     state = self.propagate(state, dz)
                     # print(f'state : {state}')
-                    # if not self.detector_geometry.point_on_bulk(state):
-                    #     continue
+                    if not self.detector_geometry.point_on_bulk(state):
+                        continue
                     # Create and record a new hit at this layer
                     # if 
                     if self.measurment_error_flag:
