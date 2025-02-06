@@ -127,7 +127,7 @@ class StateEventGenerator:
                 # Store final list in the instance
             init_particles.append(event_particles)
             self.particles = init_particles
-            print(f'init_particles : {init_particles}')
+            # print(f'init_particles : {init_particles}')
         return init_particles
 
     def collision_update(self, particle: dict) -> dict:
@@ -193,16 +193,16 @@ class StateEventGenerator:
                 track = em.Track(track_id, hits=[], segments=[])
                 # Initialize the particle's state at the primary vertex
                 state = self.particles[evt_idx][p_idx]
-                print('initial state : ', state)
+                # print('initial state : ', state)
                 # Propagate through each layer of the detector geometry
                 for mod_id, lx, ly, zpos in self.detector_geometry:
-                    print(f'mod_id : {mod_id}, lx : {lx}, ly : {ly}, zpos : {zpos}')
+                    # print(f'mod_id : {mod_id}, lx : {lx}, ly : {ly}, zpos : {zpos}')
                     # Calculate distance to the next layer along z
                     dz = zpos - state['z']
-                    print(f'zpos : {zpos}, state z : {state["z"]}, dz : {dz}')
+                    # print(f'zpos : {zpos}, state z : {state["z"]}, dz : {dz}')
                     # Update particle state by propagating in z
                     state = self.propagate(state, dz)
-                    print(f'state : {state}')
+                    # print(f'state : {state}')
                     # if not self.detector_geometry.point_on_bulk(state):
                     #     continue
                     # Create and record a new hit at this layer
