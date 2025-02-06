@@ -24,10 +24,10 @@ class StateEventGenerator:
         self,
         detector_geometry: Geometry,
         primary_vertices: list[tuple[float, float, float]] = None,
-        phi_min: float = - np.pi/20,
-        phi_max: float =   np.pi/20,
-        theta_min: float = -np.pi / 20,
-        theta_max: float = np.pi / 20,
+        phi_min: float = - 0.3,
+        phi_max: float =   0.3,
+        theta_min: float = -0.3,
+        theta_max: float = 0.3,
         events: int = 3,
         n_particles: list[int] = None,
         particles: list[dict] = None
@@ -37,10 +37,10 @@ class StateEventGenerator:
         """
         self.detector_geometry = detector_geometry  # Geometry of the detector
         self.primary_vertices = primary_vertices if primary_vertices is not None else []
-        self.phi_min = phi_min                      # Minimum azimuthal angle
-        self.phi_max = phi_max                      # Maximum azimuthal angle
-        self.theta_min = theta_min                  # Minimum polar angle
-        self.theta_max = theta_max                  # Maximum polar angle
+        self.phi_min = phi_min                      # Minimum tx angle
+        self.phi_max = phi_max                      # Maximum tx angle
+        self.theta_min = theta_min                  # Minimum ty angle
+        self.theta_max = theta_max                  # Maximum ty angle
         self.events = events                        # Number of events to generate
         self.n_particles = n_particles if n_particles is not None else []
         self.particles = particles if particles is not None else []
@@ -57,11 +57,10 @@ class StateEventGenerator:
         """
         primary_vertices = []  # Accumulate generated vertices
         # Ensure variances are small
-        assert all(v <= 1e-3 for v in phsyical_variance.values()), 'Physical variances must be small'
         for _ in range(self.events):
             # Generate each primary vertex with normal distribution
-            x = self.rng.normal(0, phsyical_variance['x'])
-            y = self.rng.normal(0, phsyical_variance['y'])
+            x = 0
+            y = 0
             z = self.rng.normal(0, phsyical_variance['z'])
             primary_vertices.append((x, y, z))
         # Store back in the instance
@@ -101,12 +100,9 @@ class StateEventGenerator:
                 # Sample cos(theta) to get uniform distribution in cos(theta)
                 theta = self.rng.uniform(self.theta_min,self.theta_max)
 
-                # Compute direction components from angles
-                
-
                 # Transverse slopes
-                tx = np.sin(phi)
-                ty = np.sin(theta)
+                tx = np.tan(phi)
+                ty = np.tan(theta)
 
                 # Retrieve charge from input (example usage)
                 # If "q" or other keys are needed, adapt code accordingly
@@ -131,27 +127,21 @@ class StateEventGenerator:
                 # Store final list in the instance
             init_particles.append(event_particles)
             self.particles = init_particles
+            print(f'init_particles : {init_particles}')
         return init_particles
 
     def collision_update(self, particle: dict) -> dict:
         """
         Updates a particle's direction to simulate a collision.
         """
-        # Small random rotation in the tx, ty plane
-        theta_hat = 0#self.rng.normal(0, 0.000)
-
-        phi,theta = np.random.normal(np.arcsin(particle['tx']), 0.01), np.random.normal(np.arcsin(particle['ty']), 0.01)
-
-
-    
-        rotation_matrix = np.array([
-            [np.cos(theta_hat), -np.sin(theta_hat)],
-            [np.sin(theta_hat),  np.cos(theta_hat)]
-        ])
-        tx_ty = np.array([particle['tx'], particle['ty']])
-        tx_ty_rotated = rotation_matrix @ tx_ty
         # Update slopes
-        particle['tx'], particle['ty'] = np.sin(phi), np.sin(theta)
+        update_x = np.tan(np.random.normal(0, 0.1e-3))
+        update_y = np.tan(np.random.normal(0, 0.1e-3))
+
+        particle['tx'] += update_x 
+        particle['ty'] += update_y
+
+        # print(f'x : {update_x}, y : {update_y}')
         return particle
     
     def measurment_error(self, particle: dict) -> dict:
@@ -159,9 +149,11 @@ class StateEventGenerator:
         Updates a particle's position to simlate a measurenemnt error
         """
         # Random slight shifts in x, y
-        particle['x'] += np.random.normal(0, 1)
-        particle['y'] += np.random.normal(0, 1)
+        # particle['x'] += np.random.normal(0, 0.01)
+        # particle['y'] += np.random.normal(0, 0.01)
         
+        particle['x'] += 0
+        particle['y'] += 0
         return particle
 
     def propagate(self, particle: dict, dz: float) -> dict:
@@ -171,6 +163,10 @@ class StateEventGenerator:
         # Position updates based on slopes
         particle['x'] += particle['tx'] * dz
         particle['y'] += particle['ty'] * dz
+        particle['z'] += dz
+
+        # print(f'particle state : {particle}, dz : {dz}')
+
         return particle
 
     def generate_complete_events(self):
@@ -197,14 +193,16 @@ class StateEventGenerator:
                 track = em.Track(track_id, hits=[], segments=[])
                 # Initialize the particle's state at the primary vertex
                 state = self.particles[evt_idx][p_idx]
+                print('initial state : ', state)
                 # Propagate through each layer of the detector geometry
-                for i in range(len(self.detector_geometry)):
-                    # Retrieve module data
-                    mod_id, lx, ly, zpos = self.detector_geometry[i]
+                for mod_id, lx, ly, zpos in self.detector_geometry:
+                    print(f'mod_id : {mod_id}, lx : {lx}, ly : {ly}, zpos : {zpos}')
                     # Calculate distance to the next layer along z
                     dz = zpos - state['z']
+                    print(f'zpos : {zpos}, state z : {state["z"]}, dz : {dz}')
                     # Update particle state by propagating in z
                     state = self.propagate(state, dz)
+                    print(f'state : {state}')
                     # if not self.detector_geometry.point_on_bulk(state):
                     #     continue
                     # Create and record a new hit at this layer
