@@ -31,7 +31,8 @@ class StateEventGenerator:
         events: int = 3,
         n_particles: list[int] = None,
         particles: list[dict] = None,
-        measurement_error: float = 0.
+        measurement_error: float = 0.,
+        collision_noise: float = 0.1e-3
     ) -> None:
         """
         Initializes the StateEventGenerator with geometry, angle limits, event counts, etc.
@@ -48,6 +49,7 @@ class StateEventGenerator:
         self.rng = np.random.default_rng()          # Random number generator
         self.measurment_error_flag = True           # Flag for measurment error
         self.measurement_error = measurement_error       # Measurment error
+        self.collision_noise = collision_noise
 
     def generate_random_primary_vertices(
         self,
@@ -137,8 +139,8 @@ class StateEventGenerator:
         Updates a particle's direction to simulate a collision.
         """
         # Update slopes
-        update_x = np.tan(np.random.normal(0, 0.1e-3))
-        update_y = np.tan(np.random.normal(0, 0.1e-3))
+        update_x = np.tan(np.random.normal(0, self.collision_noise))
+        update_y = np.tan(np.random.normal(0, self.collision_noise))
 
         particle['tx'] += update_x 
         particle['ty'] += update_y
