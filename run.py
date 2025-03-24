@@ -42,4 +42,4 @@ for m in event_tracks.modules:
     print(m.module_id)
     print(m)
 
-# event_tracks.plot_segments()
+event_tracks.plot_segments()
