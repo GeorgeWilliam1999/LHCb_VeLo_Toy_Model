@@ -30,7 +30,8 @@ class StateEventGenerator:
         theta_max: float = 0.3,
         events: int = 3,
         n_particles: list[int] = None,
-        particles: list[dict] = None
+        particles: list[dict] = None,
+        measurement_error: float = 0.
     ) -> None:
         """
         Initializes the StateEventGenerator with geometry, angle limits, event counts, etc.
@@ -46,6 +47,7 @@ class StateEventGenerator:
         self.particles = particles if particles is not None else []
         self.rng = np.random.default_rng()          # Random number generator
         self.measurment_error_flag = True           # Flag for measurment error
+        self.measurement_error = measurement_error       # Measurment error
 
     def generate_random_primary_vertices(
         self,
@@ -149,11 +151,9 @@ class StateEventGenerator:
         Updates a particle's position to simlate a measurenemnt error
         """
         # Random slight shifts in x, y
-        # particle['x'] += np.random.normal(0, 0.01)
-        # particle['y'] += np.random.normal(0, 0.01)
-        
-        particle['x'] += 0
-        particle['y'] += 0
+        particle['x'] += np.random.normal(0, self.measurement_error)
+        particle['y'] += np.random.normal(0, self.measurement_error)
+    
         return particle
 
     def propagate(self, particle: dict, dz: float) -> dict:
