@@ -261,6 +261,13 @@ class Event:
             # Plot, using (Z, Y, X) to match the existing axis mappings
             ax.plot_surface(Z, Y, X, alpha=0.3, color='gray')
 
+        # plot ghost_hits (hits that are not part of a segment)
+        ghost_hits = [h for h in self.hits if not any(h in s.hits for s in self.segments)]
+        X = [h.z for h in ghost_hits]
+        Y = [h.y for h in ghost_hits]
+        Z = [h.x for h in ghost_hits]
+        ax.scatter(X, Y, Z, c='g', marker='x')
+
         ax.set_xlabel('Z (horizontal)')
         ax.set_ylabel('Y')
         ax.set_zlabel('X')

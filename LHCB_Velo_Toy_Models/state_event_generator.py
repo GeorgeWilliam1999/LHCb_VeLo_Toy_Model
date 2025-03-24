@@ -258,6 +258,11 @@ class StateEventGenerator:
             for track in event:
                 for seg in track.segments:
                     self.segments.append(seg)
+
+        self.true_hits = self.hits
+        self.true_segments = self.segments
+        self.true_tracks = self.tracks
+        
        
     
         # Generate modules (layer wise hits)
@@ -267,8 +272,62 @@ class StateEventGenerator:
             hits = [hit for hit in self.hits if hit.module_id == mod_id]
             # print(hits)
             self.modules.append(em.Module(mod_id, zpos, lx, ly, hits))
+        self.true_modules = self.modules
 
-        return em.Event(self.detector_geometry, self.tracks, self.hits, self.segments, self.modules)
+        self.true_event = em.Event(self.detector_geometry, self.true_tracks, self.true_hits, self.true_segments, self.true_modules)
+
+        return self.true_event
 
     
-    
+    def make_noisy_event(self, drop_rate=0.1, ghost_rate=0.1):
+        """
+        Simulates hit dropout and adds ghost hits in the detector.
+        """
+        # Drop a fraction of hits
+        total_hits = len(self.hits)
+        to_drop = int(total_hits * drop_rate)
+        drop_indices = self.rng.choice(total_hits, to_drop, replace=False)
+        self.hits = [hit for i, hit in enumerate(self.hits) if i not in drop_indices]
+
+        # Remove invalid segments and update each track
+        valid_hits = self.hits
+        self.segments = [
+            seg 
+            for seg in self.segments
+            if seg.hits[0] in valid_hits and seg.hits[1] in valid_hits
+        ]
+        for track in self.tracks:
+            track.hits = [hit for hit in track.hits if hit in valid_hits]
+            track.segments = [
+                seg 
+                for seg in track.segments
+                if seg.hits[0] in valid_hits and seg.hits[1] in valid_hits
+            ]
+
+        # Insert ghost hits
+        ghost_count = int(total_hits * ghost_rate)
+        ghost_hits = []
+        for _ in range(ghost_count):
+            mod_id, lx, ly, zpos = self.rng.choice(self.detector_geometry)
+            x = self.rng.uniform(-lx / 2, lx / 2)
+            y = self.rng.uniform(-ly / 2, ly / 2)
+            ghost_hits.append(
+                em.Hit(hit_id=next(count()), x=x, y=y, z=zpos, module_id=mod_id, track_id=-1)
+            )
+        self.hits += ghost_hits
+
+        # Rebuild modules and store event
+        self._rebuild_modules()
+        self.false_event = em.Event(
+            self.detector_geometry, self.tracks, self.hits, self.segments, self.modules
+        )
+
+        return self.false_event
+
+    def _rebuild_modules(self):
+        """Rebuilds the module list with current hits."""
+        self.modules = []
+        for mod_id, lx, ly, zpos in self.detector_geometry:
+            hits = [h for h in self.hits if h.module_id == mod_id]
+            self.modules.append(em.Module(mod_id, zpos, lx, ly, hits))
+        
