@@ -16,6 +16,85 @@ import matplotlib.pyplot as plt
 # -------------------------------------------------------------------------
 # Abstract base class for detector geometry definitions
 # -------------------------------------------------------------------------
+
+
+@dataclasses.dataclass(frozen=False)
+class Hit:
+    hit_id: int
+    x: float
+    y: float
+    z: float
+    module_id: int
+    track_id: int
+
+    def __getitem__(self, index):
+        return (self.x, self.y, self.z)[index]
+    
+    def __eq__(self, __value: object) -> bool:
+        return self is __value
+        #if self.hit_id == __value.hit_id:
+        #    return True
+        #else:
+        #    return False
+
+@dataclasses.dataclass(frozen=False)
+class Module:
+    module_id: int
+    z: float
+    lx: float
+    ly: float
+    hits: list[Hit]
+
+    def __eq__(self, __value: object) -> bool:
+        if self.module_id == __value.module_id:
+            return True
+        else:
+            return False
+        
+@dataclasses.dataclass
+class Segment:
+    segment_id: int
+    hits: list[Hit]
+    
+    def __eq__(self, __value: object) -> bool:
+        return self is __value
+        #if self.segment_id == __value.segment_id:
+        #    return True
+        #else:
+        #    return False
+        
+@dataclasses.dataclass
+class Track:
+    track_id    : int
+    hits        : list[Hit]
+    segments    : list[Segment]
+    
+    def __eq__(self, __value: object) -> bool:
+        return self is __value
+        #if self.track_id == __value.track_id:
+        #    return True
+        #else:
+        #    return False
+        
+
+@dataclasses.dataclass
+class module:
+    module_id: int
+    z: float
+    lx: float
+    ly: float
+    hits: list[Hit]
+    
+    def __eq__(self, __value: object) -> bool:
+        if self.module_id == __value.module_id:
+            return True
+        else:
+            return False
+        
+# -------------------------------------------------------------------------
+# Abstract geometry specification
+# -------------------------------------------------------------------------
+
 @dataclasses.dataclass(frozen=True)
 class Geometry(ABC):
     module_id: list[int]  # List of module identifiers
@@ -109,66 +188,9 @@ class RectangularVoidGeometry(Geometry):
             return False
         else:
             return True
-        
+    
 
 
-@dataclasses.dataclass(frozen=False)
-class Hit:
-    hit_id: int
-    x: float
-    y: float
-    z: float
-    module_id: int
-    track_id: int
-
-    def __getitem__(self, index):
-        return (self.x, self.y, self.z)[index]
-    
-    def __eq__(self, __value: object) -> bool:
-        return self is __value
-        #if self.hit_id == __value.hit_id:
-        #    return True
-        #else:
-        #    return False
-
-@dataclasses.dataclass(frozen=False)
-class Module:
-    module_id: int
-    z: float
-    lx: float
-    ly: float
-    hits: list[Hit]
-    
-    def __eq__(self, __value: object) -> bool:
-        if self.module_id == __value.module_id:
-            return True
-        else:
-            return False
-        
-@dataclasses.dataclass
-class Segment:
-    segment_id: int
-    hits: list[Hit]
-    
-    def __eq__(self, __value: object) -> bool:
-        return self is __value
-        #if self.segment_id == __value.segment_id:
-        #    return True
-        #else:
-        #    return False
-        
-@dataclasses.dataclass
-class Track:
-    track_id    : int
-    hits        : list[Hit]
-    segments    : list[Segment]
-    
-    def __eq__(self, __value: object) -> bool:
-        return self is __value
-        #if self.track_id == __value.track_id:
-        #    return True
-        #else:
-        #    return False
 
 @dataclasses.dataclass
 class Event:
@@ -176,6 +198,7 @@ class Event:
     tracks: list[Track]
     hits: list[Hit]
     segments: list[Segment]
+    modules: list[Module]
     
     def __eq__(self, __value: object) -> bool:
         return self is __value
@@ -208,7 +231,7 @@ class Event:
 
         # Draw planes from geometry, but only show regions that are in the bulk
         resolution = 25  # Increase for finer mesh
-        print(self.detector_geometry)
+        # print(self.detector_geometry)
         for mod_id, lx, ly, zpos in self.detector_geometry:
             xs = np.linspace(-lx, lx, resolution)
             ys = np.linspace(-ly, ly, resolution)

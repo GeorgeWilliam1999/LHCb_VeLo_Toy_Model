@@ -241,11 +241,32 @@ class StateEventGenerator:
             all_event_tracks.append(event_tracks)
             
         # Return all events, each containing its tracks
-        self.tracks = all_event_tracks
-        self.hits = [hit for sublist in [track.hits for sublist in all_event_tracks for track in sublist] for h in sublist]
-        self.segments = [s for sublist in [track.segments for sublist in all_event_tracks for track in sublist] for s in sublist]
-        
-        return em.Event(self.detector_geometry, self.tracks, self.hits, self.segments)
-        # return all_event_tracks
+        self.events = all_event_tracks
+        self.tracks = []
+        for event in all_event_tracks:
+            for track in event:
+                self.tracks.append(track)
+        self.hits = []
+        for event in all_event_tracks:
+            for track in event:
+                for hit in track.hits:
+                    self.hits.append(hit)
+        self.segments = []
+        for event in all_event_tracks:
+            for track in event:
+                for seg in track.segments:
+                    self.segments.append(seg)
+       
+    
+        # Generate modules (layer wise hits)
+        self.modules = []
+        for mod_id, lx, ly, zpos in self.detector_geometry:
+            # print(mod_id, lx, ly, zpos)
+            hits = [hit for hit in self.hits if hit.module_id == mod_id]
+            # print(hits)
+            self.modules.append(em.Module(mod_id, zpos, lx, ly, hits))
+
+        return em.Event(self.detector_geometry, self.tracks, self.hits, self.segments, self.modules)
+
     
     

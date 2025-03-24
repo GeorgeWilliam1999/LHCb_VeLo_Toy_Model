@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 dz = 20 #mm
 
-n_particles=[1,2,3,4,5]
+n_particles=[5]
 events = len(n_particles)
 layers = 10
 n = np.sum(n_particles)
@@ -21,9 +21,6 @@ Detector = state_event_model.RectangularVoidGeometry(module_id=module_id,lx = lx
 
 state_event_gen = StateEventGenerator(Detector, events = len(n_particles), n_particles=n_particles)
 state_event_gen.generate_random_primary_vertices(events, {'x': 0, 'y': 0, 'z': 50})
-
-
-
 
 event_particles = []
 for event in range(events):
@@ -41,4 +38,8 @@ state_event_gen.generate_particles(event_particles)
 
 event_tracks = state_event_gen.generate_complete_events()
 
-event_tracks.plot_segments()
+for m in event_tracks.modules:
+    print(m.module_id)
+    print(m)
+
+# event_tracks.plot_segments()
