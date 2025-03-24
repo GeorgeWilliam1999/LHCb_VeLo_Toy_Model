@@ -105,7 +105,7 @@ class RectangularVoidGeometry(Geometry):
         """
         x, y = state['x'], state['y']  # Extract x, y
         if (x < self.void_x_boundary and x > -self.void_x_boundary and
-            y < self.void_y_boundary and y > -self.void_y_boundary):
+            y < self.void_y_boundary and y > -self.void_y_boundary) or (x > self.lx[0] or x < -self.lx[0] or y > self.ly[0] or y < -self.ly[0]):
             return False
         else:
             return True

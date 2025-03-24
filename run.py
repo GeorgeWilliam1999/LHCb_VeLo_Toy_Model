@@ -7,7 +7,7 @@ dz = 20 #mm
 
 n_particles=[1,2,3,4,5]
 events = len(n_particles)
-layers = 5
+layers = 10
 n = np.sum(n_particles)
 
 module_id = [l for l in range(1, layers+1)]
@@ -20,7 +20,7 @@ zs = [dz*l for l in range(1, layers+1)]
 Detector = state_event_model.RectangularVoidGeometry(module_id=module_id,lx = lx,ly = ly,z=zs, void_x_boundary=5, void_y_boundary=5)
 
 state_event_gen = StateEventGenerator(Detector, events = len(n_particles), n_particles=n_particles)
-state_event_gen.generate_random_primary_vertices(10, {'x': 0, 'y': 0, 'z': 50})
+state_event_gen.generate_random_primary_vertices(events, {'x': 0, 'y': 0, 'z': 50})
 
 
 
