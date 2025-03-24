@@ -8,6 +8,7 @@ import scipy as sci
 import numpy as np
 
 class SimpleHamiltonian(Hamiltonian):
+    
     def __init__(self, epsilon, gamma, delta):
         self.epsilon                                    = epsilon
         self.gamma                                      = gamma
@@ -29,8 +30,6 @@ class SimpleHamiltonian(Hamiltonian):
         for idx in range(len(event.modules)-1):
             from_hits = event.modules[idx].hits
             to_hits = event.modules[idx+1].hits
-            print(len(to_hits))
-            print(to_hits, '\n')
 
             segments_group = []
             for from_hit, to_hit in product(from_hits, to_hits):
@@ -53,12 +52,7 @@ class SimpleHamiltonian(Hamiltonian):
         b = np.ones(self.n_segments)*self.delta
         for group_idx in range(len(self.segments_grouped) - 1):
             for seg_i, seg_j in product(self.segments_grouped[group_idx], self.segments_grouped[group_idx+1]):
-                print(seg_i)
-                print(seg_i.hits[0])
-                print(seg_i.hits[1])
-                print(seg_i.hits[0] == seg_j.hits[1])
-                print('\n')
-                if seg_i.hits[0] == seg_j.hits[1]:
+                if seg_i.hits[1] == seg_j.hits[0]:
                     cosine = seg_i * seg_j
                     if abs(cosine - 1) < self.epsilon:
                         A[seg_i.segment_id, seg_j.segment_id] = A[seg_j.segment_id, seg_i.segment_id] =  1
@@ -68,6 +62,7 @@ class SimpleHamiltonian(Hamiltonian):
         return -A, b
     
     def solve_classicaly(self):
+
         if self.A is None:
             raise Exception("Not initialised")
         
@@ -75,6 +70,7 @@ class SimpleHamiltonian(Hamiltonian):
         return solution
     
     def evaluate(self, solution):
+
         if self.A is None:
             raise Exception("Not initialised")
         
