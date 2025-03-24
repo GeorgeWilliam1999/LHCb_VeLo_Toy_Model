@@ -62,6 +62,19 @@ class Segment:
         #    return True
         #else:
         #    return False
+    
+    def to_vect(self):
+        return (self.hits[1].x - self.hits[0].x, 
+                self.hits[1].y - self.hits[0].y, 
+                self.hits[1].z - self.hits[0].z)
+    
+    def __mul__(self, __value):
+        v_1 = self.to_vect()
+        v_2 = __value.to_vect()
+        n_1 = (v_1[0]**2 + v_1[1]**2 + v_1[2]**2)**0.5
+        n_2 = (v_2[0]**2 + v_2[1]**2 + v_2[2]**2)**0.5
+        
+        return (v_1[0]*v_2[0] + v_1[1]*v_2[1] + v_1[2]*v_2[2])/(n_1*n_2)
         
 @dataclasses.dataclass
 class Track:
