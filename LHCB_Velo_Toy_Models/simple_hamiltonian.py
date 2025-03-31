@@ -83,3 +83,38 @@ class SimpleHamiltonian(Hamiltonian):
             
             
         return -0.5 * sol.T @ self.A @ sol + self.b.dot(sol)
+    
+from copy import deepcopy
+from LHCB_Velo_Toy_Models.state_event_model import Track
+
+def find_segments(s0, active):
+        found_s = []
+        for s1 in active:
+            if s0.hits[0].hit_id == s1.hits[1].hit_id or \
+            s1.hits[0].hit_id == s0.hits[1].hit_id:
+                found_s.append(s1)
+        return found_s
+
+def get_tracks(ham, classical_solution, event):
+    active_segments = [segment for segment,pseudo_state in zip(ham.segments,classical_solution) if pseudo_state > np.min(classical_solution)]
+    #solution_segments = active_segments
+    active = deepcopy(active_segments)
+    tracks = []
+    while len(active):
+        s = active.pop()
+        nextt = find_segments(s, active)
+        track = set([s.hits[0].hit_id, s.hits[1].hit_id])
+        while len(nextt):
+            s = nextt.pop()
+            try:
+                active.remove(s)
+            except:
+                pass
+            nextt += find_segments(s, active)
+            track = track.union(set([s.hits[0].hit_id, s.hits[1].hit_id]))
+        tracks.append(track)
+
+    tracks_processed = []
+    for track_ind, track in enumerate(tracks):
+        tracks_processed.append(Track(track_ind,[list(filter(lambda b: b.hit_id == a, event.hits))[0] for a in track],1))
+    return tracks_processed

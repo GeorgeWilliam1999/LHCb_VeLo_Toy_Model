@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 # -------------------------------------------------------------------------
 # Abstract base class for detector geometry definitions
 # -------------------------------------------------------------------------
-
+ 
 
 @dataclasses.dataclass(frozen=False)
 class Hit:
@@ -53,8 +53,8 @@ class Module:
         
 @dataclasses.dataclass
 class Segment:
-    segment_id: int
     hits: list[Hit]
+    segment_id: int
     
     def __eq__(self, __value: object) -> bool:
         return self is __value
