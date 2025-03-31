@@ -33,7 +33,7 @@ class SimpleHamiltonian(Hamiltonian):
 
             segments_group = []
             for from_hit, to_hit in product(from_hits, to_hits):
-                seg = Segment(next(segment_id),[from_hit, to_hit])
+                seg = Segment([from_hit, to_hit],next(segment_id))
                 segments_group.append(seg)
                 segments.append(seg)
                 n_segments = n_segments + 1
@@ -45,7 +45,7 @@ class SimpleHamiltonian(Hamiltonian):
         self.n_segments = n_segments
         
     def construct_hamiltonian(self, event: StateEventGenerator):
-
+        Segment.id_counter = 0
         if self.segments_grouped is None:
             self.construct_segments(event)
         A = sci.sparse.eye(self.n_segments,format='lil')*(-(self.delta+self.gamma))
