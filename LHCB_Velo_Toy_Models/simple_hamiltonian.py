@@ -75,7 +75,7 @@ class SimpleHamiltonian(Hamiltonian):
         solution, _ = sci.sparse.linalg.cg(self.A, self.b, atol=0)
         return solution
     
-    def evaluate(self, solution):
+    def evaluate(self, solution: list):
 
         if self.A is None:
             raise Exception("Not initialised")
@@ -93,7 +93,7 @@ class SimpleHamiltonian(Hamiltonian):
 from copy import deepcopy
 from LHCB_Velo_Toy_Models.state_event_model import Track
 
-def find_segments(s0, active):
+def find_segments(s0: Segment, active: Segment):
         found_s = []
         for s1 in active:
             if s0.hits[0].hit_id == s1.hits[1].hit_id or \
@@ -101,9 +101,8 @@ def find_segments(s0, active):
                 found_s.append(s1)
         return found_s
 
-def get_tracks(ham, classical_solution, event):
+def get_tracks(ham: SimpleHamiltonian, classical_solution: list[int], event: StateEventGenerator):
     active_segments = [segment for segment,pseudo_state in zip(ham.segments,classical_solution) if pseudo_state > np.min(classical_solution)]
-    #solution_segments = active_segments
     active = deepcopy(active_segments)
     tracks = []
     while len(active):
