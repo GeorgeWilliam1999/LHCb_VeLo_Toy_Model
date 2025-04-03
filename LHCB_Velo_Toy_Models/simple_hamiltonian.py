@@ -4,8 +4,10 @@ from LHCB_Velo_Toy_Models.state_event_model import Segment
 from LHCB_Velo_Toy_Models.hamiltonian import Hamiltonian
 
 from itertools import product, count
+from scipy.special import erf 
 import scipy as sci
 import numpy as np
+
 
 class SimpleHamiltonian(Hamiltonian):
     
@@ -44,7 +46,7 @@ class SimpleHamiltonian(Hamiltonian):
         self.segments = segments
         self.n_segments = n_segments
         
-    def construct_hamiltonian(self, event: StateEventGenerator):
+    def construct_hamiltonian(self, event: StateEventGenerator, convolution: bool= False):
         Segment.id_counter = 0
         if self.segments_grouped is None:
             self.construct_segments(event)
@@ -54,8 +56,12 @@ class SimpleHamiltonian(Hamiltonian):
             for seg_i, seg_j in product(self.segments_grouped[group_idx], self.segments_grouped[group_idx+1]):
                 if seg_i.hits[1] == seg_j.hits[0]:
                     cosine = seg_i * seg_j
-                    if abs(cosine - 1) < self.epsilon:
-                        A[seg_i.segment_id, seg_j.segment_id] = A[seg_j.segment_id, seg_i.segment_id] =  1
+                    if convolution:
+                        convolved_step = (1 + erf((self.epsilon - abs(np.arccos(cosine))) / (0.01 * np.sqrt(2))))
+                        A[seg_i.segment_id, seg_j.segment_id] = A[seg_j.segment_id, seg_i.segment_id] =  convolved_step
+                    else: 
+                        if abs(cosine - 1) < self.epsilon:
+                            A[seg_i.segment_id, seg_j.segment_id] = A[seg_j.segment_id, seg_i.segment_id] =  1
         A = A.tocsc()
         
         self.A, self.b = -A, b
@@ -116,5 +122,13 @@ def get_tracks(ham, classical_solution, event):
 
     tracks_processed = []
     for track_ind, track in enumerate(tracks):
-        tracks_processed.append(Track(track_ind,[list(filter(lambda b: b.hit_id == a, event.hits))[0] for a in track],1))
+        #print([list(filter(lambda b: b.hit_id == a, event.hits))[0] for a in track])
+        #tracks_processed.append(Track(track_ind,[list(filter(lambda b: b.hit_id == a, event.hits))[0] for a in track],1))
+        track_hits = []
+        for hit_id in track:
+            matching_hits = list(filter(lambda b: b.hit_id == hit_id, event.hits))
+            if matching_hits:  
+                track_hits.append(matching_hits[0])
+        if track_hits:
+            tracks_processed.append(Track(track_ind, track_hits, 1))
     return tracks_processed
