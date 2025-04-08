@@ -83,11 +83,33 @@ class EventValidator:
 
     def print_metrics(self, threshold: float = 0.7):
         metrics = self.compute_metrics(threshold)
-        print("=== Event Validation Metrics ===")
-        print(f"Total Reconstructed Tracks: {metrics['total_rec_tracks']}")
-        print(f"Total Truth Tracks: {metrics['total_truth_tracks']}")
-        print(f"Reconstruction Efficiency: {metrics['reconstruction_efficiency']*100:.2f}%")
-        print(f"Ghost Rate: {metrics['ghost_rate']*100:.2f}%")
-        print(f"Clone Fraction: {metrics['clone_fraction']*100:.2f}% ({metrics['clones_count']} clones)")
-        print(f"Hit Efficiency: {metrics['hit_efficiency']*100:.2f}%")
-        print(f"Purity: {metrics['purity']*100:.2f}%")
+        
+        # Define table width and header text
+        table_width = 60
+        header = " EVENT VALIDATION METRICS "
+        
+        # Create horizontal divider lines
+        divider = "=" * table_width
+        separator = "-" * table_width
+
+        # Build rows with labels and values
+        row_fmt = "{:<35}{:>23}"
+        
+        rows = [
+            row_fmt.format("Total Reconstructed Tracks:", metrics['total_rec_tracks']),
+            row_fmt.format("Total Truth Tracks:", metrics['total_truth_tracks']),
+            row_fmt.format("Reconstruction Efficiency:", f"{metrics['reconstruction_efficiency']*100:6.2f}%"),
+            row_fmt.format("Ghost Rate:", f"{metrics['ghost_rate']*100:6.2f}%"),
+            row_fmt.format("Clone Fraction:", f"{metrics['clone_fraction']*100:6.2f}% ({metrics['clones_count']} clones)"),
+            row_fmt.format("Hit Efficiency:", f"{metrics['hit_efficiency']*100:6.2f}%"),
+            row_fmt.format("Purity:", f"{metrics['purity']*100:6.2f}%")
+        ]
+        
+        # Print the table
+        print(divider)
+        print(header.center(table_width))
+        print(divider)
+        for row in rows:
+            print(row)
+        print(divider)
+

@@ -57,7 +57,7 @@ class SimpleHamiltonian(Hamiltonian):
                 if seg_i.hits[1] == seg_j.hits[0]:
                     cosine = seg_i * seg_j
                     if convolution:
-                        convolved_step = (1 + erf((self.epsilon - abs(np.arccos(cosine))) / (0.01 * np.sqrt(2))))
+                        convolved_step = (1 + erf((self.epsilon - abs(np.arccos(cosine))) / (0.001 * np.sqrt(2))))
                         A[seg_i.segment_id, seg_j.segment_id] = A[seg_j.segment_id, seg_i.segment_id] =  convolved_step
                     else: 
                         if abs(cosine - 1) < self.epsilon:
