@@ -83,7 +83,7 @@ class HHLAlgorithm:
         if self.num_system_qubits == 1:
             qc_b = QuantumCircuit(1)
             theta = 2 * np.arccos(self.vector_b[0])
-            qc_b.ry(theta, 0)
+            qc_b.h(0)
         else:
             qc_b = QuantumCircuit(self.num_system_qubits)
             qc_b.initialize(self.vector_b, list(range(self.num_system_qubits)))
@@ -156,7 +156,6 @@ class HHLAlgorithm:
             qc.h(self.time_qr[qubit])
 
         # Step 3: Phase estimation with Trotterized controlled-U operations.
-        
         power = 2 ** (self.num_time_qubits - 1)
         # Pass the entire system register as target.
         qc = self.apply_controlled_u_trotter(qc, self.A, self.time_qr[0], list(self.b_qr), power, steps=2)

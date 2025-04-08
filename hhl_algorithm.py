@@ -80,7 +80,7 @@ class HHLAlgorithm:
         if self.num_system_qubits == 1:
             qc_b = QuantumCircuit(1)
             theta = 2 * np.arccos(self.vector_b[0])
-            qc_b.ry(theta, 0)
+            qc_b.h(0)
         else:
             qc_b = QuantumCircuit(self.num_system_qubits)
             qc_b.initialize(self.vector_b, list(range(self.num_system_qubits)))
