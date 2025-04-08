@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 dz = 20 #mm
 
-n_particles=[5]
+n_particles=[5,5,5,5]
 events = len(n_particles)
 layers = 10
 n = np.sum(n_particles)
