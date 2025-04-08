@@ -156,10 +156,10 @@ class HHLAlgorithm:
             qc.h(self.time_qr[qubit])
 
         # Step 3: Phase estimation with Trotterized controlled-U operations.
-        for i in range(self.num_time_qubits):
-            power = 2 ** (self.num_time_qubits - i - 1)
-            # Pass the entire system register as target.
-            qc = self.apply_controlled_u_trotter(qc, self.A, self.time_qr[i], list(self.b_qr), power, steps=2)
+        
+        power = 2 ** (self.num_time_qubits - 1)
+        # Pass the entire system register as target.
+        qc = self.apply_controlled_u_trotter(qc, self.A, self.time_qr[0], list(self.b_qr), power, steps=2)
 
         # Step 4: Apply inverse QFT on time qubits.
         iqft = self.inverse_qft(self.num_time_qubits)
@@ -189,9 +189,8 @@ class HHLAlgorithm:
         # Step 6: Uncompute phase estimation using Trotterized controlled-U operations.
         qft_gate = self.inverse_qft(self.num_time_qubits).inverse()
         qc.compose(qft_gate, qubits=self.time_qr, inplace=True)
-        for i in reversed(range(self.num_time_qubits)):
-            power = 2 ** (self.num_time_qubits - i - 1)
-            self.apply_controlled_u_trotter(qc, -self.A, self.time_qr[i], list(self.b_qr), power, steps=2)
+        power = 2 ** (self.num_time_qubits - 1)
+        self.apply_controlled_u_trotter(qc, -self.A, self.time_qr[0], list(self.b_qr), power, steps=2)
         for qubit in range(self.num_time_qubits):
             qc.h(self.time_qr[qubit])
 
