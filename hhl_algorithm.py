@@ -265,10 +265,11 @@ if __name__ == "__main__":
     print("HHL Algorithm Implementation")
     print("=" * 60)
 
-    matrix_A = np.array([[1.0, 0.0, 0.0],
-                         [0.0, 1.0, 0.0],
-                         [0.0, 0.0, 2.0]])
-    vector_b = np.array([1.0, 0.0, 3.0])
+    matrix_A = np.array([[1.0, 0.0, -3.0, 0.0],
+                         [0.0, 1.0, 0.0, -3.0],
+                         [-3.0, 0.0, -3.0, 0.0],
+                         [0.0, -3.0, 0.0, 1.0]])
+    vector_b = np.array([1.0,1.0,1.0,1.0])
     
     print("\nSolving Ax = b with:")
     print("A =")
@@ -277,7 +278,7 @@ if __name__ == "__main__":
     print(vector_b)
     
     # Create an instance of the HHL algorithm.
-    hhl_solver = HHLAlgorithm(matrix_A, vector_b, num_time_qubits=3, shots=2048)
+    hhl_solver = HHLAlgorithm(matrix_A, vector_b, num_time_qubits=1, shots=2048)
     circuit = hhl_solver.build_circuit()
     print("\nHHL Circuit:")
     print(circuit.draw(output="text"))
