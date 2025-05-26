@@ -10,7 +10,7 @@ from scipy.linalg import expm
 
 
 class HHLAlgorithm:
-    def __init__(self, matrix_A, vector_b, num_time_qubits=3, shots=1024):
+    def __init__(self, matrix_A, vector_b, num_time_qubits=3, shots=1024, trotter = False):
         """
         Initialize the HHL algorithm parameters.
 
@@ -55,6 +55,7 @@ class HHLAlgorithm:
         self.vector_b = b_normalized
         self.num_time_qubits = num_time_qubits
         self.shots = shots
+        self.trotter = trotter
 
         # System dimension is the padded dimension.
         self.system_dim = A.shape[0]
@@ -119,6 +120,24 @@ class HHLAlgorithm:
         for _ in range(steps):
             qc.append(controlled_U_step, [control] + target)
         return qc
+    
+    def apply_controlled_u(self, qc, matrix, control, target):
+        """
+        Apply a controlled-U operation corresponding to 
+            U = exp(i * matrix * t)
+        with effective time t = 1.
+
+        Args:
+            qc (QuantumCircuit): The circuit to update.
+            matrix (numpy.ndarray): The matrix whose exponential is being approximated.
+            control (Qubit): The control qubit.
+            target (list): The target qubits (the entire system register).
+        """
+        U = expm(1j * matrix * self.t)
+        controlled_U = UnitaryGate(U, label="U").control(1)
+        print(f"Applying controlled-U with power {1} on qubit {control} to qubits {target}.")
+        qc.append(controlled_U, [control] + target)
+        return qc
 
     def inverse_qft(self, n_qubits):
         """
@@ -132,48 +151,6 @@ class HHLAlgorithm:
             for m in range(j):
                 qc.cp(-np.pi / (2 ** (j - m)), m, j)
             qc.h(j)
-        return qc
-
-    def controlled_unitary(self, U):
-        n = U.shape[0]
-        I = np.eye(n, dtype=U.dtype)
-        # Construct the controlled unitary as a block-diagonal matrix.
-        controlled_U = np.block([
-            [I,             np.zeros((n, n), dtype=U.dtype)],
-            [np.zeros((n, n), dtype=U.dtype),         U]
-        ])
-        return controlled_U
-    
-
-    def apply_controlled_u_trotter_(self, matrix, power=1, trotter_steps=1):
-        t_eff = power * np.pi
-
-        U_step = expm(1j * matrix * (t_eff / trotter_steps))
-        
-        U_total = np.linalg.matrix_power(U_step, trotter_steps)
-        
-        # Build the controlled-U operator manually.
-        ctrl_U = self.controlled_unitary(U_total)
-        
-        # Determine how many qubits the operator acts on.
-        # 'matrix' is assumed to be 2^k x 2^k.
-        n = matrix.shape[0]
-        k = int(np.log2(n))
-        
-        # The controlled operator acts on one control qubit + k target qubits.
-        total_qubits = 1 + k
-        
-        # Create a QuantumCircuit with the required number of qubits.
-        qc = QuantumCircuit(total_qubits)
-        
-        # Convert the controlled unitary into a UnitaryGate.
-        # The gate's matrix is of size 2^(k+1) x 2^(k+1).
-        controlled_gate = UnitaryGate(ctrl_U, label="C-Trotter")
-        
-        # Append the controlled gate.
-        # Here we assign qubit 0 as the control and qubits 1 to total_qubits-1 as the targets.
-        qc.append(controlled_gate, list(range(total_qubits)))
-        
         return qc
 
     def build_circuit(self):
@@ -200,8 +177,11 @@ class HHLAlgorithm:
         # Step 3: Phase estimation with Trotterized controlled-U operations.
         power = 2 ** (self.num_time_qubits - 1)
         # Pass the entire system register as target.
-        qc = self.apply_controlled_u_trotter_(self.A)
-        #qc = self.apply_controlled_u_trotter(qc, self.A, self.time_qr[0], list(self.b_qr), power, steps=1)
+        if self.trotter == True:
+            qc = self.apply_controlled_u_trotter(qc, self.A, self.time_qr[0], list(self.b_qr), power, steps=2)
+        elif self.trotter == False:
+            qc = self.apply_controlled_u(qc, self.A, self.time_qr[0], list(self.b_qr))
+
 
         # Step 4: Apply inverse QFT on time qubits.
         iqft = self.inverse_qft(self.num_time_qubits)
@@ -316,11 +296,10 @@ if __name__ == "__main__":
     print("HHL Algorithm Implementation")
     print("=" * 60)
 
-    matrix_A = np.array([[1.0, 0.0, -3.0, 0.0],
-                         [0.0, 1.0, 0.0, -3.0],
-                         [-3.0, 0.0, -3.0, 0.0],
-                         [0.0, -3.0, 0.0, 1.0]])
-    vector_b = np.array([1.0,1.0,1.0,1.0])
+    matrix_A = np.array([[1.0, 0.0, 0.0],
+                         [0.0, 1.0, 0.0],
+                         [0.0, 0.0, 2.0]])
+    vector_b = np.array([1.0, 0.0, 3.0])
     
     print("\nSolving Ax = b with:")
     print("A =")

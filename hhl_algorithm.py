@@ -72,6 +72,9 @@ class HHLAlgorithm:
         self.circuit = None
         self.counts = None
 
+        # Set evolution time t (here assumed to be 1)
+        self.t = 1
+
     def create_input_state(self):
         """
         Create a circuit to initialize the system register with the state |b⟩.
@@ -86,19 +89,22 @@ class HHLAlgorithm:
             qc_b.initialize(self.vector_b, list(range(self.num_system_qubits)))
         return qc_b
 
-    def apply_controlled_u(self, qc, matrix, control, target, power=1):
+    def apply_controlled_u(self, qc, matrix, control, target, power):
         """
-        Apply a controlled-U operation corresponding to U = exp(i * matrix * t * 2^(power))
-        on the target qubit, controlled by the given control qubit.
-        (This simplified version rotates into the eigenbasis and applies a phase rotation.
-         It is designed for demonstration with a two-eigenvalue system.)
+        Apply a controlled-U operation corresponding to 
+            U = exp(i * matrix * t)
+        with effective time t = 1.
+
+        Args:
+            qc (QuantumCircuit): The circuit to update.
+            matrix (numpy.ndarray): The matrix whose exponential is being approximated.
+            control (Qubit): The control qubit.
+            target (list): The target qubits (the entire system register).
         """
-        eigenvalues, eigenvectors = np.linalg.eigh(matrix)
-        theta = np.arccos(np.real(eigenvectors[0, 0]))
-        qc.ry(-2 * theta, target)
-        angle = eigenvalues[1] * 2 * np.pi * power
-        qc.cp(angle, control, target)
-        qc.ry(2 * theta, target)
+        U = expm(1j * matrix * self.t * power)
+        controlled_U = UnitaryGate(U, label="U").control(1)
+        print(f"Applying controlled-U with power {power} on qubit {control} to qubits {target}.")
+        qc.append(controlled_U, [control] + target)
         return qc
 
     def inverse_qft(self, n_qubits):
@@ -139,7 +145,7 @@ class HHLAlgorithm:
         # Step 3: Phase estimation with controlled-U operations.
         for i in range(self.num_time_qubits):
             power = 2 ** (self.num_time_qubits - i - 1)
-            qc = self.apply_controlled_u(qc, self.A, self.time_qr[i], self.b_qr[0], power)
+            qc = self.apply_controlled_u(qc, self.A, self.time_qr[i], list(self.b_qr), power)
 
         # Step 4: Inverse QFT on time qubits.
         iqft = self.inverse_qft(self.num_time_qubits)
@@ -171,7 +177,7 @@ class HHLAlgorithm:
         qc.compose(qft_gate, qubits=self.time_qr, inplace=True)
         for i in reversed(range(self.num_time_qubits)):
             power = 2 ** (self.num_time_qubits - i - 1)
-            self.apply_controlled_u(qc, -self.A, self.time_qr[i], self.b_qr[0], power)
+            self.apply_controlled_u(qc, -self.A, self.time_qr[i], list(self.b_qr), power)
         for qubit in range(self.num_time_qubits):
             qc.h(self.time_qr[qubit])
 
@@ -278,7 +284,7 @@ if __name__ == "__main__":
     print(vector_b)
     
     # Create an instance of the HHL algorithm.
-    hhl_solver = HHLAlgorithm(matrix_A, vector_b, num_time_qubits=1, shots=2048)
+    hhl_solver = HHLAlgorithm(matrix_A, vector_b, num_time_qubits=4, shots=2048)
     circuit = hhl_solver.build_circuit()
     print("\nHHL Circuit:")
     print(circuit.draw(output="text"))
