@@ -170,7 +170,6 @@ class HHLAlgorithm:
 
         solution_vector = solution_padded[:self.original_dim]
         solution_vector = solution_vector / np.linalg.norm(solution_vector)
-        solution_vector = solution_vector / self.A_norm
         return solution_vector
 
     def get_b_register_distribution(self):
@@ -234,7 +233,6 @@ class HHLAlgorithm:
         sol = sol / np.linalg.norm(sol)
         print(f"[Postselection norm] total probability in ancilla=|1⟩: {post_norm:.4f}")
         return sol
-
 
 if __name__ == "__main__":
     matrix_A = np.array([[4.0, 1.0, 0.0, 0.0],
