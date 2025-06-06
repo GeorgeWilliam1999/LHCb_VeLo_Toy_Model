@@ -99,11 +99,17 @@ class HHLAlgorithm:
 
         self.phase_estimation(qc)
 
+        gain = 0.3
+        n_time = self.num_time_qubits
         gain = 10.0
         for i in range(2 ** self.num_time_qubits):
-            phase = i / (2 ** self.num_time_qubits)
+            phase = i / (2 ** n_time)
+            if phase >= 0.5:
+                phase = phase - 1.0
+
+            #phase = i / (2 ** self.num_time_qubits)
             lam = 2 * np.pi * phase / self.t
-            if abs(lam) < 0.1 or abs(lam) > 10.0:
+            if abs(lam) < 1e-9:# or abs(lam) > 10.0:
                 continue
 
             inv_lam = 1.0 / lam
@@ -155,7 +161,7 @@ class HHLAlgorithm:
 
         for outcome, count in self.counts.items():
             if outcome[-1] == '1':
-                system_bits = outcome[:-1][::-1]
+                system_bits = outcome[1:][::-1]
                 index = int(system_bits, 2)
                 prob_dist[index] += count
                 total_success += count
@@ -170,6 +176,7 @@ class HHLAlgorithm:
 
         solution_vector = solution_padded[:self.original_dim]
         solution_vector = solution_vector / np.linalg.norm(solution_vector)
+        solution_vector = solution_vector / self.A_norm
         return solution_vector
 
     def get_b_register_distribution(self):
@@ -235,18 +242,30 @@ class HHLAlgorithm:
         return sol
 
 if __name__ == "__main__":
-    matrix_A = np.array([[4.0, 1.0, 0.0, 0.0],
-                         [1.0, 3.0, 1.0, 0.0],
-                         [0.0, 1.0, 3.0, 1.0],
-                         [0.0, 0.0, 1.0, 4.0]])
+    matrix_A = np.array([[ 3.        ,  0.        ,  0.        ,  0.        , -0.89557156,
+                            0.        ,  0.        ,  0.        ],
+                            [ 0.        ,  3.        ,  0.        ,  0.        ,  0.        ,
+                            0.        ,  0.        ,  0.        ],
+                            [ 0.        ,  0.        ,  3.        ,  0.        ,  0.        ,
+                            0.        ,  0.        ,  0.        ],
+                            [ 0.        ,  0.        ,  0.        ,  3.        ,  0.        ,
+                            0.        ,  0.        , -0.86035038],
+                            [-0.89557156,  0.        ,  0.        ,  0.        ,  3.        ,
+                            0.        ,  0.        ,  0.        ],
+                            [ 0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+                            3.        ,  0.        ,  0.        ],
+                            [ 0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+                            0.        ,  3.        ,  0.        ],
+                            [ 0.        ,  0.        ,  0.        , -0.86035038,  0.        ,
+                            0.        ,  0.        ,  3.        ]])
 
-    vector_b = np.array([1.0, 1.0, 1.0, 1.0]) / 2
+    vector_b = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]) 
 
-    hhl_solver = HHLAlgorithm(matrix_A, vector_b, num_time_qubits=5, shots=2048, debug=True)
+    hhl_solver = HHLAlgorithm(matrix_A, vector_b, num_time_qubits=2, shots=20048, debug=True)
     circuit = hhl_solver.build_circuit()
     print(circuit.draw(output="text"))
     counts = hhl_solver.run()
-    print(counts)
+    print('counts:', counts)
     hhl_solver.plot_results("hhl_results.png")
     x_hhl = hhl_solver.get_solution()
     print("\nHHL Solution:", x_hhl)
@@ -259,19 +278,14 @@ if __name__ == "__main__":
         fidelity = np.abs(np.vdot(x_hhl, x_exact_normalized))
         print(f"\nFidelity with exact solution: {fidelity:.4f}")
 
-    print("\nEigenvalues of original A:", np.round(hhl_solver.eigenvalues, 4))
-    print("Eigenvalues of scaled A (used in phase estimation):", np.round(hhl_solver.eigenvalues_scaled, 4))
+    #print("\nEigenvalues of original A:", np.round(hhl_solver.eigenvalues, 4))
+    #print("Eigenvalues of scaled A (used in phase estimation):", np.round(hhl_solver.eigenvalues_scaled, 4))
 
-    print("\n[Debug] Running ideal statevector simulation...")
+    #print("\n[Debug] Running ideal statevector simulation...")
     statevector = hhl_solver.simulate_statevector()
-    print("Final statevector (truncated):", statevector.data[:8])
+    #print("Final statevector (truncated):", statevector.data[:8])
 
     post_selected = hhl_solver.extract_postselected_solution(statevector)
-    print("\nPostselected solution from statevector:", post_selected)
+    #print("\nPostselected solution from statevector:", post_selected)
     fidelity_post = np.abs(np.vdot(post_selected, x_exact_normalized))
     print(f"Fidelity (postselected vs exact): {fidelity_post:.4f}")
-
-    print("\nMeasured b register distribution (conditioned on ancilla=1):")
-    b_dist = hhl_solver.get_b_register_distribution()
-    for bitstring, prob in sorted(b_dist.items()):
-        print(f"{bitstring}: {prob:.4f}")
