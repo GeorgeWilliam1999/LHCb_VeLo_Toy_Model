@@ -60,6 +60,9 @@ class HHLAlgorithm:
 
     def apply_controlled_u(self, qc, matrix, control, target, power):
         U = expm(1j * matrix * self.t * power)
+        if self.debug and power <= 2:
+            eigvals = np.linalg.eigvals(U)
+            print(f"[Debug] power={power}, U eigvals (abs): {np.round(np.abs(eigvals), 4)}")
         controlled_U = UnitaryGate(U).control(1)
         qc.append(controlled_U, [control] + target)
         return qc
@@ -96,7 +99,7 @@ class HHLAlgorithm:
 
         self.phase_estimation(qc)
 
-        gain = 2.0
+        gain = 10.0
         for i in range(2 ** self.num_time_qubits):
             phase = i / (2 ** self.num_time_qubits)
             lam = 2 * np.pi * phase / self.t
@@ -104,14 +107,15 @@ class HHLAlgorithm:
                 continue
 
             inv_lam = 1.0 / lam
-            angle = 2 * np.arcsin(min(1.0, gain * inv_lam / 2))
+            amplitude = (gain * inv_lam) / (1 + gain * inv_lam)
+            angle = 2 * np.arcsin(min(1.0, amplitude))
             controls = list(self.time_qr)
 
             if self.debug:
                 bits = format(i, f"0{self.num_time_qubits}b")
                 print(f"Time state |{bits}>: phase = {phase:.4f}, ",
-                      f"\u03bb_scaled = {lam:.4f}, \u03bb_true = {lam * self.A_norm:.4f}, ",
-                      f"1/\u03bb = {inv_lam:.2f}, Ry angle = {angle:.4f}")
+                      f"λ_scaled = {lam:.4f}, λ_true = {lam * self.A_norm:.4f}, ",
+                      f"1/λ = {inv_lam:.2f}, amplitude = {amplitude:.4f}, Ry angle = {angle:.4f}")
 
             bits = format(i, f"0{self.num_time_qubits}b")
             for j, bit in enumerate(bits):
@@ -151,7 +155,7 @@ class HHLAlgorithm:
 
         for outcome, count in self.counts.items():
             if outcome[-1] == '1':
-                system_bits = outcome[1:][::-1]
+                system_bits = outcome[:-1][::-1]
                 index = int(system_bits, 2)
                 prob_dist[index] += count
                 total_success += count
@@ -168,6 +172,27 @@ class HHLAlgorithm:
         solution_vector = solution_vector / np.linalg.norm(solution_vector)
         solution_vector = solution_vector / self.A_norm
         return solution_vector
+
+    def get_b_register_distribution(self):
+        if self.counts is None:
+            raise ValueError("No measurement results available. Run run() first.")
+
+        b_counts = {}
+        total = 0
+        for outcome, count in self.counts.items():
+            if outcome[-1] == '1':
+                b_bits = outcome[:-1][::-1]  # Reverse to get b register bits
+                b_counts[b_bits] = b_counts.get(b_bits, 0) + count
+                total += count
+
+        if total == 0:
+            print("Warning: No outcomes with ancilla in |1⟩.")
+            return {}
+
+        for key in b_counts:
+            b_counts[key] /= total
+
+        return b_counts
 
     def plot_results(self, filename="hhl_results.png"):
         if self.counts is None:
@@ -193,13 +218,21 @@ class HHLAlgorithm:
         probs = np.abs(statevector.data) ** 2
         sol = np.zeros(2 ** system_qubits)
 
+        post_norm = 0.0
         for i, amp in enumerate(statevector.data):
             if ((i >> ancilla_index) & 1) == 1:
                 system_state = (i >> 0) & ((1 << system_qubits) - 1)
-                sol[system_state] += np.abs(amp) ** 2
+                prob = np.abs(amp) ** 2
+                sol[system_state] += prob
+                post_norm += prob
+
+        if post_norm == 0:
+            print("Warning: no postselected amplitude.")
+            return sol
 
         sol = np.sqrt(sol)
         sol = sol / np.linalg.norm(sol)
+        print(f"[Postselection norm] total probability in ancilla=|1⟩: {post_norm:.4f}")
         return sol
 
 
@@ -239,3 +272,8 @@ if __name__ == "__main__":
     print("\nPostselected solution from statevector:", post_selected)
     fidelity_post = np.abs(np.vdot(post_selected, x_exact_normalized))
     print(f"Fidelity (postselected vs exact): {fidelity_post:.4f}")
+
+    print("\nMeasured b register distribution (conditioned on ancilla=1):")
+    b_dist = hhl_solver.get_b_register_distribution()
+    for bitstring, prob in sorted(b_dist.items()):
+        print(f"{bitstring}: {prob:.4f}")
