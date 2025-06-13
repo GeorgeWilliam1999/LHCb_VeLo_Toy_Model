@@ -7,6 +7,76 @@ from qiskit_aer import AerSimulator
 from qiskit.circuit.library import QFT, RYGate, UnitaryGate
 from scipy.linalg import expm
 
+from qiskit.quantum_info import SparsePauliOp
+from qiskit.circuit.library import PauliEvolutionGate
+from qiskit.synthesis import QDrift, LieTrotter, SuzukiTrotter
+
+def add_suzuki_trotter_to_class(HHLAlgorithmClass):
+    
+    def _create_trotter_gate(self, evolution_time, trotter_steps=1, order=2):
+        if not hasattr(self, '_pauli_A'):
+            self._pauli_A = SparsePauliOp.from_operator(self.A)
+
+        if order == 1:
+            synthesis_method = LieTrotter(reps=trotter_steps)
+        else:
+            synthesis_method = SuzukiTrotter(reps=trotter_steps, order=2)
+
+        trotter_gate = PauliEvolutionGate(self._pauli_A, 
+                                          time=evolution_time, 
+                                          synthesis=synthesis_method)
+        return trotter_gate
+
+    def _apply_trotter_controlled_u(self, qc, control_qubit, target_qubits, power, trotter_steps=1, order=1):
+        evolution_time = self.t * power
+        trotter_gate = self._create_trotter_gate(evolution_time, trotter_steps, order)
+        controlled_trotter = trotter_gate.control(1, label=f"C-Trot(t={evolution_time:.1f})")
+        qc.append(controlled_trotter, [control_qubit] + target_qubits)
+
+    # Replace the class's original apply_controlled_u with our new one
+    print("Patching HHLAlgorithm with Suzuki-Trotter methods...")
+    HHLAlgorithmClass._create_trotter_gate = _create_trotter_gate
+    HHLAlgorithmClass.apply_controlled_u = _apply_trotter_controlled_u
+    
+    return HHLAlgorithmClass
+
+import numpy as np
+import math
+from qiskit import QuantumCircuit
+from qiskit.quantum_info import SparsePauliOp
+from qiskit.circuit.library import PauliEvolutionGate
+from qiskit.synthesis import LieTrotter, SuzukiTrotter
+
+def create_trotter_evolution_circuit(
+    hamiltonian_matrix: np.ndarray, 
+    time: float = np.pi, 
+    trotter_steps: int = 1, 
+    trotter_order: int = 1
+) -> QuantumCircuit:
+
+    dim = hamiltonian_matrix.shape[0]
+    if hamiltonian_matrix.shape[0] != hamiltonian_matrix.shape[1] or not math.isclose(math.log2(dim), int(math.log2(dim))):
+        raise ValueError("Hamiltonian matrix must be square and its dimension must be a power of 2.")
+    num_qubits = int(math.log2(dim))
+
+    pauli_hamiltonian = SparsePauliOp.from_operator(hamiltonian_matrix)
+    print(f"Decomposed Hamiltonian into {len(pauli_hamiltonian)} Pauli terms.")
+
+    if trotter_order == 1:
+        synthesis_method = LieTrotter(reps=trotter_steps)
+        print(f"Using 1st Order Lie-Trotter with {trotter_steps} step(s).")
+    else:
+        synthesis_method = SuzukiTrotter(reps=trotter_steps, order=trotter_order)
+        print(f"Using {trotter_order}nd Order Suzuki-Trotter with {trotter_steps} step(s).")
+
+    evolution_gate = PauliEvolutionGate(pauli_hamiltonian, 
+                                        time=time, 
+                                        synthesis=synthesis_method)
+
+    circuit = QuantumCircuit(num_qubits, name=f"Trotter(t={time})")
+    circuit.append(evolution_gate, range(num_qubits))
+
+    return circuit
 
 class HHLAlgorithm:
     def __init__(self, matrix_A, vector_b, num_time_qubits=5, shots=1024, debug=False):
@@ -73,7 +143,7 @@ class HHLAlgorithm:
 
         for i in range(self.num_time_qubits):
             power = 2 ** i
-            self.apply_controlled_u(qc, self.A, self.time_qr[self.num_time_qubits - i - 1], list(self.b_qr), power)
+            self.apply_controlled_u(qc, self.time_qr[self.num_time_qubits - i - 1], list(self.b_qr), power)
 
         iqft = self.inverse_qft(self.num_time_qubits).to_gate(label="IQFT")
         qc.append(iqft, self.time_qr[:])
@@ -84,7 +154,7 @@ class HHLAlgorithm:
 
         for i in reversed(range(self.num_time_qubits)):
             power = 2 ** i
-            self.apply_controlled_u(qc, -self.A, self.time_qr[self.num_time_qubits - i - 1], list(self.b_qr), power)
+            self.apply_controlled_u(qc, self.time_qr[self.num_time_qubits - i - 1], list(self.b_qr), power)
 
         for qubit in self.time_qr:
             qc.h(qubit)
@@ -92,7 +162,11 @@ class HHLAlgorithm:
     def build_circuit(self):
         qc = QuantumCircuit(self.time_qr, self.b_qr, self.ancilla_qr, self.classical_reg)
 
-        qc.compose(self.create_input_state(), qubits=list(self.b_qr), inplace=True)
+        #qc.compose(self.create_input_state(), qubits=list(self.b_qr), inplace=True)
+        for qubit in self.b_qr:
+            qc.h(qubit)
+
+        qc = create_trotter_evolution_circuit(self.A, time=np.pi, trotter_steps=1, trotter_order=1)
 
         self.phase_estimation(qc)
 
@@ -109,14 +183,8 @@ class HHLAlgorithm:
                 continue
 
             inv_lam = 1.0 / lam
-            angle = 2 * np.arcsin(min(1.0, gain * inv_lam / 2))
+            angle = 2 * np.arcsin(min(1, gain * inv_lam / 2))
             controls = list(self.time_qr)
-
-            if self.debug:
-                bits = format(i, f"0{self.num_time_qubits}b")
-                print(f"Time state |{bits}>: phase = {phase:.4f}, ",
-                      f"\u03bb_scaled = {lam:.4f}, \u03bb_true = {lam * self.A_norm:.4f}, ",
-                      f"1/\u03bb = {inv_lam:.2f}, Ry angle = {angle:.4f}")
 
             bits = format(i, f"0{self.num_time_qubits}b")
             for j, bit in enumerate(bits):
@@ -140,7 +208,7 @@ class HHLAlgorithm:
 
     def run(self):
         simulator = AerSimulator()
-        transpiled_circuit = transpile(self.circuit, simulator)
+        transpiled_circuit = transpile(self.circuit, simulator, optimization_level=3)
         job = simulator.run(transpiled_circuit, shots=self.shots)
         result = job.result()
         self.counts = result.get_counts()
@@ -231,7 +299,9 @@ if __name__ == "__main__":
 
     vector_b = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]) 
 
-    hhl_solver = HHLAlgorithm(matrix_A, vector_b, num_time_qubits=2, shots=20048, debug=True)
+    HHLAlgorithm = add_suzuki_trotter_to_class(HHLAlgorithm)
+
+    hhl_solver = HHLAlgorithm(matrix_A, vector_b, num_time_qubits=2, shots=8192, debug=True)
     circuit = hhl_solver.build_circuit()
     print(circuit.draw(output="text"))
     counts = hhl_solver.run()
@@ -247,6 +317,12 @@ if __name__ == "__main__":
     if x_hhl is not None:
         fidelity = np.abs(np.vdot(x_hhl, x_exact_normalized))
         print(f"\nFidelity with exact solution: {fidelity:.4f}")
+    
+    circuit_depth = circuit.decompose().decompose().decompose().decompose().decompose().decompose().depth()
+    gate_statistics = circuit.decompose().decompose().decompose().decompose().decompose().decompose().count_ops()
+    print(f"The depth of the quantum circuit is: {circuit_depth}")
+    print("Gate statistics for the circuit:")
+    print(gate_statistics)
 
     #print("\nEigenvalues of original A:", np.round(hhl_solver.eigenvalues, 4))
     #print("Eigenvalues of scaled A (used in phase estimation):", np.round(hhl_solver.eigenvalues_scaled, 4))
