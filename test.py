@@ -308,6 +308,7 @@ if __name__ == "__main__":
     print('counts:', counts)
     hhl_solver.plot_results("hhl_results.png")
     x_hhl = hhl_solver.get_solution()
+    
     print("\nHHL Solution:", x_hhl)
 
     x_exact = np.linalg.solve(matrix_A, vector_b)
