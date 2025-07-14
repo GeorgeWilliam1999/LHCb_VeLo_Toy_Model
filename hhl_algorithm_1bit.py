@@ -65,7 +65,7 @@ class HHLAlgorithm:
 
         self.A_orig = A.copy()
         self.A_norm = np.linalg.norm(A)
-        A = A / self.A_norm
+        #A = A / self.A_norm
 
         self.A = A
         self.vector_b = b_normalized
@@ -139,14 +139,18 @@ class HHLAlgorithm:
             #phase = i / (2 ** n_time)
             #if phase >= 0.5:
             #    phase = phase - 1.0
+            #print(self.t)
+            #print(np.max(np.linalg.eigvals(self.A)))
 
             phase = i / (2 ** self.num_time_qubits)
             lam = 2 * np.pi * phase / self.t
-            if abs(lam) < 1e-9:# or abs(lam) > 10.0:
+
+            print(lam)
+            if abs(lam) > 6 or abs(lam) < 6:#1e-9:# or abs(lam) > 10.0:
                 continue
 
             inv_lam = 1.0 / lam
-            angle = 2 * np.arcsin(min(1, gain * inv_lam / 2))
+            angle = np.pi#2 * np.arcsin(min(1, gain * inv_lam / 2))
             controls = list(self.time_qr)
 
             bits = format(i, f"0{self.num_time_qubits}b")
@@ -176,11 +180,58 @@ class HHLAlgorithm:
         result = job.result()
         self.counts = result.get_counts()
         return self.counts
+    
+    def run_with_noise_simulation(self, backend_name="ibm_brisbane"):
+        print(f"\n--- Starting Noisy Simulation based on '{backend_name}' ---")
 
-    def get_solution(self):
-        if self.counts is None:
+        try:
+            # Step 1: Connect to the service and get the real backend object
+            print("Connecting to IBM Quantum to fetch backend properties...")
+            # This uses your saved IBM Cloud credentials
+            from qiskit_ibm_runtime import QiskitRuntimeService
+            service = QiskitRuntimeService(
+                channel='ibm_quantum',
+                instance='ibm-q/open/main',
+                token='20caa5a0277cbbb8949d9d9dbe38669d2a916493d36b2920d6d9d6d409addc73167334f2a5ec06736887b565c2c0f20aabc250aa773f6dcaef80e10fd68ce5a6'
+            )
+            real_backend = service.backend(backend_name)
+            print(f"Successfully fetched properties for '{backend_name}'.")
+
+            # Step 2: Create a simulator from the real backend's properties
+            # This automatically configures the simulator with the noise model,
+            # coupling map, and basis gates of the real device.
+            print("Creating noise model and configured simulator...")
+            from qiskit_aer import AerSimulator
+            noisy_simulator = AerSimulator.from_backend(real_backend)
+            
+            # Step 3: Transpile the circuit for the real backend
+            # This is crucial. It rewrites the circuit to use the correct gates
+            # and adds SWAP gates to handle qubit connectivity.
+            print(f"Transpiling circuit for '{backend_name}' architecture...")
+            # Using optimization_level=3 is recommended for performance
+            transpiled_circuit = transpile(self.circuit, backend=real_backend, optimization_level=3)
+            
+            print(f"Ideal depth: {self.circuit.depth()} -> Transpiled depth: {transpiled_circuit.depth()}")
+
+            # Step 4: Run the simulation on the configured noisy simulator
+            print(f"Running simulation with {self.shots} shots...")
+            job = noisy_simulator.run(transpiled_circuit, shots=self.shots)
+            result = job.result()
+            self.counts = result.get_counts()
+            
+            print("Noisy simulation finished.")
+            return self.counts
+
+        except Exception as e:
+            print(f"\nAn error occurred during the noisy simulation: {e}")
+            print("Please ensure your IBM Cloud credentials are saved and you have the necessary packages installed.")
+            return None
+
+    def get_solution(self, counts = None):
+        if self.counts is None and counts is None:
             raise ValueError("No measurement results available. Run run() first.")
-
+        if counts is not None:
+            self.counts = counts
         total_success = 0
         padded_dim = 2 ** self.num_system_qubits
         prob_dist = np.zeros(padded_dim)
@@ -204,7 +255,7 @@ class HHLAlgorithm:
         solution_padded = solution_padded / np.linalg.norm(solution_padded)
 
         solution_vector = solution_padded[:self.original_dim]
-        solution_vector = solution_vector / np.linalg.norm(solution_vector)
+        solution_vector = solution_vector #/ np.linalg.norm(solution_vector)
         #solution_vector = solution_vector / self.A_norm
         return solution_vector
 
@@ -243,31 +294,40 @@ class HHLAlgorithm:
 
 
 if __name__ == "__main__":
-    matrix_A = np.array([[ 3.        ,  0.        ,  0.        ,  0.        , -0.89557156,
+    matrix_A = np.array([[ 3.        ,  0.        ,  0.        ,  0.        , -1,
                             0.        ,  0.        ,  0.        ],
                             [ 0.        ,  3.        ,  0.        ,  0.        ,  0.        ,
                             0.        ,  0.        ,  0.        ],
                             [ 0.        ,  0.        ,  3.        ,  0.        ,  0.        ,
                             0.        ,  0.        ,  0.        ],
                             [ 0.        ,  0.        ,  0.        ,  3.        ,  0.        ,
-                            0.        ,  0.        , -0.86035038],
-                            [-0.89557156,  0.        ,  0.        ,  0.        ,  3.        ,
+                            0.        ,  0.        , -1],
+                            [-1,  0.        ,  0.        ,  0.        ,  3.        ,
                             0.        ,  0.        ,  0.        ],
                             [ 0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
                             3.        ,  0.        ,  0.        ],
                             [ 0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
                             0.        ,  3.        ,  0.        ],
-                            [ 0.        ,  0.        ,  0.        , -0.86035038,  0.        ,
+                            [ 0.        ,  0.        ,  0.        , -1,  0.        ,
                             0.        ,  0.        ,  3.        ]])
 
     vector_b = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]) 
 
     HHLAlgorithm = add_suzuki_trotter_to_class(HHLAlgorithm)
 
-    hhl_solver = HHLAlgorithm(matrix_A, vector_b, num_time_qubits=2, shots=8192, debug=True)
+    hhl_solver = HHLAlgorithm(matrix_A, vector_b, num_time_qubits=2, shots=16000, debug=True)
     circuit = hhl_solver.build_circuit()
+    
     print(circuit.draw(output="text"))
+    #counts = hhl_solver.run_with_noise_simulation()
     counts = hhl_solver.run()
+
+    #from pytket.utils import gate_counts
+    #from pytket.extensions.qiskit import qiskit_to_tk
+
+    #circuit_tk = qiskit_to_tk(circuit)
+    #gate_counts(circuit_tk)
+
     print('counts:', counts)
     hhl_solver.plot_results("hhl_results.png")
     x_hhl = hhl_solver.get_solution()
@@ -291,10 +351,12 @@ if __name__ == "__main__":
     #print("Eigenvalues of scaled A (used in phase estimation):", np.round(hhl_solver.eigenvalues_scaled, 4))
 
     #print("\n[Debug] Running ideal statevector simulation...")
-    statevector = hhl_solver.simulate_statevector()
+    #statevector = hhl_solver.simulate_statevector()
     #print("Final statevector (truncated):", statevector.data[:8])
 
-    post_selected = hhl_solver.extract_postselected_solution(statevector)
+    #post_selected = hhl_solver.extract_postselected_solution(statevector)
     #print("\nPostselected solution from statevector:", post_selected)
-    fidelity_post = np.abs(np.vdot(post_selected, x_exact_normalized))
+    #fidelity_post = np.abs(np.vdot(post_selected, x_exact_normalized))
     #print(f"Fidelity (postselected vs exact): {fidelity_post:.4f}")
+
+    
