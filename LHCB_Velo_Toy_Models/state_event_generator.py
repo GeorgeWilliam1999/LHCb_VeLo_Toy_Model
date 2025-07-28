@@ -24,10 +24,10 @@ class StateEventGenerator:
         self,
         detector_geometry: Geometry,
         primary_vertices: list[tuple[float, float, float]] = None,
-        phi_min: float = - 0.3,
-        phi_max: float =   0.3,
-        theta_min: float = -0.3,
-        theta_max: float = 0.3,
+        phi_min: float = - 0.1,
+        phi_max: float =   0.1,
+        theta_min: float = -0.1,
+        theta_max: float = 0.1,
         events: int = 3,
         n_particles: list[int] = None,
         particles: list[dict] = None,
@@ -53,8 +53,7 @@ class StateEventGenerator:
 
     def generate_random_primary_vertices(
         self,
-        n_events: int,
-        phsyical_variance: dict[str, float]
+        physical_variance: dict[str, float]
     ) -> list[tuple[float, float, float]]:
         """
         Generates random primary vertices (x, y, z) for events based on provided variances.
@@ -65,7 +64,7 @@ class StateEventGenerator:
             # Generate each primary vertex with normal distribution
             x = 0
             y = 0
-            z = self.rng.normal(0, phsyical_variance['z'])
+            z = self.rng.normal(0, physical_variance['z'])
             primary_vertices.append((x, y, z))
         # Store back in the instance
         self.primary_vertices = primary_vertices
@@ -195,20 +194,16 @@ class StateEventGenerator:
                 track = em.Track(track_id, hits=[], segments=[])
                 # Initialize the particle's state at the primary vertex
                 state = self.particles[evt_idx][p_idx]
-                # print('initial state : ', state)
                 # Propagate through each layer of the detector geometry
                 for mod_id, lx, ly, zpos in self.detector_geometry:
-                    # print(f'mod_id : {mod_id}, lx : {lx}, ly : {ly}, zpos : {zpos}')
                     # Calculate distance to the next layer along z
                     dz = zpos - state['z']
-                    # print(f'zpos : {zpos}, state z : {state["z"]}, dz : {dz}')
                     # Update particle state by propagating in z
                     state = self.propagate(state, dz)
                     # print(f'state : {state}')
                     if not self.detector_geometry.point_on_bulk(state):
                         continue
                     # Create and record a new hit at this layer
-                    # if 
                     if self.measurment_error_flag:
                         errot_state = self.measurment_error(state)
                         hit = em.Hit(

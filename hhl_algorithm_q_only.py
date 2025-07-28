@@ -9,7 +9,7 @@ from scipy.linalg import expm
 
 
 class HHLAlgorithm:
-    def __init__(self, matrix_A, vector_b, num_time_qubits=5, shots=10240, debug=False):
+    def __init__(self, matrix_A, vector_b, num_time_qubits=5, shots=1024, debug=False):
         A = matrix_A
         self.original_dim = A.shape[0]
         self.debug = debug
@@ -45,28 +45,13 @@ class HHLAlgorithm:
         self.b_qr = QuantumRegister(self.num_system_qubits, "b")
         self.ancilla_qr = QuantumRegister(1, "ancilla")
         self.classical_reg = ClassicalRegister(1 + self.num_system_qubits, "c")
+
         self.circuit = None
         self.counts = None
 
         self.t = np.pi / np.max(np.abs(np.linalg.eigvals(A)))
         self.eigenvalues = np.linalg.eigvals(self.A_orig)
         self.eigenvalues_scaled = np.linalg.eigvals(self.A)
-
-    def get_quantum_only_circuit(self):
-        """Return a copy of the circuit with all classical elements and measurements removed."""
-        if self.circuit is None:
-            raise ValueError("Circuit has not been built yet.")
-        
-        # Create a new QuantumCircuit with only quantum registers
-        qc_clean = QuantumCircuit(self.time_qr, self.b_qr, self.ancilla_qr)
-
-        # Copy only the quantum instructions
-        for instr, qargs, cargs in self.circuit.data:
-            if instr.name == 'measure':
-                continue  # Skip measurement
-            qc_clean.append(instr, qargs, cargs)
-
-        return qc_clean
 
     def create_input_state(self):
         qc_b = QuantumCircuit(self.num_system_qubits)
@@ -103,14 +88,6 @@ class HHLAlgorithm:
 
         for qubit in self.time_qr:
             qc.h(qubit)
-    
-    def R_rotation(self, qc, target_qubit):
-        """Grover rotation operator I-2*|1><1| = Z on ancilla qubit"""
-        #apply z to ancilla register 
-        qc.z(target_qubit)
-
-    def WRW_operator(self,qc,ancilla_qubit, target_qubit):
-        pass
 
     def build_circuit(self):
         qc = QuantumCircuit(self.time_qr, self.b_qr, self.ancilla_qr, self.classical_reg)

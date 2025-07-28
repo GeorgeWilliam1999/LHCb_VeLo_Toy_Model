@@ -9,7 +9,7 @@ from scipy.linalg import expm
 
 
 class HHLAlgorithm:
-    def __init__(self, matrix_A, vector_b, num_time_qubits=5, shots=10240, debug=False):
+    def __init__(self, matrix_A, vector_b, num_time_qubits=5, shots=1024, debug=False):
         A = matrix_A
         self.original_dim = A.shape[0]
         self.debug = debug
@@ -45,6 +45,7 @@ class HHLAlgorithm:
         self.b_qr = QuantumRegister(self.num_system_qubits, "b")
         self.ancilla_qr = QuantumRegister(1, "ancilla")
         self.classical_reg = ClassicalRegister(1 + self.num_system_qubits, "c")
+
         self.circuit = None
         self.counts = None
 
@@ -103,14 +104,6 @@ class HHLAlgorithm:
 
         for qubit in self.time_qr:
             qc.h(qubit)
-    
-    def R_rotation(self, qc, target_qubit):
-        """Grover rotation operator I-2*|1><1| = Z on ancilla qubit"""
-        #apply z to ancilla register 
-        qc.z(target_qubit)
-
-    def WRW_operator(self,qc,ancilla_qubit, target_qubit):
-        pass
 
     def build_circuit(self):
         qc = QuantumCircuit(self.time_qr, self.b_qr, self.ancilla_qr, self.classical_reg)
