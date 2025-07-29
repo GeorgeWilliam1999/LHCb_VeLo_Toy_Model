@@ -234,6 +234,7 @@ gate_statistics = circuit.decompose().decompose().decompose().decompose().decomp
 print(f"The depth of the quantum circuit is: {circuit_depth}")
 print("Gate statistics for the circuit:")
 print(gate_statistics)
+print(circuit.count_ops())
 
 '''
 from pytket import Circuit, OpType
