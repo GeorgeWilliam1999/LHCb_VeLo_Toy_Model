@@ -24,10 +24,10 @@ class StateEventGenerator:
         self,
         detector_geometry: Geometry,
         primary_vertices: list[tuple[float, float, float]] = None,
-        phi_min: float = - 0.1,
-        phi_max: float =   0.1,
-        theta_min: float = -0.1,
-        theta_max: float = 0.1,
+        phi_min: float = - 0.2,
+        phi_max: float =   0.2,
+        theta_min: float = -0.2,
+        theta_max: float =  0.2,
         events: int = 3,
         n_particles: list[int] = None,
         particles: list[dict] = None,
@@ -106,6 +106,7 @@ class StateEventGenerator:
                 # Transverse slopes
                 tx = np.tan(phi)
                 ty = np.tan(theta)
+             
 
                 # Retrieve charge from input (example usage)
                 # If "q" or other keys are needed, adapt code accordingly
