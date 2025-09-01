@@ -273,3 +273,61 @@ class Event:
         ax.set_zlabel('X')
         plt.tight_layout()
         plt.show()
+
+    def save_plot_segments(self, filename : str, params: dict = None):
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+
+        # Gather all hits
+        hits = []
+        for segment in self.segments:
+            hits.extend(segment.hits)
+
+        # Re-map: X-axis <- Z, Y-axis <- Y, Z-axis <- X
+        X = [h.z for h in hits]
+        Y = [h.y for h in hits]
+        Z = [h.x for h in hits]
+        ax.scatter(X, Y, Z, c='r', marker='o')
+
+        # Plot lines
+        for segment in self.segments:
+            x = [h.z for h in segment.hits]
+            y = [h.y for h in segment.hits]
+            z = [h.x for h in segment.hits]
+            ax.plot(x, y, z, c='b')
+
+        # Draw planes from geometry, but only show regions that are in the bulk
+        resolution = 25
+         # print(self.detector_geometry)
+        for mod_id, lx, ly, zpos in self.detector_geometry:
+            xs = np.linspace(-lx, lx, resolution)
+            ys = np.linspace(-ly, ly, resolution)
+            X, Y = np.meshgrid(xs, ys)
+            Z = np.full_like(X, zpos, dtype=float)
+
+            for idx in np.ndindex(X.shape):
+                x_val = X[idx]
+                y_val = Y[idx]
+                # If not in the bulk (e.g., inside a void), mask out
+                if not self.detector_geometry.point_on_bulk({'x': x_val, 'y': y_val, 'z': zpos}):
+                    X[idx], Y[idx], Z[idx] = np.nan, np.nan, np.nan
+
+            # Plot, using (Z, Y, X) to match the existing axis mappings
+            ax.plot_surface(Z, Y, X, alpha=0.3, color='gray')
+
+        # plot ghost_hits (hits that are not part of a segment)
+        ghost_hits = [h for h in self.hits if not any(h in s.hits for s in self.segments)]
+        X = [h.z for h in ghost_hits]
+        Y = [h.y for h in ghost_hits]
+        Z = [h.x for h in ghost_hits]
+        ax.scatter(X, Y, Z, c='g', marker='x')
+
+        ax.set_xlabel('Z (horizontal)')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('X')
+        if params:
+            plt.title(f"Event Parameters: {params}")
+
+        plt.tight_layout()
+        plt.savefig(filename)
+        plt.close()

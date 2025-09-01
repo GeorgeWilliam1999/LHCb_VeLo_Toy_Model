@@ -250,6 +250,7 @@ class HHLAlgorithm:
             print("No valid solution: ancilla was never measured as |1⟩.")
             return None
 
+        print('Total success:', total_success/len(self.counts))
         prob_dist = prob_dist / total_success
         solution_padded = np.sqrt(prob_dist)
         solution_padded = solution_padded / np.linalg.norm(solution_padded)

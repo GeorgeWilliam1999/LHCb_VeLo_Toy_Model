@@ -43,7 +43,7 @@ class StateEventGenerator:
         self.phi_max = phi_max                      # Maximum tx angle
         self.theta_min = theta_min                  # Minimum ty angle
         self.theta_max = theta_max                  # Maximum ty angle
-        self.events = events                        # Number of events to generate
+        self.events_num = events                        # Number of events to generate
         self.n_particles = n_particles if n_particles is not None else []
         self.particles = particles if particles is not None else []
         self.rng = np.random.default_rng()          # Random number generator
@@ -60,7 +60,7 @@ class StateEventGenerator:
         """
         primary_vertices = []  # Accumulate generated vertices
         # Ensure variances are small
-        for _ in range(self.events):
+        for _ in range(self.events_num):
             # Generate each primary vertex with normal distribution
             x = 0
             y = 0
@@ -76,7 +76,7 @@ class StateEventGenerator:
         """
         self.primary_vertices = primary_vertices
         # Validate length
-        assert len(primary_vertices) == self.events, (
+        assert len(primary_vertices) == self.events_num, (
             'Number of primary vertices must be equal to the number of events'
         )
         # Validate structure
@@ -93,7 +93,7 @@ class StateEventGenerator:
         Generates particle state dictionaries for each event based on the primary vertices.
         """
         init_particles = []  # Overwrite local particles list
-        for event in range(self.events):
+        for event in range(self.events_num):
             # For each event, retrieve the stored primary vertex
             x, y, z = self.primary_vertices[event]
             event_particles = []  # Accumulate particles for this event
@@ -184,7 +184,7 @@ class StateEventGenerator:
         # Prepare container for all events
         all_event_tracks = []
         # Loop over the number of events
-        for evt_idx in range(self.events):
+        for evt_idx in range(self.events_num):
             # Container for tracks in this event
             event_tracks = []
             # Retrieve the primary vertex for this event

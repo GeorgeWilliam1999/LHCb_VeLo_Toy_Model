@@ -1,0 +1,4036 @@
+{
+    "0": {
+        "Hit_res": 0,
+        "Multi_scatter": 0,
+        "noise_rate": 0.01,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.7228664426339356
+            ]
+        ],
+        "event_count": 1
+    },
+    "1": {
+        "Hit_res": 0,
+        "Multi_scatter": 0,
+        "noise_rate": 0.01,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -1.2540401373318337
+            ]
+        ],
+        "event_count": 1
+    },
+    "2": {
+        "Hit_res": 0,
+        "Multi_scatter": 0,
+        "noise_rate": 0.01,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.3815111234965494
+            ]
+        ],
+        "event_count": 1
+    },
+    "3": {
+        "Hit_res": 0,
+        "Multi_scatter": 0,
+        "noise_rate": 0.01,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.5828963846179526
+            ]
+        ],
+        "event_count": 1
+    },
+    "4": {
+        "Hit_res": 0,
+        "Multi_scatter": 0,
+        "noise_rate": 0.02,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.7134885216403586
+            ]
+        ],
+        "event_count": 1
+    },
+    "5": {
+        "Hit_res": 0,
+        "Multi_scatter": 0,
+        "noise_rate": 0.02,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.0034785889695138003
+            ]
+        ],
+        "event_count": 1
+    },
+    "6": {
+        "Hit_res": 0,
+        "Multi_scatter": 0,
+        "noise_rate": 0.02,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.0931206939703812
+            ]
+        ],
+        "event_count": 1
+    },
+    "7": {
+        "Hit_res": 0,
+        "Multi_scatter": 0,
+        "noise_rate": 0.02,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                2.059382615522532
+            ]
+        ],
+        "event_count": 1
+    },
+    "8": {
+        "Hit_res": 0,
+        "Multi_scatter": 0,
+        "noise_rate": 0.04,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -1.3512053162282653
+            ]
+        ],
+        "event_count": 1
+    },
+    "9": {
+        "Hit_res": 0,
+        "Multi_scatter": 0,
+        "noise_rate": 0.04,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0222222222222221,
+            "purity": 0.9800000000000001,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.14810029557477272
+            ]
+        ],
+        "event_count": 1
+    },
+    "10": {
+        "Hit_res": 0,
+        "Multi_scatter": 0,
+        "noise_rate": 0.04,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.8361669127692306
+            ]
+        ],
+        "event_count": 1
+    },
+    "11": {
+        "Hit_res": 0,
+        "Multi_scatter": 0,
+        "noise_rate": 0.04,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -1.4932986725756914
+            ]
+        ],
+        "event_count": 1
+    },
+    "12": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.01,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.0,
+            "hit_efficiency": 0.0,
+            "purity": 0.0,
+            "total_rec_tracks": 0,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                1.1170528022612665
+            ]
+        ],
+        "event_count": 1
+    },
+    "13": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.01,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.1,
+            "hit_efficiency": 0.06666666666666667,
+            "purity": 1.0,
+            "total_rec_tracks": 1,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.7048994393487134
+            ]
+        ],
+        "event_count": 1
+    },
+    "14": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.01,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.0,
+            "hit_efficiency": 0.0,
+            "purity": 0.0,
+            "total_rec_tracks": 0,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -1.2084604475253113
+            ]
+        ],
+        "event_count": 1
+    },
+    "15": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.01,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.1,
+            "hit_efficiency": 0.0625,
+            "purity": 1.0,
+            "total_rec_tracks": 1,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -1.4161269755355943
+            ]
+        ],
+        "event_count": 1
+    },
+    "16": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.02,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.1,
+            "hit_efficiency": 0.06,
+            "purity": 1.0,
+            "total_rec_tracks": 1,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.30819707184752204
+            ]
+        ],
+        "event_count": 1
+    },
+    "17": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.02,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.0,
+            "hit_efficiency": 0.0,
+            "purity": 0.0,
+            "total_rec_tracks": 0,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.3152987057729909
+            ]
+        ],
+        "event_count": 1
+    },
+    "18": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.02,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.1,
+            "hit_efficiency": 0.061224489795918366,
+            "purity": 1.0,
+            "total_rec_tracks": 1,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.37221702010090224
+            ]
+        ],
+        "event_count": 1
+    },
+    "19": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.02,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.2,
+            "hit_efficiency": 0.14583333333333334,
+            "purity": 1.0,
+            "total_rec_tracks": 2,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -2.228790365256749
+            ]
+        ],
+        "event_count": 1
+    },
+    "20": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.04,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.1,
+            "hit_efficiency": 0.06,
+            "purity": 1.0,
+            "total_rec_tracks": 1,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.2891568985810551
+            ]
+        ],
+        "event_count": 1
+    },
+    "21": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.04,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.1,
+            "hit_efficiency": 0.06666666666666667,
+            "purity": 1.0,
+            "total_rec_tracks": 1,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.9846812442631803
+            ]
+        ],
+        "event_count": 1
+    },
+    "22": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.04,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.1,
+            "hit_efficiency": 0.04081632653061224,
+            "purity": 1.0,
+            "total_rec_tracks": 1,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.2505649312261785
+            ]
+        ],
+        "event_count": 1
+    },
+    "23": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.04,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.0,
+            "hit_efficiency": 0.0,
+            "purity": 0.0,
+            "total_rec_tracks": 0,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -1.124230070251382
+            ]
+        ],
+        "event_count": 1
+    },
+    "24": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.01,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.96,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                1.0818018227805497
+            ]
+        ],
+        "event_count": 1
+    },
+    "25": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.01,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.9777777777777777,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.24645476810679506
+            ]
+        ],
+        "event_count": 1
+    },
+    "26": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.01,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.9795918367346939,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.8339846113481324
+            ]
+        ],
+        "event_count": 1
+    },
+    "27": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.01,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                1.1025346569853731
+            ]
+        ],
+        "event_count": 1
+    },
+    "28": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.02,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.98,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.12739712415819954
+            ]
+        ],
+        "event_count": 1
+    },
+    "29": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.02,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.9777777777777777,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.12251262298036136
+            ]
+        ],
+        "event_count": 1
+    },
+    "30": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.02,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.2777747321238684
+            ]
+        ],
+        "event_count": 1
+    },
+    "31": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.02,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.31113364517373554
+            ]
+        ],
+        "event_count": 1
+    },
+    "32": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.04,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.5931783995118849
+            ]
+        ],
+        "event_count": 1
+    },
+    "33": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.04,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.23896163895486244
+            ]
+        ],
+        "event_count": 1
+    },
+    "34": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.04,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.9795918367346939,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.48885781695566033
+            ]
+        ],
+        "event_count": 1
+    },
+    "35": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.04,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.2869538211106323
+            ]
+        ],
+        "event_count": 1
+    },
+    "36": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.01,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.82,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                1.2754611387389543
+            ]
+        ],
+        "event_count": 1
+    },
+    "37": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.01,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.8,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.7909097759218072
+            ]
+        ],
+        "event_count": 1
+    },
+    "38": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.01,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.7755102040816326,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.40785442572747216
+            ]
+        ],
+        "event_count": 1
+    },
+    "39": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.01,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.8125,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.3527671317074593
+            ]
+        ],
+        "event_count": 1
+    },
+    "40": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.02,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.76,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.8347384371259781
+            ]
+        ],
+        "event_count": 1
+    },
+    "41": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.02,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.9,
+            "hit_efficiency": 0.7111111111111111,
+            "purity": 1.0,
+            "total_rec_tracks": 9,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                1.5725311486586442
+            ]
+        ],
+        "event_count": 1
+    },
+    "42": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.02,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.8367346938775511,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.5858043943064601
+            ]
+        ],
+        "event_count": 1
+    },
+    "43": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.02,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.8541666666666666,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -1.9080622731998835
+            ]
+        ],
+        "event_count": 1
+    },
+    "44": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.04,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.76,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.7825711177971935
+            ]
+        ],
+        "event_count": 1
+    },
+    "45": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.04,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.7777777777777778,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.06309430085373013
+            ]
+        ],
+        "event_count": 1
+    },
+    "46": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.04,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.7755102040816326,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.271223515782265
+            ]
+        ],
+        "event_count": 1
+    },
+    "47": {
+        "Hit_res": 0,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.04,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.7916666666666666,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.14166798191135396
+            ]
+        ],
+        "event_count": 1
+    },
+    "48": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0,
+        "noise_rate": 0.01,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.9298507560312577
+            ]
+        ],
+        "event_count": 1
+    },
+    "49": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0,
+        "noise_rate": 0.01,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -1.2051059993146198
+            ]
+        ],
+        "event_count": 1
+    },
+    "50": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0,
+        "noise_rate": 0.01,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -1.2927162200966904
+            ]
+        ],
+        "event_count": 1
+    },
+    "51": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0,
+        "noise_rate": 0.01,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.8567651028329085
+            ]
+        ],
+        "event_count": 1
+    },
+    "52": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0,
+        "noise_rate": 0.02,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.17369287539385528
+            ]
+        ],
+        "event_count": 1
+    },
+    "53": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0,
+        "noise_rate": 0.02,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.7250895669335506
+            ]
+        ],
+        "event_count": 1
+    },
+    "54": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0,
+        "noise_rate": 0.02,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                1.6693210918495447
+            ]
+        ],
+        "event_count": 1
+    },
+    "55": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0,
+        "noise_rate": 0.02,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.21084775193400992
+            ]
+        ],
+        "event_count": 1
+    },
+    "56": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0,
+        "noise_rate": 0.04,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                1.048258710973584
+            ]
+        ],
+        "event_count": 1
+    },
+    "57": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0,
+        "noise_rate": 0.04,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0222222222222221,
+            "purity": 0.9800000000000001,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -1.5023417422599916
+            ]
+        ],
+        "event_count": 1
+    },
+    "58": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0,
+        "noise_rate": 0.04,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.8759370814208304
+            ]
+        ],
+        "event_count": 1
+    },
+    "59": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0,
+        "noise_rate": 0.04,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.7419516071517642
+            ]
+        ],
+        "event_count": 1
+    },
+    "60": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.01,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.0,
+            "hit_efficiency": 0.0,
+            "purity": 0.0,
+            "total_rec_tracks": 0,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.05108881606333818
+            ]
+        ],
+        "event_count": 1
+    },
+    "61": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.01,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.1,
+            "hit_efficiency": 0.06666666666666667,
+            "purity": 1.0,
+            "total_rec_tracks": 1,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.2452315777572903
+            ]
+        ],
+        "event_count": 1
+    },
+    "62": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.01,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.2,
+            "hit_efficiency": 0.12244897959183673,
+            "purity": 1.0,
+            "total_rec_tracks": 2,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                1.1040842728834563
+            ]
+        ],
+        "event_count": 1
+    },
+    "63": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.01,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.2,
+            "hit_efficiency": 0.10416666666666667,
+            "purity": 1.0,
+            "total_rec_tracks": 2,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.43905100532279434
+            ]
+        ],
+        "event_count": 1
+    },
+    "64": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.02,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.2,
+            "hit_efficiency": 0.12,
+            "purity": 1.0,
+            "total_rec_tracks": 2,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.3048053207279851
+            ]
+        ],
+        "event_count": 1
+    },
+    "65": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.02,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.1,
+            "hit_efficiency": 0.044444444444444446,
+            "purity": 1.0,
+            "total_rec_tracks": 1,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.4809862981689255
+            ]
+        ],
+        "event_count": 1
+    },
+    "66": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.02,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.0,
+            "hit_efficiency": 0.0,
+            "purity": 0.0,
+            "total_rec_tracks": 0,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.14457263964848416
+            ]
+        ],
+        "event_count": 1
+    },
+    "67": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.02,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.2,
+            "hit_efficiency": 0.10416666666666667,
+            "purity": 1.0,
+            "total_rec_tracks": 2,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.5109105031732668
+            ]
+        ],
+        "event_count": 1
+    },
+    "68": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.04,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.1,
+            "hit_efficiency": 0.06,
+            "purity": 1.0,
+            "total_rec_tracks": 1,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.21722861202336233
+            ]
+        ],
+        "event_count": 1
+    },
+    "69": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.04,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.0,
+            "hit_efficiency": 0.0,
+            "purity": 0.0,
+            "total_rec_tracks": 0,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.5793650411046428
+            ]
+        ],
+        "event_count": 1
+    },
+    "70": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.04,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.1,
+            "hit_efficiency": 0.061224489795918366,
+            "purity": 1.0,
+            "total_rec_tracks": 1,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.4926918353907926
+            ]
+        ],
+        "event_count": 1
+    },
+    "71": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.04,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.0,
+            "hit_efficiency": 0.0,
+            "purity": 0.0,
+            "total_rec_tracks": 0,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.5281496920784093
+            ]
+        ],
+        "event_count": 1
+    },
+    "72": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.01,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                1.4065643306218476
+            ]
+        ],
+        "event_count": 1
+    },
+    "73": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.01,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.0975138759706941
+            ]
+        ],
+        "event_count": 1
+    },
+    "74": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.01,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.9591836734693877,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.160482465928595
+            ]
+        ],
+        "event_count": 1
+    },
+    "75": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.01,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -1.4116216232502565
+            ]
+        ],
+        "event_count": 1
+    },
+    "76": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.02,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.96,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -1.441183446050721
+            ]
+        ],
+        "event_count": 1
+    },
+    "77": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.02,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.9777777777777777,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.9622074774889874
+            ]
+        ],
+        "event_count": 1
+    },
+    "78": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.02,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.9795918367346939,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.9706579557099532
+            ]
+        ],
+        "event_count": 1
+    },
+    "79": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.02,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.6087031966808986
+            ]
+        ],
+        "event_count": 1
+    },
+    "80": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.04,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.44019721600650646
+            ]
+        ],
+        "event_count": 1
+    },
+    "81": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.04,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0222222222222221,
+            "purity": 0.9800000000000001,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.3852714277598523
+            ]
+        ],
+        "event_count": 1
+    },
+    "82": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.04,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -2.5451898781429803
+            ]
+        ],
+        "event_count": 1
+    },
+    "83": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.04,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.9791666666666666,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.6560824908613025
+            ]
+        ],
+        "event_count": 1
+    },
+    "84": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.01,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.84,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.6501308410569985
+            ]
+        ],
+        "event_count": 1
+    },
+    "85": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.01,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.8666666666666667,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.18490031540325827
+            ]
+        ],
+        "event_count": 1
+    },
+    "86": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.01,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.7551020408163265,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.40366144216511096
+            ]
+        ],
+        "event_count": 1
+    },
+    "87": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.01,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.9,
+            "hit_efficiency": 0.75,
+            "purity": 1.0,
+            "total_rec_tracks": 9,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.8015468314680106
+            ]
+        ],
+        "event_count": 1
+    },
+    "88": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.02,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.72,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.7200919764685872
+            ]
+        ],
+        "event_count": 1
+    },
+    "89": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.02,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.7777777777777778,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.3638145764765564
+            ]
+        ],
+        "event_count": 1
+    },
+    "90": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.02,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.7551020408163265,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.8605757792011451
+            ]
+        ],
+        "event_count": 1
+    },
+    "91": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.02,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.8125,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.8290448207948825
+            ]
+        ],
+        "event_count": 1
+    },
+    "92": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.04,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.84,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.7126264353477769
+            ]
+        ],
+        "event_count": 1
+    },
+    "93": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.04,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.7777777777777778,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.7731033699218853
+            ]
+        ],
+        "event_count": 1
+    },
+    "94": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.04,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.7755102040816326,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                1.7321775497584502
+            ]
+        ],
+        "event_count": 1
+    },
+    "95": {
+        "Hit_res": 0.002,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.04,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.875,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -1.4210992618310465
+            ]
+        ],
+        "event_count": 1
+    },
+    "96": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0,
+        "noise_rate": 0.01,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.08268520600381117
+            ]
+        ],
+        "event_count": 1
+    },
+    "97": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0,
+        "noise_rate": 0.01,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -2.2430725812153494
+            ]
+        ],
+        "event_count": 1
+    },
+    "98": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0,
+        "noise_rate": 0.01,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.5498396666205522
+            ]
+        ],
+        "event_count": 1
+    },
+    "99": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0,
+        "noise_rate": 0.01,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -1.5279311587239908
+            ]
+        ],
+        "event_count": 1
+    },
+    "100": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0,
+        "noise_rate": 0.02,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.5178391394345608
+            ]
+        ],
+        "event_count": 1
+    },
+    "101": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0,
+        "noise_rate": 0.02,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                1.2986915362186717
+            ]
+        ],
+        "event_count": 1
+    },
+    "102": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0,
+        "noise_rate": 0.02,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -1.122927587201811
+            ]
+        ],
+        "event_count": 1
+    },
+    "103": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0,
+        "noise_rate": 0.02,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.9791666666666666,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.2154100757561644
+            ]
+        ],
+        "event_count": 1
+    },
+    "104": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0,
+        "noise_rate": 0.04,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.28436608173512135
+            ]
+        ],
+        "event_count": 1
+    },
+    "105": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0,
+        "noise_rate": 0.04,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.8191394846203378
+            ]
+        ],
+        "event_count": 1
+    },
+    "106": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0,
+        "noise_rate": 0.04,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.6504565660815749
+            ]
+        ],
+        "event_count": 1
+    },
+    "107": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0,
+        "noise_rate": 0.04,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.9791666666666666,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.48362042354235
+            ]
+        ],
+        "event_count": 1
+    },
+    "108": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.01,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.1,
+            "hit_efficiency": 0.04,
+            "purity": 1.0,
+            "total_rec_tracks": 1,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.08974557659762973
+            ]
+        ],
+        "event_count": 1
+    },
+    "109": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.01,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.1,
+            "hit_efficiency": 0.06666666666666667,
+            "purity": 1.0,
+            "total_rec_tracks": 1,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -1.0376738437480788
+            ]
+        ],
+        "event_count": 1
+    },
+    "110": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.01,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.1,
+            "hit_efficiency": 0.04081632653061224,
+            "purity": 1.0,
+            "total_rec_tracks": 1,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.8476716620589881
+            ]
+        ],
+        "event_count": 1
+    },
+    "111": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.01,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.2,
+            "hit_efficiency": 0.10416666666666667,
+            "purity": 1.0,
+            "total_rec_tracks": 2,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.14982963306373473
+            ]
+        ],
+        "event_count": 1
+    },
+    "112": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.02,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.1,
+            "hit_efficiency": 0.06,
+            "purity": 1.0,
+            "total_rec_tracks": 1,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.3758085013317947
+            ]
+        ],
+        "event_count": 1
+    },
+    "113": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.02,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.0,
+            "hit_efficiency": 0.0,
+            "purity": 0.0,
+            "total_rec_tracks": 0,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.974581521005606
+            ]
+        ],
+        "event_count": 1
+    },
+    "114": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.02,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.0,
+            "hit_efficiency": 0.0,
+            "purity": 0.0,
+            "total_rec_tracks": 0,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.17706771276627264
+            ]
+        ],
+        "event_count": 1
+    },
+    "115": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.02,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.2,
+            "hit_efficiency": 0.125,
+            "purity": 1.0,
+            "total_rec_tracks": 2,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.40403601411164114
+            ]
+        ],
+        "event_count": 1
+    },
+    "116": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.04,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.2,
+            "hit_efficiency": 0.12,
+            "purity": 1.0,
+            "total_rec_tracks": 2,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.3367370911588029
+            ]
+        ],
+        "event_count": 1
+    },
+    "117": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.04,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.0,
+            "hit_efficiency": 0.0,
+            "purity": 0.0,
+            "total_rec_tracks": 0,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.6095480740585397
+            ]
+        ],
+        "event_count": 1
+    },
+    "118": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.04,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.1,
+            "hit_efficiency": 0.04081632653061224,
+            "purity": 1.0,
+            "total_rec_tracks": 1,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.032644637882804035
+            ]
+        ],
+        "event_count": 1
+    },
+    "119": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.002,
+        "noise_rate": 0.04,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.1,
+            "hit_efficiency": 0.0625,
+            "purity": 1.0,
+            "total_rec_tracks": 1,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 4.999958333473664e-05,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.681132875401874
+            ]
+        ],
+        "event_count": 1
+    },
+    "120": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.01,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.92,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.9839660575186356
+            ]
+        ],
+        "event_count": 1
+    },
+    "121": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.01,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.9111111111111111,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.3685967992466046
+            ]
+        ],
+        "event_count": 1
+    },
+    "122": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.01,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.8979591836734694,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -2.2604488729694103
+            ]
+        ],
+        "event_count": 1
+    },
+    "123": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.01,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.9583333333333334,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                1.405459439666263
+            ]
+        ],
+        "event_count": 1
+    },
+    "124": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.02,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.96,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.5739098274177472
+            ]
+        ],
+        "event_count": 1
+    },
+    "125": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.02,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.9777777777777777,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.8929214119402541
+            ]
+        ],
+        "event_count": 1
+    },
+    "126": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.02,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.8367346938775511,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.3263721328826299
+            ]
+        ],
+        "event_count": 1
+    },
+    "127": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.02,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 0.9800000000000001,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.801669370677846
+            ]
+        ],
+        "event_count": 1
+    },
+    "128": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.04,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.92,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                1.4023805532171512
+            ]
+        ],
+        "event_count": 1
+    },
+    "129": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.04,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 1.0,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.5954950030700545
+            ]
+        ],
+        "event_count": 1
+    },
+    "130": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.04,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.9183673469387755,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                1.0383126587379534
+            ]
+        ],
+        "event_count": 1
+    },
+    "131": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.0002,
+        "noise_rate": 0.04,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.9791666666666666,
+            "purity": 0.9800000000000001,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.1249997891038532e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.3179557989618022
+            ]
+        ],
+        "event_count": 1
+    },
+    "132": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.01,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.9,
+            "hit_efficiency": 0.7,
+            "purity": 1.0,
+            "total_rec_tracks": 9,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.09845659109508821
+            ]
+        ],
+        "event_count": 1
+    },
+    "133": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.01,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.6888888888888889,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.3212662967972182
+            ]
+        ],
+        "event_count": 1
+    },
+    "134": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.01,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.6122448979591837,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.36705867083866817
+            ]
+        ],
+        "event_count": 1
+    },
+    "135": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.01,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.7083333333333334,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -1.8420217759063868
+            ]
+        ],
+        "event_count": 1
+    },
+    "136": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.02,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.66,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.44685237751230333
+            ]
+        ],
+        "event_count": 1
+    },
+    "137": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.02,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.1,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.9,
+            "hit_efficiency": 0.6888888888888889,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [
+                9
+            ],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                1.140462551199937
+            ]
+        ],
+        "event_count": 1
+    },
+    "138": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.02,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.7755102040816326,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.9923643058619706
+            ]
+        ],
+        "event_count": 1
+    },
+    "139": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.02,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.7291666666666666,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.22647088919954653
+            ]
+        ],
+        "event_count": 1
+    },
+    "140": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.04,
+        "efficency_err": 0.0,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 0.9,
+            "hit_efficiency": 0.62,
+            "purity": 1.0,
+            "total_rec_tracks": 9,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.2615715866259862
+            ]
+        ],
+        "event_count": 1
+    },
+    "141": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.04,
+        "efficency_err": 0.1,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.7111111111111111,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.004536508056264464
+            ]
+        ],
+        "event_count": 1
+    },
+    "142": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.04,
+        "efficency_err": 0.02,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.7142857142857143,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                -0.7676958079728292
+            ]
+        ],
+        "event_count": 1
+    },
+    "143": {
+        "Hit_res": 0.004,
+        "Multi_scatter": 0.0004,
+        "noise_rate": 0.04,
+        "efficency_err": 0.04,
+        "metrics": {
+            "ghost_rate": 0.0,
+            "clone_fraction": 0.0,
+            "reconstruction_efficiency": 1.0,
+            "hit_efficiency": 0.8333333333333334,
+            "purity": 1.0,
+            "total_rec_tracks": 10,
+            "total_truth_tracks": 10,
+            "ghost_tracks": [],
+            "clones_count": 0
+        },
+        "epsilon": 1.999999333368585e-06,
+        "phi_range": 0.2,
+        "theta_range": 0.2,
+        "primary_verticies": [
+            [
+                0,
+                0,
+                0.6813848802728361
+            ]
+        ],
+        "event_count": 1
+    }
+}

@@ -47,6 +47,7 @@ class SimpleHamiltonian(Hamiltonian):
         self.n_segments = n_segments
         
     def construct_hamiltonian(self, event: StateEventGenerator, convolution: bool= False):
+        # Check to see if EFR < thresh then map to 0.
         Segment.id_counter = 0
         if self.segments_grouped is None:
             self.construct_segments(event)
@@ -55,9 +56,11 @@ class SimpleHamiltonian(Hamiltonian):
         for group_idx in range(len(self.segments_grouped) - 1):
             for seg_i, seg_j in product(self.segments_grouped[group_idx], self.segments_grouped[group_idx+1]):
                 if seg_i.hits[1] == seg_j.hits[0]:
-                    cosine = seg_i * seg_j
+                    cosine = seg_i * seg_j - 1e-9
                     if convolution:
-                        convolved_step = (1 + erf((self.epsilon - abs(np.arccos(cosine))) / (0.001 * np.sqrt(2))))
+                        convolved_step = (1 + erf((self.epsilon - abs(np.arccos(cosine))) / (0.001 * np.sqrt(2)))) # ASK XENO/DAVIDE
+                        # if convolved_step < 1e-3:
+                        #     convolved_step = 0
                         A[seg_i.segment_id, seg_j.segment_id] = A[seg_j.segment_id, seg_i.segment_id] =  convolved_step
                     else: 
                         if abs(cosine - 1) < self.epsilon:
