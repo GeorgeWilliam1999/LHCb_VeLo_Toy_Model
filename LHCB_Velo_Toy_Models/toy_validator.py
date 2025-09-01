@@ -57,12 +57,19 @@ class EventValidator:
         reconstruction_efficiency = matched_truth_tracks / total_truth_tracks if total_truth_tracks > 0 else 0.0
         
         # Hit efficiency: fraction of truth hits that are associated with at least one rec track.
-        matched_rec_hit_ids = set()
+        all_truth_hit_ids = set()
+        for hits in self.truth_track_hits.values():
+            all_truth_hit_ids.update(hits)
+            
+        found_truth_hits = set()
         for rec_id, (frac, truth_id) in match_results.items():
             if truth_id is not None:
-                matched_rec_hit_ids.update(self.rec_track_hits[rec_id])
-        total_truth_hits = sum(len(hits) for hits in self.truth_track_hits.values())
-        hit_efficiency = len(matched_rec_hit_ids) / total_truth_hits if total_truth_hits > 0 else 0.0
+                # Only count hits that exist in truth tracks
+                truth_hits = self.truth_track_hits[truth_id]
+                rec_hits = self.rec_track_hits[rec_id]
+                found_truth_hits.update(truth_hits.intersection(rec_hits))
+
+        hit_efficiency = len(found_truth_hits) / len(all_truth_hit_ids) if all_truth_hit_ids else 0.0
         
         # Purity: average overlap fraction among rec tracks with a valid truth match.
         purity_values = [frac for rec_id, (frac, truth_id) in match_results.items() if truth_id is not None]
