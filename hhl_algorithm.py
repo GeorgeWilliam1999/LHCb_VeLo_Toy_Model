@@ -1,3 +1,4 @@
+from cmath import phase
 import numpy as np
 import math
 import matplotlib.pyplot as plt
@@ -31,7 +32,11 @@ class HHLAlgorithm:
 
         self.A_orig = A.copy()
         self.A_norm = np.linalg.norm(A)
-        A = A / self.A_norm
+        w = np.linalg.eigvals(self.A_orig)
+        lam_max = np.max(np.abs(w))
+        self.A = self.A_orig / lam_max        # spectral scaling
+        self.A_norm = lam_max
+        self.t = 2*np.pi                      # so phase = λ_hat directly
 
         self.A = A
         self.vector_b = b_normalized
@@ -127,31 +132,30 @@ class HHLAlgorithm:
             #    phase = phase - 1.0
 
             phase = i / (2 ** self.num_time_qubits)
-            lam = 2 * np.pi * phase / self.t
-            if abs(lam) < 1e-9:# or abs(lam) > 10.0:
+            lam_hat = phase                        # since t = 2π
+            if lam_hat < 1e-12:
                 continue
-
-            inv_lam = 1.0 / lam
-            angle = 2 * np.arcsin(min(1.0, gain * inv_lam / 2))
+            C = 0.49   # choose ≤ 1/κ_hat; you can set C = 0.99 * min(abs(eigs(self.A))) if you want max-safe
+            angle = 2 * np.arcsin( min(1.0, C / lam_hat) )
             controls = list(self.time_qr)
 
             if self.debug:
                 bits = format(i, f"0{self.num_time_qubits}b")
                 print(f"Time state |{bits}>: phase = {phase:.4f}, ",
-                      f"\u03bb_scaled = {lam:.4f}, \u03bb_true = {lam * self.A_norm:.4f}, ",
-                      f"1/\u03bb = {inv_lam:.2f}, Ry angle = {angle:.4f}")
+                      f"\u03bb_scaled = {lam_hat:.4f}, \u03bb_true = {lam_hat * self.A_norm:.4f}, ",
+                      f"1/\u03bb = {1/lam_hat:.2f}, Ry angle = {angle:.4f}")
 
             bits = format(i, f"0{self.num_time_qubits}b")
             for j, bit in enumerate(bits):
                 if bit == '0':
-                    qc.x(self.time_qr[j])
+                    qc.x(self.time_qr[self.num_time_qubits - 1 - j])
 
             cry = RYGate(angle).control(num_ctrl_qubits=self.num_time_qubits)
             qc.append(cry, [*controls, self.ancilla_qr[0]])
 
             for j, bit in enumerate(bits):
                 if bit == '0':
-                    qc.x(self.time_qr[j])
+                    qc.x([self.num_time_qubits - 1 - j])
 
         self.uncompute_phase_estimation(qc)
 
@@ -178,11 +182,8 @@ class HHLAlgorithm:
         prob_dist = np.zeros(padded_dim)
 
         for outcome, count in self.counts.items():
-            if outcome[-1] == '1':
-                print(f"Outcome: {outcome}, Count: {count}")
-                #print(outcome[:-1])
-                system_bits = outcome[:-1]#[::-1]
-                #print(f"System bits: {system_bits}")
+            if outcome[0] == '1':   # ancilla is classical bit 0 -> leftmost char
+                system_bits = outcome[1:]
                 index = int(system_bits, 2)
                 prob_dist[index] += count
                 total_success += count
