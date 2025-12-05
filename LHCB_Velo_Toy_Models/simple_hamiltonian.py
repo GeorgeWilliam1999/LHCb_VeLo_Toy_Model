@@ -1,20 +1,20 @@
-
 from LHCB_Velo_Toy_Models.state_event_generator import StateEventGenerator
-from LHCB_Velo_Toy_Models.state_event_model import Segment
+from LHCB_Velo_Toy_Models.state_event_model import *
 from LHCB_Velo_Toy_Models.hamiltonian import Hamiltonian
 
 from itertools import product, count
 from scipy.special import erf 
 import scipy as sci
 import numpy as np
-
+from itertools import chain
 
 class SimpleHamiltonian(Hamiltonian):
     
-    def __init__(self, epsilon, gamma, delta):
+    def __init__(self, epsilon, gamma, delta,theta_d=1e-4):
         self.epsilon                                    = epsilon
         self.gamma                                      = gamma
         self.delta                                      = delta
+        self.theta_d                                   = theta_d
         self.Z                                          = None
         self.A                                          = None
         self.b                                          = None
@@ -23,7 +23,6 @@ class SimpleHamiltonian(Hamiltonian):
         self.n_segments                                 = None
     
     def construct_segments(self, event: StateEventGenerator):
-        
         segments_grouped = []
         segments = []
         n_segments = 0
@@ -56,9 +55,9 @@ class SimpleHamiltonian(Hamiltonian):
         for group_idx in range(len(self.segments_grouped) - 1):
             for seg_i, seg_j in product(self.segments_grouped[group_idx], self.segments_grouped[group_idx+1]):
                 if seg_i.hits[1] == seg_j.hits[0]:
-                    cosine = seg_i * seg_j - 1e-9
+                    cosine = (seg_i * seg_j) 
                     if convolution:
-                        convolved_step = (1 + erf((self.epsilon - abs(np.arccos(cosine))) / (0.001 * np.sqrt(2)))) # ASK XENO/DAVIDE
+                        convolved_step = (1 + erf((self.epsilon - abs(np.arccos(cosine))) / (self.theta_d * np.sqrt(2))))
                         # if convolved_step < 1e-3:
                         #     convolved_step = 0
                         A[seg_i.segment_id, seg_j.segment_id] = A[seg_j.segment_id, seg_i.segment_id] =  convolved_step
@@ -66,12 +65,11 @@ class SimpleHamiltonian(Hamiltonian):
                         if abs(cosine - 1) < self.epsilon:
                             A[seg_i.segment_id, seg_j.segment_id] = A[seg_j.segment_id, seg_i.segment_id] =  1
         A = A.tocsc()
-        
+
         self.A, self.b = -A, b
         return -A, b
     
     def solve_classicaly(self):
-
         if self.A is None:
             raise Exception("Not initialised")
         
@@ -124,13 +122,21 @@ def get_tracks(ham: SimpleHamiltonian, classical_solution: list[int], event: Sta
 
     tracks_processed = []
     for track_ind, track in enumerate(tracks):
-        #print([list(filter(lambda b: b.hit_id == a, event.hits))[0] for a in track])
-        #tracks_processed.append(Track(track_ind,[list(filter(lambda b: b.hit_id == a, event.hits))[0] for a in track],1))
         track_hits = []
+        track_segs = []
         for hit_id in track:
             matching_hits = list(filter(lambda b: b.hit_id == hit_id, event.hits))
             if matching_hits:  
                 track_hits.append(matching_hits[0])
-        if track_hits:
-            tracks_processed.append(Track(track_ind, track_hits, 1))
+        for idx in range(len(track_hits) - 1):
+            track_segs.append(Segment(hits=[track_hits[idx], track_hits[idx + 1]], segment_id=idx))
+        if track_hits and track_segs:
+            tracks_processed.append(Track(track_ind, track_hits, track_segs))
     return tracks_processed
+
+def construct_event(detector_geometry, tracks, hits, segments, modules):
+    return Event(detector_geometry=detector_geometry,
+                                   tracks=tracks,
+                                   hits=hits,
+                                   segments=segments,
+                                   modules=modules)
