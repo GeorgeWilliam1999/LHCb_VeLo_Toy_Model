@@ -1,0 +1,29 @@
+# ======================================================================
+# Full Velo toy workflow per batch (inside a single runs_X experiment)
+# ======================================================================
+
+universe   = vanilla
+executable = /data/bfys/gscriven/Velo_toy/run_full_workflow.sh
+initialdir = /data/bfys/gscriven/Velo_toy
+
+should_transfer_files = NO
+
+output = /data/bfys/gscriven/Velo_toy/logs/full.out.$(Cluster).$(Process).txt
+error  = /data/bfys/gscriven/Velo_toy/logs/full.err.$(Cluster).$(Process).txt
+log    = /data/bfys/gscriven/Velo_toy/logs/full.$(Cluster).log
+
++UseOS       = "el9"
++JobCategory = "short"
+
+request_cpus   = 1
+request_memory = 1 GB
+request_disk   = 2 GB
+
+# Arguments to run_full_workflow.sh:
+#   $1 = batch ID (from $(batches_file))
+#   $2 = job tag (Cluster.Process)
+#   $3 = runs root (macro runsroot)
+arguments = $(batch) $(Cluster).$(Process) $(runsroot)
+
+# One job per batch ID in the per-run batches.txt
+queue batch from $(batches_file)

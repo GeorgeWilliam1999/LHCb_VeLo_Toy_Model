@@ -1,0 +1,29 @@
+# =============================================================================
+# Condor submit file for aggregating batch results
+#
+# Runs after all experiment jobs complete to merge metrics.
+#
+# Usage:
+#   condor_submit aggregate.sub runsdir=/path/to/runs_X
+# =============================================================================
+
+universe        = vanilla
+executable      = /data/bfys/gscriven/Velo_toy/scripts/condor/run_aggregate.sh
+initialdir      = /data/bfys/gscriven/Velo_toy
+
+should_transfer_files = NO
+
+output = /data/bfys/gscriven/Velo_toy/results/logs/aggregate.$(Cluster).out
+error  = /data/bfys/gscriven/Velo_toy/results/logs/aggregate.$(Cluster).err
+log    = /data/bfys/gscriven/Velo_toy/results/logs/condor_agg.$(Cluster).log
+
++UseOS          = "el9"
++JobCategory    = "short"
+
+request_cpus    = 1
+request_memory  = 4 GB
+request_disk    = 1 GB
+
+arguments = $(runsdir)
+
+queue 1

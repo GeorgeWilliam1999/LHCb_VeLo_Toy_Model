@@ -1,0 +1,754 @@
+\documentclass[11pt,a4paper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+
+% Page style
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{VELO Toy Model Study}
+\lhead{Track Reconstruction Analysis}
+\rfoot{Page \thepage}
+
+% Title formatting
+\titleformat{\section}{\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{1em}{}
+
+% Custom commands
+\newcommand{\sres}{\sigma_{\text{res}}}
+\newcommand{\sscatt}{\sigma_{\text{scatt}}}
+\newcommand{\eps}{\varepsilon}
+
+% Document info
+\title{%
+    \vspace{-2cm}
+    \textbf{VELO Toy Model: Track Reconstruction Study} \\[0.5em]
+    \large Sparse and Dense Event Analysis \\[0.3em]
+    \normalsize Parameter Optimization and Performance Characterization
+}
+\author{George William Scriven}
+\date{December 2025}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This report documents a comprehensive study of track reconstruction performance using the VELO 
+toy model with a Hamiltonian-based segment matching algorithm. We investigate the effects of 
+hit resolution ($\sres$), multiple scattering ($\sscatt$), scale factor ($n$), and threshold 
+function (step vs.\ erf) on reconstruction efficiency and ghost rate. Three experimental runs 
+(Runs 8, 9, and 10) were conducted, analyzing over 3000 events across sparse (10 tracks) and 
+dense (100 tracks) configurations. Key findings include: (1) optimal performance at 
+$\sres \leq 10~\mu$m and $\sscatt \leq 0.2$~mrad, (2) scale factor $n=3$--5 provides best 
+efficiency-ghost trade-off, and (3) performance degradation with increasing multiple scattering 
+is driven by increased track angular density. The validator uses a completeness threshold of 
+70\% as specified in the LHCb instructions.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%=============================================================================
+\section{Introduction}
+%=============================================================================
+
+\subsection{Motivation}
+
+The LHCb VELO (VErtex LOcator) detector requires efficient track reconstruction algorithms 
+capable of handling high track multiplicities. This study uses a toy model to investigate 
+the fundamental limits and parameter dependencies of a Hamiltonian-based track reconstruction 
+approach.
+
+\subsection{The VELO Toy Model}
+
+The toy model simulates:
+\begin{itemize}
+    \item A simplified detector geometry with multiple parallel sensor planes
+    \item Particle tracks traversing the detector with configurable multiplicity
+    \item Hit position smearing based on measurement resolution ($\sres$)
+    \item Multiple scattering effects parameterized by $\sscatt$
+\end{itemize}
+
+\subsection{Hamiltonian Track Reconstruction}
+
+Track reconstruction is formulated as an optimization problem using a Hamiltonian approach:
+\begin{equation}
+    H = -\sum_{\text{segments}} w_{ij} \cdot x_i \cdot x_j
+\end{equation}
+where $w_{ij}$ represents the compatibility weight between segment pairs $(i,j)$ and $x_i \in \{0,1\}$ 
+indicates segment selection.
+
+\subsubsection{Angular Threshold}
+
+The segment compatibility is determined by the inter-segment angle $\theta$ compared to a 
+threshold $\eps$:
+\begin{equation}
+    \eps = \sqrt{\theta_s^2 + \theta_r^2 + \theta_{\min}^2}
+    \label{eq:epsilon}
+\end{equation}
+where:
+\begin{itemize}
+    \item $\theta_s = n \cdot \sscatt$ is the multiple scattering contribution
+    \item $\theta_r = \arctan(n \cdot \sres / \Delta z)$ is the resolution contribution
+    \item $\theta_{\min} \approx 15~\mu$rad is a minimum threshold
+    \item $n$ is the scale factor
+\end{itemize}
+
+\subsubsection{Threshold Functions}
+
+Two threshold functions are compared:
+
+\textbf{Step function:}
+\begin{equation}
+    w(\theta) = \begin{cases}
+        1 & \text{if } |\theta| \leq \eps \\
+        0 & \text{otherwise}
+    \end{cases}
+\end{equation}
+
+\textbf{Error function (erf):}
+\begin{equation}
+    w(\theta) = \frac{1}{2}\left(1 + \text{erf}\left(\frac{\eps - |\theta|}{\theta_d \sqrt{2}}\right)\right)
+\end{equation}
+where $\theta_d$ is the erf smoothing parameter (erf\_sigma).
+
+%=============================================================================
+\section{Experimental Setup}
+%=============================================================================
+
+\subsection{Parameter Space}
+
+Three comprehensive parameter scans were conducted:
+
+\begin{table}[H]
+\centering
+\caption{Parameter ranges for each experimental run}
+\label{tab:params}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Parameter} & \textbf{Runs 8} & \textbf{Runs 9} & \textbf{Runs 10} \\
+\midrule
+$\sres$ ($\mu$m) & 1, 10 & 1--200 & 0, 10, 20, 50 \\
+$\sscatt$ (mrad) & 0.01 & 0.001--1 & 0, 0.1, 0.2, 0.3, 0.5, 1.0 \\
+Scale $n$ & 2--10 & 2--10 & 3, 4, 5 \\
+erf\_sigma & $10^{-6}$--$10^{-3}$ & $10^{-6}$--$10^{-3}$ & $10^{-4}$ \\
+Track density & sparse (10), dense (100) & sparse (10), dense (100) & sparse (10) \\
+Threshold & step, erf & step, erf & step \\
+Events per config & 10 & 10 & 50--500 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Validation Metrics}
+
+Track reconstruction quality is evaluated using metrics defined in the LHCb instructions:
+
+\textbf{Completeness:} Fraction of truth track hits found in reconstructed track
+\begin{equation}
+    \text{Completeness} = \frac{N_{\text{shared}}}{N_{\text{truth}}}
+\end{equation}
+
+\textbf{Track Classification:}
+\begin{itemize}
+    \item \textbf{GOOD}: Reconstructed track with completeness $\geq 70\%$
+    \item \textbf{GHOST}: Reconstructed track with completeness $< 70\%$
+\end{itemize}
+
+\textbf{Efficiency:}
+\begin{equation}
+    \text{Efficiency} = \frac{N_{\text{GOOD}}}{N_{\text{truth}}}
+\end{equation}
+
+\textbf{Ghost Rate:}
+\begin{equation}
+    \text{Ghost Rate} = \frac{N_{\text{GHOST}}}{N_{\text{reconstructed}}}
+\end{equation}
+
+\subsection{Computing Infrastructure}
+
+All simulations were executed on the Nikhef HTCondor cluster with:
+\begin{itemize}
+    \item Batch job submission for parallel parameter scanning
+    \item Event stores saved as compressed pickle files
+    \item Post-processing aggregation of metrics
+\end{itemize}
+
+%=============================================================================
+\section{Runs 8: Scale Factor and ERF Sigma Study}
+%=============================================================================
+
+\subsection{Objectives}
+
+Runs 8 investigated:
+\begin{enumerate}
+    \item The effect of scale factor $n$ on reconstruction performance
+    \item Comparison of step vs.\ erf threshold functions
+    \item Independence of step function results from erf\_sigma parameter
+    \item Performance difference between sparse (10 tracks) and dense (100 tracks) events
+\end{enumerate}
+
+\subsection{Key Results}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{runs_8/scale_effect.png}
+\caption{Runs 8: Effect of scale factor on track efficiency and ghost rate for sparse and dense events}
+\label{fig:runs8_scale}
+\end{figure}
+
+\subsubsection{Step Function Independence Verification}
+
+A critical verification was performed to confirm that step function results are 
+independent of the erf\_sigma parameter:
+
+\begin{quote}
+\textit{Result: Step function gives IDENTICAL results for all erf\_sigma values, 
+with maximum efficiency variation $< 10^{-10}$ across the same (parameters, repeat) 
+combinations.}
+\end{quote}
+
+This confirms correct implementation of the threshold logic.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{runs_8/erf_sigma_effect.png}
+\caption{Runs 8: ERF sigma effect on track efficiency (confirms step function independence)}
+\label{fig:runs8_erf}
+\end{figure}
+
+\subsubsection{Sparse Events Performance}
+
+\begin{table}[H]
+\centering
+\caption{Best configurations for sparse events (Runs 8)}
+\label{tab:runs8_sparse}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Metric} & \textbf{Step Function} & \textbf{ERF Function} \\
+\midrule
+Best efficiency & 93.8\% $\pm$ 1.2\% & 94.2\% $\pm$ 1.5\% \\
+Optimal scale & 5 & 5 \\
+Ghost rate & 0.8\% & 0.6\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Dense Events Performance}
+
+\begin{table}[H]
+\centering
+\caption{Best configurations for dense events (Runs 8)}
+\label{tab:runs8_dense}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Metric} & \textbf{Step Function} & \textbf{ERF Function} \\
+\midrule
+Best efficiency & 13.8\% $\pm$ 2.4\% & 12.5\% $\pm$ 3.1\% \\
+Optimal scale & 2 & 3 \\
+Ghost rate & 8.2\% & 9.4\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Key Finding: Density Limitation}
+
+Dense events (100 tracks) show significantly reduced performance compared to sparse events 
+(10 tracks). This is a fundamental limitation due to:
+\begin{itemize}
+    \item Increased track merging (multiple truth tracks combined into one reconstructed track)
+    \item Higher combinatorial background from false segment pairs
+    \item Violation of the ``one track per segment'' assumption in high-density regions
+\end{itemize}
+
+%=============================================================================
+\section{Runs 9: Extended Parameter Scan}
+%=============================================================================
+
+\subsection{Objectives}
+
+Runs 9 extended the parameter space to explore:
+\begin{enumerate}
+    \item Hit resolution from 1--200 $\mu$m
+    \item Multiple scattering from 0.001--1 mrad
+    \item Full scale factor range 2--10
+    \item Both sparse and dense configurations
+\end{enumerate}
+
+\subsection{Hit Resolution Scan}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{runs_9/hit_resolution_scan.png}
+\caption{Effect of hit resolution on reconstruction performance for step and ERF methods}
+\label{fig:res_scan}
+\end{figure}
+
+Key observations:
+\begin{itemize}
+    \item Efficiency decreases monotonically with increasing $\sres$
+    \item Ghost rate increases with $\sres$ due to wider acceptance windows
+    \item Performance degrades rapidly above $\sres = 50~\mu$m
+    \item Sparse events maintain $>50\%$ efficiency up to $\sres = 100~\mu$m
+\end{itemize}
+
+\subsection{Multiple Scattering Scan}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{runs_9/scattering_scan.png}
+\caption{Effect of multiple scattering on reconstruction performance}
+\label{fig:scatter_scan}
+\end{figure}
+
+Key observations:
+\begin{itemize}
+    \item Efficiency drops significantly for $\sscatt > 0.2$~mrad
+    \item Ghost rate increases from $\sim 5\%$ to $>30\%$ as $\sscatt$ increases
+    \item Dense events are more sensitive to scattering than sparse events
+    \item The erf function shows slightly better performance at high scattering
+\end{itemize}
+
+\subsection{Scale Factor Optimization}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{runs_9/scale_scan.png}
+\caption{Scale factor optimization: efficiency and ghost rate vs.\ scale factor}
+\label{fig:scale_scan}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Optimal scale factors by configuration (Runs 9)}
+\label{tab:optimal_scale}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Configuration} & \textbf{Optimal Scale} & \textbf{Peak Efficiency} \\
+\midrule
+Sparse + Step & 5 & 94.1\% \\
+Sparse + ERF & 5 & 93.8\% \\
+Dense + Step & 3 & 14.2\% \\
+Dense + ERF & 3 & 13.1\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%=============================================================================
+\section{Runs 10: Instruction-Aligned Parameters}
+%=============================================================================
+
+\subsection{Objectives}
+
+Runs 10 used the exact parameter values specified in Instructions.pdf:
+\begin{itemize}
+    \item $\sres \in \{0, 10, 20, 50\}~\mu$m (default: 10 $\mu$m)
+    \item $\sscatt \in \{0, 0.1, 0.2, 0.3, 0.5, 1.0\}$~mrad (default: 0.1 mrad)
+    \item Scale $n \in \{3, 4, 5\}$
+    \item High statistics: 50--500 events per configuration
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{runs_10/runs10_analysis.png}
+\caption{Runs 10: Comprehensive analysis of instruction-aligned parameter scan}
+\label{fig:runs10_analysis}
+\end{figure}
+
+\subsection{Results Summary}
+
+\begin{table}[H]
+\centering
+\caption{Complete results table (Runs 10, sparse events)}
+\label{tab:runs10_results}
+\begin{tabular}{rrrrrr}
+\toprule
+$\sres$ ($\mu$m) & $\sscatt$ (mrad) & Scale & Efficiency (\%) & Ghost (\%) & $N$ \\
+\midrule
+0 & 0.10 & 5 & 92.0 & 3.9 & 50 \\
+10 & 0.00 & 5 & 66.8 & 16.7 & 50 \\
+10 & 0.10 & 3 & 81.4 & 7.7 & 50 \\
+10 & 0.10 & 4 & 76.6 & 11.5 & 50 \\
+10 & 0.10 & 5 & 64.5 & 18.2 & 500 \\
+10 & 0.20 & 5 & 64.2 & 16.9 & 50 \\
+10 & 0.30 & 5 & 60.2 & 20.7 & 50 \\
+10 & 0.50 & 5 & 45.6 & 28.4 & 50 \\
+10 & 1.00 & 5 & 27.4 & 40.4 & 50 \\
+20 & 0.10 & 5 & 40.0 & 31.4 & 50 \\
+50 & 0.10 & 5 & 11.4 & 65.7 & 50 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Performance at Instruction Defaults}
+
+At the instruction-specified default parameters ($\sres = 10~\mu$m, $\sscatt = 0.1$~mrad):
+
+\begin{table}[H]
+\centering
+\caption{Performance at instruction defaults}
+\label{tab:defaults}
+\begin{tabular}{ccc}
+\toprule
+\textbf{Scale} & \textbf{Efficiency} & \textbf{Ghost Rate} \\
+\midrule
+3 & 81.4\% & 7.7\% \\
+4 & 76.6\% & 11.5\% \\
+5 & 64.5\% & 18.2\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Recommendation:} Scale = 3 provides the best efficiency-ghost trade-off at 
+instruction defaults.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{runs_10/runs10_heatmaps.png}
+\caption{Runs 10: Efficiency heatmaps showing performance across resolution and scattering parameter space for each scale factor}
+\label{fig:runs10_heatmaps}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{runs_10/example_tracks.png}
+\caption{Example track visualizations from Runs 10: high efficiency (top) vs.\ low efficiency (bottom) events}
+\label{fig:runs10_tracks}
+\end{figure}
+
+%=============================================================================
+\section{Track Angular Density Analysis}
+%=============================================================================
+
+\subsection{The Degradation Mechanism}
+
+The degradation in track reconstruction efficiency with increasing multiple scattering 
+is fundamentally due to \textbf{increased effective track density in angular space}.
+
+\subsubsection{Angular Threshold Growth}
+
+From Equation~\ref{eq:epsilon}, as $\sscatt$ increases:
+\begin{equation}
+    \eps(\sscatt) = \sqrt{(n \cdot \sscatt)^2 + \theta_r^2 + \theta_{\min}^2}
+\end{equation}
+
+At $\sres = 10~\mu$m and $n = 5$:
+
+\begin{table}[H]
+\centering
+\caption{Angular threshold vs.\ multiple scattering}
+\label{tab:threshold}
+\begin{tabular}{cc}
+\toprule
+$\sscatt$ (mrad) & $\eps$ (mrad) \\
+\midrule
+0.0 & 1.52 \\
+0.1 & 1.60 \\
+0.2 & 1.83 \\
+0.5 & 2.89 \\
+1.0 & 5.15 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{False Acceptance Problem}
+
+The wider threshold $\eps$ required to capture scattered tracks also accepts more 
+false segment combinations:
+
+\begin{equation}
+    P(\text{false accepted}) \propto \frac{2\eps}{\theta_{\max}}
+\end{equation}
+
+where $\theta_{\max}$ is the angular range of false combinations.
+
+\subsection{Segment Angle Distributions}
+
+Analysis of inter-segment angles from actual events reveals:
+
+\begin{itemize}
+    \item \textbf{True pairs:} Angles follow a narrow distribution centered near zero, 
+          with width increasing with $\sscatt$
+    \item \textbf{False pairs:} Angles are broadly distributed across the full angular range
+    \item \textbf{Overlap:} As $\sscatt$ increases, the true distribution broadens and 
+          overlaps more with the false distribution
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{segment_angle_histograms.png}
+\caption{Segment angle distributions showing true (blue) vs.\ false (red) pair separation at different $\sscatt$ values, with step and erf threshold overlays}
+\label{fig:angle_hist}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{track_density_analysis.png}
+\caption{Track angular density analysis: threshold functions, false acceptance rate, and ghost rate vs.\ multiple scattering}
+\label{fig:density_analysis}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{angle_threshold_summary.png}
+\caption{Summary of angular thresholds: comparison of true track angle distributions at low vs.\ high scattering with step and erf acceptance curves}
+\label{fig:angle_summary}
+\end{figure}
+
+\subsection{Summary Statistics}
+
+\begin{table}[H]
+\centering
+\caption{Angular statistics vs.\ multiple scattering (from event data)}
+\label{tab:angle_stats}
+\begin{tabular}{cccc}
+\toprule
+$\sscatt$ (mrad) & Mean $|\theta|$ (mrad) & Std $|\theta|$ (mrad) & Threshold $\eps$ (mrad) \\
+\midrule
+0.0 & 0.12 & 0.08 & 1.52 \\
+0.1 & 0.15 & 0.12 & 1.60 \\
+0.2 & 0.21 & 0.18 & 1.83 \\
+0.5 & 0.38 & 0.31 & 2.89 \\
+1.0 & 0.72 & 0.55 & 5.15 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%=============================================================================
+\section{Ghost Classification Analysis}
+%=============================================================================
+
+\subsection{Types of Ghost Tracks}
+
+The validator classifies reconstructed tracks as GHOST when completeness $< 70\%$. 
+Analysis reveals two categories:
+
+\begin{enumerate}
+    \item \textbf{Partial Real Ghosts:} Incomplete reconstructions of actual tracks
+          \begin{itemize}
+              \item High purity ($>50\%$) but low completeness
+              \item Caused by track splitting due to scattering
+              \item More common at high $\sscatt$
+          \end{itemize}
+    
+    \item \textbf{Pure Fake Ghosts:} False combinations with no strong truth match
+          \begin{itemize}
+              \item Low purity, no dominant truth track
+              \item Caused by combinatorial background
+              \item More common at high resolution uncertainty
+          \end{itemize}
+\end{enumerate}
+
+\subsection{Ghost Composition Analysis}
+
+\begin{table}[H]
+\centering
+\caption{Ghost composition at different scattering values}
+\label{tab:ghost_composition}
+\begin{tabular}{ccccc}
+\toprule
+$\sscatt$ (mrad) & $N_{\text{ghost}}$ & Partial Real & Pure Fake & Avg.\ Purity \\
+\midrule
+0.1 & 12 & 8 (67\%) & 4 (33\%) & 62\% \\
+0.5 & 28 & 18 (64\%) & 10 (36\%) & 48\% \\
+1.0 & 45 & 24 (53\%) & 21 (47\%) & 41\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Key insight:} At all scattering values, a significant fraction of ``ghosts'' 
+are actually partial reconstructions of real tracks. This is correct behavior per 
+LHCb standards---partial tracks should not be counted as successful reconstructions.
+
+%=============================================================================
+\section{Step vs.\ ERF Threshold Comparison}
+%=============================================================================
+
+\subsection{Mathematical Comparison}
+
+The step and erf thresholds differ in their treatment of segments near the boundary:
+
+\begin{itemize}
+    \item \textbf{Step:} Hard cutoff at $|\theta| = \eps$
+    \item \textbf{ERF:} Soft transition with width controlled by $\theta_d$
+\end{itemize}
+
+\subsection{Performance Comparison}
+
+\begin{table}[H]
+\centering
+\caption{Step vs.\ ERF performance comparison (average across all configurations)}
+\label{tab:step_vs_erf}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Configuration} & \textbf{Step Eff.} & \textbf{ERF Eff.} & \textbf{Difference} \\
+\midrule
+Sparse, low $\sscatt$ & 87.2\% & 86.8\% & +0.4\% \\
+Sparse, high $\sscatt$ & 45.1\% & 46.3\% & $-$1.2\% \\
+Dense, low $\sscatt$ & 12.4\% & 11.8\% & +0.6\% \\
+Dense, high $\sscatt$ & 5.2\% & 5.8\% & $-$0.6\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Conclusion:} The step function performs comparably to the erf function across 
+all tested configurations. The step function is recommended for simplicity and 
+computational efficiency.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{runs_9/step_vs_erf.png}
+\caption{Direct comparison of step vs.\ ERF threshold function performance}
+\label{fig:step_vs_erf}
+\end{figure}
+
+%=============================================================================
+\section{Conclusions and Recommendations}
+%=============================================================================
+
+\subsection{Key Findings}
+
+\begin{enumerate}
+    \item \textbf{Sparse events achieve high efficiency:} Up to 94\% efficiency with 
+          $<1\%$ ghost rate at optimal parameters
+    
+    \item \textbf{Dense events are fundamentally limited:} Maximum $\sim14\%$ efficiency 
+          due to track merging and combinatorial background
+    
+    \item \textbf{Multiple scattering drives degradation:} Performance degrades due to 
+          increased track angular density, not algorithmic limitations
+    
+    \item \textbf{Step function is sufficient:} No significant benefit from erf smoothing
+    
+    \item \textbf{Scale factor 3--5 is optimal:} Balances track capture vs.\ false acceptance
+\end{enumerate}
+
+\subsection{Recommended Parameters}
+
+For LHCb VELO-like conditions:
+
+\begin{table}[H]
+\centering
+\caption{Recommended parameters for optimal performance}
+\label{tab:recommendations}
+\begin{tabular}{ll}
+\toprule
+\textbf{Parameter} & \textbf{Recommended Value} \\
+\midrule
+Hit resolution $\sres$ & $\leq 10~\mu$m \\
+Multiple scattering $\sscatt$ & $\leq 0.2$~mrad \\
+Scale factor $n$ & 3--5 (use 3 for lowest ghost rate) \\
+Threshold function & Step (for simplicity) \\
+Completeness threshold & 70\% (per LHCb standard) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Performance Summary at Instruction Defaults}
+
+At $\sres = 10~\mu$m, $\sscatt = 0.1$~mrad, scale = 3:
+\begin{itemize}
+    \item \textbf{Track efficiency:} 81.4\%
+    \item \textbf{Ghost rate:} 7.7\%
+    \item \textbf{Events analyzed:} 50
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{metrics_vs_scattering.png}
+\caption{Summary: Key metrics (efficiency and ghost rate) vs.\ multiple scattering at best parameters}
+\label{fig:metrics_summary}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{comparison_all_runs.png}
+\caption{Performance comparison across all experimental runs (Runs 8, 9, and 10)}
+\label{fig:all_runs}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{example_tracks_comparison.png}
+\caption{Visual comparison of track reconstruction: high efficiency events (top row) vs.\ low efficiency events (bottom row)}
+\label{fig:tracks_comparison}
+\end{figure}
+
+\subsection{Future Work}
+
+\begin{enumerate}
+    \item Investigate adaptive thresholds that adjust with local track density
+    \item Explore machine learning approaches for segment classification
+    \item Study performance with realistic LHCb detector geometry
+    \item Implement track fitting to improve ghost rejection
+\end{enumerate}
+
+%=============================================================================
+\section*{Appendix A: Generated Figures}
+%=============================================================================
+
+The following figures were generated during this study and are saved in the 
+\texttt{Velo\_toy} directory:
+
+\begin{itemize}
+    \item \texttt{runs\_8/erf\_sigma\_effect.png} -- ERF sigma effect heatmap
+    \item \texttt{runs\_8/scale\_effect.png} -- Scale factor effect plots
+    \item \texttt{runs\_9/hit\_resolution\_scan.png} -- Resolution scan results
+    \item \texttt{runs\_9/scattering\_scan.png} -- Scattering scan results
+    \item \texttt{runs\_9/scale\_scan.png} -- Scale optimization plots
+    \item \texttt{runs\_9/erf\_sigma\_scan.png} -- ERF sigma scan results
+    \item \texttt{runs\_10/runs10\_analysis.png} -- Runs 10 summary plots
+    \item \texttt{runs\_10/runs10\_heatmaps.png} -- Efficiency heatmaps by scale
+    \item \texttt{runs\_10/example\_tracks.png} -- Example track visualizations
+    \item \texttt{track\_density\_analysis.png} -- Angular density analysis
+    \item \texttt{segment\_angle\_histograms.png} -- Angle distribution histograms
+    \item \texttt{angle\_threshold\_summary.png} -- Threshold comparison plots
+    \item \texttt{metrics\_vs\_scattering.png} -- Metrics vs.\ scattering summary
+    \item \texttt{example\_tracks\_comparison.png} -- High vs.\ low efficiency comparison
+    \item \texttt{executive\_summary.png} -- Overall study summary
+    \item \texttt{comparison\_all\_runs.png} -- Cross-run comparison
+\end{itemize}
+
+%=============================================================================
+\section*{Appendix B: Data Files}
+%=============================================================================
+
+\begin{itemize}
+    \item \texttt{runs\_8/metrics\_fixed.csv} -- Runs 8 aggregated metrics
+    \item \texttt{runs\_9/metrics\_fixed.csv} -- Runs 9 aggregated metrics
+    \item \texttt{runs\_10/metrics\_fixed.csv} -- Runs 10 aggregated metrics
+    \item \texttt{runs\_*/event\_store.pkl.gz} -- Compressed event data per batch
+\end{itemize}
+
+%=============================================================================
+\section*{Appendix C: Code References}
+%=============================================================================
+
+The analysis was performed using:
+\begin{itemize}
+    \item \texttt{velo\_workflow.py} -- Main simulation workflow
+    \item \texttt{gen\_params\_runs*.py} -- Parameter generation scripts
+    \item \texttt{LHCB\_Velo\_Toy\_Models/toy\_validator.py} -- Track validation
+    \item \texttt{track\_density\_study\_*.ipynb} -- Analysis notebooks
+\end{itemize}
+
+\vspace{1cm}
+\hrule
+\vspace{0.5cm}
+\textit{Report generated: December 2025}\\
+\textit{Total events analyzed: $>3000$}\\
+\textit{Computing: Nikhef HTCondor cluster}
+
+\end{document}
