@@ -2,6 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![CI](https://github.com/GeorgeWilliam1999/LHCb_VeLo_Toy_Model/actions/workflows/ci.yml/badge.svg)](https://github.com/GeorgeWilliam1999/LHCb_VeLo_Toy_Model/actions/workflows/ci.yml)
 
 A quantum-inspired and quantum computing framework for charged particle track reconstruction in High Energy Physics detectors, with a focus on the LHCb VELO (Vertex Locator) detector.
 

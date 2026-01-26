@@ -21,6 +21,10 @@ build/
 dist/
 *.egg-info/
 .eggs/
+*.egg
+MANIFEST
+pip-wheel-metadata/
+*.whl
 
 # LaTeX auxiliary files
 *.aux
@@ -40,14 +44,58 @@ dist/
 venv/
 env/
 .env/
+.venv/
+ENV/
 
 # IDE
 .idea/
 .vscode/
+*.swp
+*.swo
+*~
 
 # OS files
 .DS_Store
 Thumbs.db
+Desktop.ini
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.cover
+.hypothesis/
+.nox/
+.tox/
+
+# Type checking
+.mypy_cache/
+.pytype/
+
+# Documentation
+docs/_build/
+site/
+
+# Profiling
+*.prof
+*.lprof
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Secrets (never commit these!)
+.env.local
+.env.*.local
+secrets.json
+credentials.json
 
 # Temporary files
 *.tmp
