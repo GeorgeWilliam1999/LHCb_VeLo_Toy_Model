@@ -1,3 +1,78 @@
+"""
+Simple Hamiltonian Implementation for Track Finding
+====================================================
+
+This module provides the reference implementation of the Hamiltonian-based
+track finding algorithm for the LHCb VELO detector. The approach formulates
+track reconstruction as a quadratic optimization problem.
+
+Algorithm Overview
+------------------
+1. **Segment Construction**: Create all possible segments between hits on
+   adjacent detector layers.
+
+2. **Hamiltonian Construction**: Build a matrix A encoding segment compatibility:
+   - Diagonal: -(delta + gamma) penalty terms
+   - Off-diagonal: +1 for compatible segments (sharing a hit and nearly collinear)
+
+3. **Solve Linear System**: Find x = A^(-1) * b using conjugate gradient.
+
+4. **Track Extraction**: Group active segments (x > threshold) into tracks.
+
+Parameters
+----------
+epsilon : float
+    Angular tolerance (radians) for segment compatibility. Segments with
+    angle difference < epsilon are considered compatible.
+    
+gamma : float
+    Self-interaction penalty term in the diagonal.
+    
+delta : float
+    Bias term encouraging segment activation.
+    
+theta_d : float
+    Width of the ERF smoothing function for convolved compatibility.
+
+Mathematical Details
+--------------------
+The Hamiltonian energy is:
+
+    H(x) = -0.5 * x^T * A * x + b^T * x
+
+For binary x, this is a QUBO (Quadratic Unconstrained Binary Optimization).
+For continuous relaxation, we solve the linear system Ax = b.
+
+The compatibility function between segments i and j (sharing a middle hit) is:
+
+    A_ij = 1    if |arccos(v_i · v_j)| < epsilon   (hard threshold)
+    
+    A_ij = (1 + erf((epsilon - angle) / (theta_d * sqrt(2))))  (convolution)
+
+where v_i, v_j are normalized direction vectors.
+
+Example
+-------
+>>> from LHCB_Velo_Toy_Models.simple_hamiltonian import SimpleHamiltonian, get_tracks
+>>> 
+>>> # Create Hamiltonian with parameters
+>>> ham = SimpleHamiltonian(epsilon=0.01, gamma=1.0, delta=1.0)
+>>> 
+>>> # Build from event
+>>> A, b = ham.construct_hamiltonian(event, convolution=False)
+>>> 
+>>> # Solve
+>>> solution = ham.solve_classicaly()
+>>> 
+>>> # Extract tracks
+>>> tracks = get_tracks(ham, solution, event)
+
+See Also
+--------
+simple_hamiltonian_fast : Optimized implementation
+simple_hamiltonian_cpp : C++/CUDA accelerated version
+"""
+
 from LHCB_Velo_Toy_Models.state_event_generator import StateEventGenerator
 from LHCB_Velo_Toy_Models.state_event_model import *
 from LHCB_Velo_Toy_Models.hamiltonian import Hamiltonian
@@ -8,9 +83,62 @@ import scipy as sci
 import numpy as np
 from itertools import chain
 
+
 class SimpleHamiltonian(Hamiltonian):
+    """
+    Reference implementation of the track-finding Hamiltonian.
     
-    def __init__(self, epsilon, gamma, delta,theta_d=1e-4):
+    This class constructs and solves the Hamiltonian system for track finding
+    using scipy sparse matrices.
+    
+    Parameters
+    ----------
+    epsilon : float
+        Angular tolerance for segment compatibility (radians).
+    gamma : float
+        Self-interaction penalty coefficient.
+    delta : float
+        Bias term for the linear part of the Hamiltonian.
+    theta_d : float, optional
+        Width parameter for ERF-smoothed compatibility (default: 1e-4).
+    
+    Attributes
+    ----------
+    A : scipy.sparse.csc_matrix
+        The Hamiltonian matrix (negated).
+    b : numpy.ndarray
+        The bias vector.
+    segments : list[Segment]
+        All constructed segments.
+    segments_grouped : list[list[Segment]]
+        Segments organized by layer transition.
+    n_segments : int
+        Total number of segments.
+    
+    Examples
+    --------
+    >>> ham = SimpleHamiltonian(epsilon=0.01, gamma=1.0, delta=1.0)
+    >>> A, b = ham.construct_hamiltonian(event)
+    >>> solution = ham.solve_classicaly()
+    >>> energy = ham.evaluate(solution)
+    """
+    
+    def __init__(self, epsilon, gamma, delta, theta_d=1e-4):
+        """
+        Initialize the Hamiltonian with physics parameters.
+        
+        Parameters
+        ----------
+        epsilon : float
+            Angular tolerance for segment compatibility (radians).
+            Typical values: 0.001 - 0.1 depending on multiple scattering.
+        gamma : float
+            Self-interaction penalty. Higher values penalize segment activation.
+        delta : float
+            Bias term. Higher values encourage more segments to be active.
+        theta_d : float, optional
+            Width of ERF smoothing for convolved compatibility (default: 1e-4).
+        """
         self.epsilon                                    = epsilon
         self.gamma                                      = gamma
         self.delta                                      = delta
@@ -23,6 +151,22 @@ class SimpleHamiltonian(Hamiltonian):
         self.n_segments                                 = None
     
     def construct_segments(self, event: StateEventGenerator):
+        """
+        Build all possible segments between adjacent detector layers.
+        
+        Creates segments for every pair of hits on consecutive modules,
+        representing all potential track segment candidates.
+        
+        Parameters
+        ----------
+        event : StateEventGenerator
+            Event containing detector modules with hits.
+        
+        Notes
+        -----
+        Populates self.segments, self.segments_grouped, and self.n_segments.
+        segments_grouped[i] contains all segments from layer i to layer i+1.
+        """
         segments_grouped = []
         segments = []
         n_segments = 0
@@ -46,6 +190,33 @@ class SimpleHamiltonian(Hamiltonian):
         self.n_segments = n_segments
         
     def construct_hamiltonian(self, event: StateEventGenerator, convolution: bool= False):
+        """
+        Construct the Hamiltonian matrix A and bias vector b.
+        
+        Parameters
+        ----------
+        event : StateEventGenerator
+            Event containing detector modules and hits.
+        convolution : bool, optional
+            If True, use ERF-smoothed compatibility function.
+            If False (default), use hard threshold.
+        
+        Returns
+        -------
+        A : scipy.sparse.csc_matrix
+            The negated Hamiltonian matrix.
+        b : numpy.ndarray
+            The bias vector (all elements = delta).
+        
+        Notes
+        -----
+        The matrix A encodes:
+        - Diagonal[i,i] = -(delta + gamma) for self-interaction
+        - A[i,j] = 1 if segments i,j share a hit and are angularly compatible
+        
+        With convolution=True, the step function is smoothed with an ERF:
+        A[i,j] = 1 + erf((epsilon - angle) / (theta_d * sqrt(2)))
+        """
         # Check to see if EFR < thresh then map to 0.
         Segment.id_counter = 0
         if self.segments_grouped is None:
@@ -70,6 +241,19 @@ class SimpleHamiltonian(Hamiltonian):
         return -A, b
     
     def solve_classicaly(self):
+        """
+        Solve the linear system Ax = b using conjugate gradient.
+        
+        Returns
+        -------
+        numpy.ndarray
+            Solution vector x giving segment activation levels.
+        
+        Raises
+        ------
+        Exception
+            If the Hamiltonian has not been constructed yet.
+        """
         if self.A is None:
             raise Exception("Not initialised")
         
@@ -77,6 +261,26 @@ class SimpleHamiltonian(Hamiltonian):
         return solution
     
     def evaluate(self, solution: list):
+        """
+        Evaluate the Hamiltonian energy for a given solution.
+        
+        Computes H(x) = -0.5 * x^T * A * x + b^T * x
+        
+        Parameters
+        ----------
+        solution : array-like
+            Segment activation vector.
+        
+        Returns
+        -------
+        float
+            Hamiltonian energy value.
+        
+        Raises
+        ------
+        Exception
+            If the Hamiltonian has not been constructed yet.
+        """
 
         if self.A is None:
             raise Exception("Not initialised")
@@ -94,15 +298,62 @@ class SimpleHamiltonian(Hamiltonian):
 from copy import deepcopy
 from LHCB_Velo_Toy_Models.state_event_model import Track
 
+
 def find_segments(s0: Segment, active: Segment):
-        found_s = []
-        for s1 in active:
-            if s0.hits[0].hit_id == s1.hits[1].hit_id or \
-            s1.hits[0].hit_id == s0.hits[1].hit_id:
-                found_s.append(s1)
-        return found_s
+    """
+    Find segments connected to a given segment.
+    
+    Two segments are connected if they share an endpoint hit
+    (the end of one equals the start of another).
+    
+    Parameters
+    ----------
+    s0 : Segment
+        The reference segment.
+    active : list[Segment]
+        List of segments to search for connections.
+    
+    Returns
+    -------
+    list[Segment]
+        Segments connected to s0.
+    """
+    found_s = []
+    for s1 in active:
+        if s0.hits[0].hit_id == s1.hits[1].hit_id or \
+        s1.hits[0].hit_id == s0.hits[1].hit_id:
+            found_s.append(s1)
+    return found_s
+
 
 def get_tracks(ham: SimpleHamiltonian, classical_solution: list[int], event: StateEventGenerator):
+    """
+    Extract tracks from the Hamiltonian solution.
+    
+    Identifies active segments (solution > min) and groups connected
+    segments into track candidates.
+    
+    Parameters
+    ----------
+    ham : SimpleHamiltonian
+        The Hamiltonian instance with constructed segments.
+    classical_solution : array-like
+        Solution vector from solve_classicaly().
+    event : StateEventGenerator
+        The event containing hits for track construction.
+    
+    Returns
+    -------
+    list[Track]
+        List of reconstructed tracks.
+    
+    Algorithm
+    ---------
+    1. Filter segments where activation > minimum value
+    2. Starting from an arbitrary active segment, grow track by
+       finding connected segments (depth-first search)
+    3. Convert segment chains to Track objects with ordered hits
+    """
     active_segments = [segment for segment,pseudo_state in zip(ham.segments,classical_solution) if pseudo_state > np.min(classical_solution)]
     active = deepcopy(active_segments)
     tracks = []
@@ -134,7 +385,29 @@ def get_tracks(ham: SimpleHamiltonian, classical_solution: list[int], event: Sta
             tracks_processed.append(Track(track_ind, track_hits, track_segs))
     return tracks_processed
 
+
 def construct_event(detector_geometry, tracks, hits, segments, modules):
+    """
+    Construct an Event object from its components.
+    
+    Parameters
+    ----------
+    detector_geometry : Geometry
+        The detector geometry specification.
+    tracks : list[Track]
+        List of tracks.
+    hits : list[Hit]
+        List of hits.
+    segments : list[Segment]
+        List of segments.
+    modules : list[Module]
+        List of detector modules.
+    
+    Returns
+    -------
+    Event
+        A complete event object.
+    """
     return Event(detector_geometry=detector_geometry,
                                    tracks=tracks,
                                    hits=hits,

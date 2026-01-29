@@ -1,6 +1,71 @@
-'''
-The goal of this module is to provide a state event model for for tracks parameterised by the standard LHCb state (x,y,tx,ty,p/q)
-'''
+"""
+State Event Model - Core Data Structures for LHCb VELO Simulation
+==================================================================
+
+This module provides the fundamental data structures for representing particle
+detector events in the LHCb VELO (Vertex Locator) detector. It defines the
+building blocks for hits, segments, tracks, detector geometry, and complete
+events.
+
+The module is designed around the LHCb state vector parameterization:
+(x, y, tx, ty, p/q) where:
+    - x, y: transverse position coordinates
+    - tx, ty: direction tangents (slopes)
+    - p/q: momentum over charge
+
+Data Structures
+---------------
+Hit
+    A single measurement point in the detector with (x, y, z) coordinates.
+    
+Segment
+    A connection between two hits, typically on adjacent detector layers.
+    Provides vector operations for computing angular compatibility.
+    
+Track
+    A collection of hits and segments representing a particle trajectory.
+    
+Module
+    A detector layer/plane containing hits at a specific z position.
+    
+Event
+    A complete collision event containing geometry, tracks, hits, and modules.
+
+Geometry Classes
+----------------
+Geometry (ABC)
+    Abstract base class for detector geometry specifications.
+    
+PlaneGeometry
+    Simple planar detector geometry with rectangular active areas.
+    
+RectangularVoidGeometry
+    Detector geometry with a rectangular beam pipe void in the center.
+
+Visualization
+-------------
+The Event class provides methods for 3D visualization of tracks and hits,
+including `plot_segments()` for interactive display and `save_plot_segments()`
+for saving figures.
+
+Example
+-------
+>>> from LHCB_Velo_Toy_Models.state_event_model import Hit, Segment, Track
+>>> 
+>>> # Create hits
+>>> h1 = Hit(hit_id=0, x=0.0, y=0.0, z=100.0, module_id=0, track_id=0)
+>>> h2 = Hit(hit_id=1, x=0.1, y=0.1, z=130.0, module_id=1, track_id=0)
+>>> 
+>>> # Create segment
+>>> seg = Segment(hits=[h1, h2], segment_id=0)
+>>> 
+>>> # Compute cosine of angle between segments
+>>> cos_angle = seg * other_segment
+
+Notes
+-----
+The coordinate system follows LHCb conventions with z along the beam axis.
+"""
 from itertools import count
 from abc import ABC, abstractmethod
 import matplotlib.animation as animation
@@ -20,6 +85,32 @@ import matplotlib.pyplot as plt
 
 @dataclasses.dataclass(frozen=False)
 class Hit:
+    """
+    A single detector hit (measurement point).
+    
+    Represents a position measurement in the VELO detector, typically from
+    a charged particle crossing a sensor plane.
+    
+    Attributes
+    ----------
+    hit_id : int
+        Unique identifier for this hit.
+    x : float
+        X coordinate in mm.
+    y : float
+        Y coordinate in mm.
+    z : float
+        Z coordinate (along beam axis) in mm.
+    module_id : int
+        ID of the detector module/layer containing this hit.
+    track_id : int
+        ID of the true particle track that created this hit (-1 for ghosts).
+    
+    Methods
+    -------
+    __getitem__(index)
+        Access coordinates by index: 0=x, 1=y, 2=z.
+    """
     hit_id: int
     x: float
     y: float
@@ -28,9 +119,11 @@ class Hit:
     track_id: int
 
     def __getitem__(self, index):
+        """Return coordinate by index (0=x, 1=y, 2=z)."""
         return (self.x, self.y, self.z)[index]
     
     def __eq__(self, __value: object) -> bool:
+        """Identity comparison (same object in memory)."""
         return self is __value
         #if self.hit_id == __value.hit_id:
         #    return True
@@ -39,6 +132,25 @@ class Hit:
 
 @dataclasses.dataclass(frozen=False)
 class Module:
+    """
+    A detector module (sensor plane) in the VELO.
+    
+    Represents a single sensor layer at a fixed z position, containing
+    all hits recorded on that layer.
+    
+    Attributes
+    ----------
+    module_id : int
+        Unique identifier for this module.
+    z : float
+        Z position of the module in mm.
+    lx : float
+        Half-width of the active area in x (mm).
+    ly : float
+        Half-width of the active area in y (mm).
+    hits : list[Hit]
+        List of hits on this module.
+    """
     module_id: int
     z: float
     lx: float
@@ -46,6 +158,7 @@ class Module:
     hits: list[Hit]
 
     def __eq__(self, __value: object) -> bool:
+        """Compare modules by module_id."""
         if self.module_id == __value.module_id:
             return True
         else:
@@ -53,10 +166,38 @@ class Module:
         
 @dataclasses.dataclass
 class Segment:
+    """
+    A track segment connecting two hits.
+    
+    Segments connect hits on adjacent detector layers and form the building
+    blocks for track reconstruction. The class provides vector operations
+    for computing angular compatibility between segments.
+    
+    Attributes
+    ----------
+    hits : list[Hit]
+        List of two hits defining the segment endpoints [start, end].
+    segment_id : int
+        Unique identifier for this segment.
+    
+    Methods
+    -------
+    to_vect()
+        Return the 3D direction vector (dx, dy, dz) of the segment.
+    __mul__(other)
+        Compute cosine of angle between this segment and another.
+    
+    Notes
+    -----
+    The multiplication operator computes the cosine of the angle between
+    two segments, which is used to determine angular compatibility in
+    track finding. Segments with cos(angle) close to 1 are nearly collinear.
+    """
     hits: list[Hit]
     segment_id: int
     
     def __eq__(self, __value: object) -> bool:
+        """Identity comparison (same object in memory)."""
         return self is __value
         #if self.segment_id == __value.segment_id:
         #    return True
@@ -64,11 +205,35 @@ class Segment:
         #    return False
     
     def to_vect(self):
+        """
+        Compute the 3D direction vector of the segment.
+        
+        Returns
+        -------
+        tuple
+            (dx, dy, dz) direction vector from start to end hit.
+        """
         return (self.hits[1].x - self.hits[0].x, 
                 self.hits[1].y - self.hits[0].y, 
                 self.hits[1].z - self.hits[0].z)
     
     def __mul__(self, __value):
+        """
+        Compute cosine of angle between this segment and another.
+        
+        This is the dot product of normalized direction vectors, useful
+        for determining angular compatibility in track finding.
+        
+        Parameters
+        ----------
+        __value : Segment
+            Another segment to compare with.
+        
+        Returns
+        -------
+        float
+            Cosine of the angle between segments (1 = parallel, 0 = perpendicular).
+        """
         v_1 = self.to_vect()
         v_2 = __value.to_vect()
         n_1 = (v_1[0]**2 + v_1[1]**2 + v_1[2]**2)**0.5
@@ -78,11 +243,27 @@ class Segment:
         
 @dataclasses.dataclass
 class Track:
+    """
+    A particle track through the detector.
+    
+    Represents a reconstructed or true particle trajectory, consisting of
+    a sequence of hits and the segments connecting them.
+    
+    Attributes
+    ----------
+    track_id : int
+        Unique identifier for this track.
+    hits : list[Hit]
+        Ordered list of hits on the track (by z position).
+    segments : list[Segment]
+        List of segments connecting consecutive hits.
+    """
     track_id    : int
     hits        : list[Hit]
     segments    : list[Segment]
     
     def __eq__(self, __value: object) -> bool:
+        """Identity comparison (same object in memory)."""
         return self is __value
         #if self.track_id == __value.track_id:
         #    return True
@@ -92,6 +273,12 @@ class Track:
 
 @dataclasses.dataclass
 class module:
+    """
+    Legacy module class (lowercase).
+    
+    .. deprecated::
+        Use Module (capitalized) instead.
+    """
     module_id: int
     z: float
     lx: float
@@ -110,26 +297,64 @@ class module:
 
 @dataclasses.dataclass(frozen=True)
 class Geometry(ABC):
+    """
+    Abstract base class for detector geometry definitions.
+    
+    Defines the interface for specifying detector geometry, including
+    sensor positions and active/inactive regions.
+    
+    Attributes
+    ----------
+    module_id : list[int]
+        List of module identifiers.
+    
+    Methods
+    -------
+    __getitem__(index)
+        Access geometry data for a specific module.
+    point_on_bulk(state)
+        Check if a point is in the active detector region.
+    __len__()
+        Return the number of modules.
+    """
     module_id: list[int]  # List of module identifiers
 
     @abstractmethod
     def __getitem__(self, index):
         """
         Returns geometry item data at specific index.
+        
+        Parameters
+        ----------
+        index : int
+            Module index.
+        
+        Returns
+        -------
+        tuple
+            Geometry data for the module (implementation-specific).
         """
         pass
 
     @abstractmethod
     def point_on_bulk(self, state: dict):
         """
-        Checks if the (x, y) point from a particle state is within the geometry.
+        Check if a point is within the active detector region.
+        
+        Parameters
+        ----------
+        state : dict
+            Particle state with 'x' and 'y' keys.
+        
+        Returns
+        -------
+        bool
+            True if the point is in the active region.
         """
         pass
 
     def __len__(self):
-        """
-        Returns the number of modules.
-        """
+        """Return the number of modules."""
         return len(self.module_id)
 
 
@@ -138,13 +363,44 @@ class Geometry(ABC):
 # -------------------------------------------------------------------------
 @dataclasses.dataclass(frozen=True)
 class PlaneGeometry(Geometry):
+    """
+    Simple planar detector geometry with rectangular active areas.
+    
+    Each module is a flat sensor plane at a specific z position with
+    rectangular active area defined by half-widths lx and ly.
+    
+    Attributes
+    ----------
+    module_id : list[int]
+        List of module identifiers.
+    lx : list[float]
+        Half-widths of active areas in x (mm).
+    ly : list[float]
+        Half-widths of active areas in y (mm).
+    z : list[float]
+        Z positions of the planes (mm).
+    
+    Example
+    -------
+    >>> geometry = PlaneGeometry(
+    ...     module_id=[0, 1, 2],
+    ...     lx=[50.0, 50.0, 50.0],
+    ...     ly=[50.0, 50.0, 50.0],
+    ...     z=[100.0, 130.0, 160.0]
+    ... )
+    """
     lx: list[float]  # Half-sizes in the x-direction
     ly: list[float]  # Half-sizes in the y-direction
     z: list[float]   # z positions of planes
 
     def __getitem__(self, index):
         """
-        Returns tuple (module_id, lx, ly, z) for a specific index.
+        Get geometry data for a specific module.
+        
+        Returns
+        -------
+        tuple
+            (module_id, lx, ly, z) for the specified index.
         """
         return (self.module_id[index], 
                 self.lx[index], 
@@ -153,7 +409,17 @@ class PlaneGeometry(Geometry):
 
     def point_on_bulk(self, state: dict):
         """
-        Checks if a given state (x, y) is within plane boundaries.
+        Check if point is within any module's active area.
+        
+        Parameters
+        ----------
+        state : dict
+            State with 'x' and 'y' coordinates.
+        
+        Returns
+        -------
+        bool
+            True if point is within at least one module's active area.
         """
         x, y = state['x'], state['y']  # Extract x, y from particle state
         for i in range(len(self.module_id)):
@@ -170,7 +436,31 @@ class PlaneGeometry(Geometry):
 @dataclasses.dataclass(frozen=True)
 class RectangularVoidGeometry(Geometry):
     """
-    Detector geometry that contains a rectangular void region in the center.
+    Detector geometry with a rectangular beam pipe void in the center.
+    
+    This geometry models the VELO's characteristic design where the active
+    silicon sensors have a rectangular cutout around the beam pipe.
+    
+    Attributes
+    ----------
+    module_id : list[int]
+        List of module identifiers.
+    z : list[float]
+        Z positions of the modules (mm).
+    void_x_boundary : list[float]
+        Half-width of the void region in x (mm).
+    void_y_boundary : list[float]
+        Half-width of the void region in y (mm).
+    lx : list[float]
+        Half-width of the total sensor area in x (mm).
+    ly : list[float]
+        Half-width of the total sensor area in y (mm).
+    
+    Notes
+    -----
+    A point is on the bulk (active region) if it is:
+    - Within the outer boundaries (lx, ly)
+    - AND outside the inner void (void_x_boundary, void_y_boundary)
     """
     z: list[float]         # z positions
     void_x_boundary: list[float]  # +/- x boundary of the void
@@ -180,12 +470,15 @@ class RectangularVoidGeometry(Geometry):
 
     def __getitem__(self, index):
         """
-        Returns tuple with module_id, void, and boundary definitions.
+        Get geometry data for a specific module.
+        
+        Returns
+        -------
+        tuple
+            (module_id, lx, ly, z) for the specified index.
         """
         return (
             self.module_id[index],
-            # self.void_x_boundary,
-            # self.void_y_boundary,
             self.lx[index],
             self.ly[index],
             self.z[index]
@@ -193,7 +486,17 @@ class RectangularVoidGeometry(Geometry):
 
     def point_on_bulk(self, state: dict):
         """
-        Checks if (x, y) point is outside the void region, indicating it is on the bulk material.
+        Check if point is in the active region (outside void, inside boundaries).
+        
+        Parameters
+        ----------
+        state : dict
+            State with 'x' and 'y' coordinates.
+        
+        Returns
+        -------
+        bool
+            True if point is in the active (bulk) region.
         """
         x, y = state['x'], state['y']  # Extract x, y
         if (x < self.void_x_boundary and x > -self.void_x_boundary and
@@ -207,6 +510,32 @@ class RectangularVoidGeometry(Geometry):
 
 @dataclasses.dataclass
 class Event:
+    """
+    A complete collision event.
+    
+    Contains all information about a particle collision event including
+    detector geometry, true tracks, hits, segments, and modules.
+    
+    Attributes
+    ----------
+    detector_geometry : Geometry
+        The detector geometry configuration.
+    tracks : list[Track]
+        List of particle tracks in the event.
+    hits : list[Hit]
+        List of all hits in the event.
+    segments : list[Segment]
+        List of all segments in the event.
+    modules : list[Module]
+        List of detector modules with their hits.
+    
+    Methods
+    -------
+    plot_segments()
+        Display interactive 3D visualization of tracks and hits.
+    save_plot_segments(filename, params=None)
+        Save 3D visualization to a file.
+    """
     detector_geometry: Geometry
     tracks: list[Track]
     hits: list[Hit]
@@ -214,13 +543,21 @@ class Event:
     modules: list[Module]
     
     def __eq__(self, __value: object) -> bool:
+        """Identity comparison (same object in memory)."""
         return self is __value
-        #if self.event_id == __value.event_id:
-        #    return True
-        #else:
-        #    return False
 
     def plot_segments(self):
+        """
+        Display interactive 3D visualization of the event.
+        
+        Shows:
+        - Red dots: hits that are part of segments
+        - Blue lines: track segments
+        - Green X marks: ghost hits (not part of any segment)
+        - Gray surfaces: detector planes
+        
+        Note: Axes are remapped for better visualization (Z->horizontal).
+        """
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
 

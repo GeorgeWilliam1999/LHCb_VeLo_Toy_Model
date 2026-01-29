@@ -1,23 +1,122 @@
+"""
+Multiple Scattering Event Generator
+====================================
+
+This module provides a legacy event generator that simulates particle tracks
+with multiple scattering effects. It generates collision events where particles
+undergo angular deflections as they traverse detector material.
+
+This generator is an alternative to StateEventGenerator and provides a simpler
+model focused on multiple scattering physics.
+
+Features
+--------
+- Random primary vertex generation with Gaussian spread
+- Particle propagation through planar detector geometry
+- Multiple scattering simulation via angular deflection at each layer
+- Hit position recording with measurement noise
+
+Physics Model
+-------------
+Particles are generated at a primary vertex and propagated through the detector.
+At each detector layer:
+1. The particle position is updated based on its direction
+2. Angular scattering is applied (Gaussian distributed)
+3. A hit is recorded if the particle is within the sensor acceptance
+
+The scattering angles follow a simplified model where both polar and azimuthal
+angles receive independent Gaussian deflections.
+
+Example
+-------
+>>> from LHCB_Velo_Toy_Models.multi_scattering_generator import (
+...     SimpleDetectorGeometry, MultiScatteringGenerator
+... )
+>>> 
+>>> # Define detector
+>>> geometry = SimpleDetectorGeometry(
+...     module_id=list(range(10)),
+...     lx=[50.0] * 10,
+...     ly=[50.0] * 10,
+...     z=[100 + i * 30 for i in range(10)]
+... )
+>>> 
+>>> # Create generator
+>>> gen = MultiScatteringGenerator(detector_geometry=geometry)
+>>> 
+>>> # Generate events
+>>> events = gen.generate_event(n_particles=5, n_events=10)
+
+Notes
+-----
+For more realistic simulations with LHCb state vectors, use StateEventGenerator.
+"""
+
 import numpy as np
 import LHCB_Velo_Toy_Models.state_event_model as em
 import dataclasses
 from itertools import count
 
+
 @dataclasses.dataclass(frozen=True)
 class SimpleDetectorGeometry:
+    """
+    Simple planar detector geometry for the multiple scattering generator.
+    
+    Attributes
+    ----------
+    module_id : list[int]
+        Unique identifiers for each detector module.
+    lx : list[float]
+        Half-widths of active areas in x (mm).
+    ly : list[float]
+        Half-widths of active areas in y (mm).
+    z : list[float]
+        Z positions of detector planes (mm).
+    """
     module_id   : list[int]
     lx          : list[float]
     ly          : list[float]
     z           : list[float]
     
     def __getitem__(self, index):
+        """Return (module_id, lx, ly, z) for a given index."""
         return (self.module_id[index], self.lx[index], self.ly[index], self.z[index])
     
     def __len__(self):
+        """Return number of modules."""
         return len(self.module_id)
+
 
 @dataclasses.dataclass()
 class MultiScatteringGenerator:
+    """
+    Event generator with multiple scattering simulation.
+    
+    Generates particle tracks from a primary vertex through a detector,
+    applying random angular deflections at each layer to simulate
+    multiple scattering in detector material.
+    
+    Parameters
+    ----------
+    detector_geometry : SimpleDetectorGeometry
+        The detector geometry specification.
+    primary_vertices : list, optional
+        Pre-defined primary vertex positions.
+    phi_min, phi_max : float
+        Range for initial azimuthal angle (default: 0 to 2π).
+    theta_min, theta_max : float
+        Range for initial polar angle (default: 0 to π/10).
+    rng : numpy.random.Generator
+        Random number generator instance.
+    
+    Attributes
+    ----------
+    theta_divergence : float
+        RMS of polar angle scattering (radians).
+    phi_divergence : float
+        RMS of azimuthal angle scattering (radians).
+    """
     detector_geometry   : SimpleDetectorGeometry
     primary_vertices    : list = dataclasses.field(default_factory=list)
     phi_min             : float = 0.0
@@ -30,6 +129,21 @@ class MultiScatteringGenerator:
     phi_divergence = np.pi/20
 
     def generate_random_primary_vertices(self, n_events, sigma):
+        """
+        Generate random primary vertices with Gaussian spread.
+        
+        Parameters
+        ----------
+        n_events : int
+            Number of vertices to generate.
+        sigma : tuple[float, float, float]
+            Standard deviations for (x, y, z) coordinates.
+        
+        Returns
+        -------
+        list[tuple]
+            List of (x, y, z) vertex positions.
+        """
         primary_vertices = []
         for _ in range(n_events):
             x = self.rng.normal(0, sigma[0])
@@ -39,10 +153,52 @@ class MultiScatteringGenerator:
         return primary_vertices
 
     def find_vs(self, theta, phi):
+        """
+        Convert spherical angles to Cartesian direction vector.
+        
+        Parameters
+        ----------
+        theta : float
+            Polar angle (from z-axis).
+        phi : float
+            Azimuthal angle (in x-y plane).
+        
+        Returns
+        -------
+        tuple
+            (vx, vy, vz) unit direction vector.
+        """
         return np.sin(theta) * np.cos(phi), np.sin(theta) * np.sin(phi), np.cos(theta)
     
     #ToDo: Fix events naming
     def generate_event(self, n_particles, n_events=1, sigma=(0,0,0), defined_primary_vertex=None):
+        """
+        Generate collision events with multiple scattering.
+        
+        Creates particle tracks from primary vertices through the detector,
+        applying multiple scattering at each layer crossing.
+        
+        Parameters
+        ----------
+        n_particles : int
+            Number of particles per event.
+        n_events : int, optional
+            Number of events to generate (default: 1).
+        sigma : tuple, optional
+            Vertex spread (x, y, z) if generating random vertices.
+        defined_primary_vertex : list[tuple], optional
+            Pre-defined primary vertices for each event.
+        
+        Returns
+        -------
+        Event or list[Event]
+            Single Event if n_events=1, otherwise list of Events.
+        
+        Notes
+        -----
+        Multiple scattering is simulated by adding Gaussian-distributed
+        angular deflections at each detector layer.
+        """
         hit_id_counter = count()
         all_events = []
 

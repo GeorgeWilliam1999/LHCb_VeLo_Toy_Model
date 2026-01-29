@@ -1,3 +1,56 @@
+"""
+HHL Algorithm Implementation for Track Finding
+===============================================
+
+This module implements the Harrow-Hassidim-Lloyd (HHL) quantum algorithm for
+solving linear systems of equations. It is designed to solve the track-finding
+Hamiltonian system Ax = b on quantum hardware or simulators.
+
+The HHL Algorithm
+-----------------
+The HHL algorithm solves the linear system Ax = b, returning |x⟩ proportional
+to A^(-1)|b⟩. The algorithm consists of:
+
+1. **State Preparation**: Encode |b⟩ into quantum state
+2. **Quantum Phase Estimation (QPE)**: Estimate eigenvalues of A
+3. **Controlled Rotation**: Apply rotation conditioned on eigenvalue register
+4. **Inverse QPE**: Uncompute the eigenvalue register
+5. **Measurement**: Post-select on ancilla qubit to obtain solution
+
+For track finding, A is the Hamiltonian matrix and b encodes the bias terms.
+
+Requirements
+------------
+- qiskit >= 1.0
+- qiskit-aer
+- numpy
+- scipy
+
+Usage
+-----
+>>> import numpy as np
+>>> from hhl_algorithm import HHLAlgorithm
+>>> 
+>>> # Define the linear system
+>>> A = np.array([[3, -1], [-1, 3]])
+>>> b = np.array([1, 1])
+>>> 
+>>> # Create and run HHL solver
+>>> hhl = HHLAlgorithm(A, b, num_time_qubits=4, shots=10000)
+>>> circuit = hhl.build_circuit()
+>>> counts = hhl.run()
+>>> solution = hhl.get_solution()
+
+References
+----------
+[1] Harrow, A. W., Hassidim, A., & Lloyd, S. (2009). Quantum algorithm for
+    linear systems of equations. Physical review letters, 103(15), 150502.
+
+See Also
+--------
+hhl_algorithm_1bit : Optimized version with Suzuki-Trotter decomposition
+"""
+
 from cmath import phase
 import numpy as np
 import math
@@ -10,6 +63,45 @@ from scipy.linalg import expm
 
 
 class HHLAlgorithm:
+    """
+    Implementation of the HHL quantum algorithm for solving linear systems.
+    
+    This class provides a complete implementation of the HHL algorithm using
+    Qiskit, suitable for solving small linear systems on quantum simulators
+    or real quantum hardware.
+    
+    Parameters
+    ----------
+    matrix_A : numpy.ndarray
+        The system matrix A (must be Hermitian and invertible).
+    vector_b : numpy.ndarray
+        The right-hand side vector b.
+    num_time_qubits : int, optional
+        Number of qubits for phase estimation (default: 5).
+        More qubits give higher precision but deeper circuits.
+    shots : int, optional
+        Number of measurement shots (default: 10240).
+    debug : bool, optional
+        Enable debug output (default: False).
+    
+    Attributes
+    ----------
+    A : numpy.ndarray
+        The (possibly padded) system matrix.
+    vector_b : numpy.ndarray
+        The normalized b vector.
+    circuit : QuantumCircuit
+        The constructed HHL circuit (after build_circuit).
+    counts : dict
+        Measurement results (after run).
+    eigenvalues : numpy.ndarray
+        Eigenvalues of the original matrix.
+    
+    Notes
+    -----
+    The matrix A is automatically padded to a power of 2 dimension if needed.
+    The solution is obtained by post-selecting on the ancilla qubit.
+    """
     def __init__(self, matrix_A, vector_b, num_time_qubits=5, shots=10240, debug=False):
         A = matrix_A
         self.original_dim = A.shape[0]

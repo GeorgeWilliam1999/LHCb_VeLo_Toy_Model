@@ -1,3 +1,68 @@
+"""
+HHL Algorithm with Suzuki-Trotter Decomposition
+=================================================
+
+This module provides an optimized implementation of the HHL quantum algorithm
+with support for Suzuki-Trotter decomposition of the Hamiltonian evolution.
+This version includes modifications by Alain Chancé for improved accuracy
+and additional features like noisy simulation support.
+
+Key Features
+------------
+- **Suzuki-Trotter Decomposition**: Efficient approximation of e^(iAt) using
+  Pauli decomposition and product formulas.
+- **Configurable Trotterization**: Supports QDrift, Lie-Trotter, and higher-order
+  Suzuki-Trotter formulas.
+- **Noisy Simulation**: Built-in support for simulating on noisy backends
+  using IBM Quantum noise models.
+- **Flexible Rotation Angles**: Configurable gain and angular parameters for
+  the ancilla rotation.
+
+Trotterization Methods
+----------------------
+The Hamiltonian evolution e^(iAt) is decomposed using:
+
+- **QDrift (order=0)**: Randomized product formula, good for many-body systems
+- **Lie-Trotter (order=1)**: First-order product formula, simplest
+- **Suzuki-Trotter (order=2)**: Second-order symmetric decomposition, more accurate
+
+Usage
+-----
+>>> import numpy as np
+>>> from hhl_algorithm_1bit import HHLAlgorithm, add_suzuki_trotter_to_class
+>>> 
+>>> A = np.array([[3, -1], [-1, 3]])
+>>> b = np.array([1, 1])
+>>> 
+>>> # Patch class with Trotter methods
+>>> HHLAlgorithm = add_suzuki_trotter_to_class(HHLAlgorithm)
+>>> 
+>>> # Create solver with custom parameters
+>>> hhl = HHLAlgorithm(
+...     A, b,
+...     num_time_qubits=4,
+...     gain=0.3,
+...     lam_s=6,
+...     angle_pi=True
+... )
+>>> circuit = hhl.build_circuit()
+>>> counts = hhl.run()
+>>> solution = hhl.get_solution()
+
+Running with Noise
+------------------
+>>> # Simulate with IBM Brisbane noise model
+>>> counts = hhl.run_with_noise_simulation(backend_name="ibm_brisbane")
+
+Authors
+-------
+Original implementation with modifications by Alain Chancé.
+
+See Also
+--------
+hhl_algorithm : Basic HHL implementation
+"""
+
 # hhl_algorithm_1bit.py
 
 
@@ -14,9 +79,31 @@ from qiskit.quantum_info import SparsePauliOp
 from qiskit.circuit.library import PauliEvolutionGate
 from qiskit.synthesis import QDrift, LieTrotter, SuzukiTrotter
 
+
 def add_suzuki_trotter_to_class(HHLAlgorithmClass):
-    """Patch the class to use PauliEvolutionGate with optional Trotterization."""
+    """
+    Patch the HHLAlgorithm class to use PauliEvolutionGate with Trotterization.
+    
+    This function adds methods for creating Trotter gates and controlled
+    Hamiltonian evolution using Qiskit's synthesis tools.
+    
+    Parameters
+    ----------
+    HHLAlgorithmClass : class
+        The HHLAlgorithm class to patch.
+    
+    Returns
+    -------
+    class
+        The patched class with Trotter methods.
+    
+    Notes
+    -----
+    After patching, apply_controlled_u will use Trotterized evolution
+    instead of exact matrix exponentiation.
+    """
     def _create_trotter_gate(self, evolution_time, trotter_steps=1, order=0):
+        """Create a Trotter gate for Hamiltonian evolution."""
         if not hasattr(self, '_pauli_A'):
             self._pauli_A = SparsePauliOp.from_operator(self.A)
 
@@ -36,6 +123,7 @@ def add_suzuki_trotter_to_class(HHLAlgorithmClass):
         return trotter_gate
 
     def _apply_trotter_controlled_u(self, qc, control_qubit, target_qubits, power, trotter_steps=1, order=2):
+        """Apply controlled Trotterized evolution."""
         evolution_time = self.t * power
         trotter_gate = self._create_trotter_gate(evolution_time, trotter_steps, order)
         controlled_trotter = trotter_gate.control(1, label=f"C-Trot(t={evolution_time:.3g})")
@@ -48,7 +136,53 @@ def add_suzuki_trotter_to_class(HHLAlgorithmClass):
     
     return HHLAlgorithmClass
 
+
 class HHLAlgorithm:
+    """
+    HHL Algorithm with Suzuki-Trotter support and enhanced features.
+    
+    This class implements the HHL quantum algorithm with additional features
+    for controlling the rotation angles, Trotterization order, and noisy
+    simulation capabilities.
+    
+    Parameters
+    ----------
+    matrix_A : numpy.ndarray
+        The system matrix A (must be Hermitian).
+    vector_b : numpy.ndarray
+        The right-hand side vector b.
+    num_time_qubits : int, optional
+        Number of qubits for phase estimation (default: 5).
+    gain : float, optional
+        Gain factor for ancilla rotation (default: 0.3).
+    lam_s : int, optional
+        Target eigenvalue bucket for rotation (default: 6).
+    angle_pi : bool, optional
+        If True, use π rotation; otherwise compute from eigenvalue (default: True).
+    shots : int, optional
+        Number of measurement shots (default: 1024).
+    debug : bool, optional
+        Enable debug output (default: False).
+    do_draw : bool, optional
+        Save circuit diagram to file (default: False).
+    
+    Attributes
+    ----------
+    circuit : QuantumCircuit
+        The constructed HHL circuit.
+    counts : dict
+        Measurement results.
+    t : float
+        Evolution time parameter.
+    eigenvalues : numpy.ndarray
+        Eigenvalues of original matrix.
+    eigenvalues_scaled : numpy.ndarray
+        Eigenvalues of scaled matrix.
+    
+    Notes
+    -----
+    Modified by Alain Chancé with fixes for improved numerical stability.
+    """
     # Modified by Alain Chancé + fixes
     def __init__(self, matrix_A, vector_b, num_time_qubits=5, gain=0.3, lam_s=6, angle_pi=True, shots=1024, debug=False, do_draw=False):
         A = matrix_A
