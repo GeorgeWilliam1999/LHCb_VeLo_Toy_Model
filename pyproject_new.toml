@@ -1,0 +1,118 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lhcb-velo-toy"
+version = "2.0.0"
+description = "LHCb VELO detector simulation and track reconstruction with quantum algorithms"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "George William Scriven"},
+    {name = "Xenofon Chiotopoulos"},
+    {name = "Alain Chancé"},
+]
+keywords = [
+    "LHCb",
+    "VELO",
+    "particle physics",
+    "track reconstruction",
+    "quantum computing",
+    "HHL",
+    "simulation",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Physics",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Typing :: Typed",
+]
+requires-python = ">=3.9"
+
+dependencies = [
+    "numpy>=1.20",
+    "scipy>=1.7",
+    "matplotlib>=3.5",
+]
+
+[project.optional-dependencies]
+quantum = [
+    "qiskit>=1.0",
+    "qiskit-aer>=0.14",
+    "qiskit-ibm-runtime>=0.20",
+]
+analysis = [
+    "pandas>=1.4",
+]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "mypy>=1.0",
+    "ruff>=0.1",
+]
+all = ["lhcb-velo-toy[quantum,analysis,dev]"]
+
+[project.urls]
+Homepage = "https://github.com/GeorgeWilliam1999/LHCb_VeLo_Toy_Model"
+Documentation = "https://github.com/GeorgeWilliam1999/LHCb_VeLo_Toy_Model#readme"
+Repository = "https://github.com/GeorgeWilliam1999/LHCb_VeLo_Toy_Model.git"
+Issues = "https://github.com/GeorgeWilliam1999/LHCb_VeLo_Toy_Model/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["lhcb_velo_toy*"]
+
+[tool.setuptools.package-data]
+lhcb_velo_toy = ["py.typed"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+    "I",   # isort
+    "D",   # pydocstyle
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+]
+ignore = [
+    "D100",  # Missing docstring in public module (handled by __init__)
+    "D104",  # Missing docstring in public package
+]
+
+[tool.ruff.pydocstyle]
+convention = "numpy"
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = [
+    "scipy.*",
+    "qiskit.*",
+    "qiskit_aer.*",
+    "qiskit_ibm_runtime.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --cov=lhcb_velo_toy --cov-report=term-missing"
