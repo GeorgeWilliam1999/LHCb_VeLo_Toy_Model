@@ -57,28 +57,41 @@ The **LHCb VELO Toy Model** is a simulation and reconstruction framework for par
 
 ```mermaid
 graph TB
-    subgraph "📦 lhcb_velo_toy"
-        direction TB
-        
-        subgraph GEN["🔵 generation"]
-            direction LR
-            G1[models/] --> G1a["Hit, Segment<br/>Track, Module, Event"]
-            G2[geometry/] --> G2a["PlaneGeometry<br/>RectangularVoidGeometry"]
-            G3[generators/] --> G3a["StateEventGenerator"]
+    subgraph PKG["lhcb_velo_toy Package"]
+        subgraph GEN["generation"]
+            G1["models/"]
+            G1a["Hit, Segment, Track, Module, Event"]
+            G2["geometry/"]
+            G2a["PlaneGeometry, RectangularVoidGeometry"]
+            G3["generators/"]
+            G3a["StateEventGenerator"]
+            G1 --- G1a
+            G2 --- G2a
+            G3 --- G3a
         end
         
-        subgraph SOL["🟢 solvers"]
-            direction LR
-            S1[hamiltonians/] --> S1a["SimpleHamiltonian<br/>SimpleHamiltonianFast"]
-            S2[classical/] --> S2a["CG Solver<br/>Direct Solver"]
-            S3[quantum/] --> S3a["HHL Algorithm<br/>OneBitHHL"]
-            S4[reconstruction/] --> S4a["get_tracks()<br/>find_segments()"]
+        subgraph SOL["solvers"]
+            S1["hamiltonians/"]
+            S1a["SimpleHamiltonian, SimpleHamiltonianFast"]
+            S2["classical/"]
+            S2a["CG Solver, Direct Solver"]
+            S3["quantum/"]
+            S3a["HHL Algorithm, OneBitHHL"]
+            S4["reconstruction/"]
+            S4a["get_tracks, find_segments"]
+            S1 --- S1a
+            S2 --- S2a
+            S3 --- S3a
+            S4 --- S4a
         end
         
-        subgraph ANA["🟡 analysis"]
-            direction LR
-            A1[validation/] --> A1a["Match<br/>EventValidator"]
-            A2[plotting/] --> A2a["Event Display<br/>Performance Plots"]
+        subgraph ANA["analysis"]
+            A1["validation/"]
+            A1a["Match, EventValidator"]
+            A2["plotting/"]
+            A2a["Event Display, Performance Plots"]
+            A1 --- A1a
+            A2 --- A2a
         end
     end
     
@@ -98,28 +111,23 @@ graph TB
 
 ```mermaid
 flowchart LR
-    subgraph "1️⃣ INPUT"
-        direction TB
-        CONFIG["⚙️ Configuration<br/>• Detector geometry<br/>• Particle definitions<br/>• Physics parameters"]
+    subgraph INPUT["1. INPUT"]
+        CONFIG["Configuration"]
     end
     
-    subgraph "2️⃣ GENERATION"
-        direction TB
-        GEN["🔵 StateEventGenerator<br/>• Create primary vertices<br/>• Propagate particles<br/>• Record hits"]
-        EVT["📊 Event<br/>• Truth tracks<br/>• Hits on modules<br/>• Perfect segments"]
-        NOISE["🔀 Add Noise<br/>• Drop rate<br/>• Ghost hits"]
-        
-        GEN --> EVT --> NOISE
+    subgraph GENERATION["2. GENERATION"]
+        GEN2["StateEventGenerator"]
+        EVT["Event"]
+        NOISE["Add Noise"]
+        GEN2 --> EVT --> NOISE
     end
     
-    subgraph "3️⃣ SOLVING"
-        direction TB
-        HAM["🟢 Hamiltonian<br/>• Build A matrix<br/>• Build b vector"]
+    subgraph SOLVING["3. SOLVING"]
+        HAM["Hamiltonian"]
         SOLVE{"Solver?"}
-        CLASS["📐 Classical<br/>Conjugate Gradient"]
-        QUANT["⚛️ Quantum<br/>HHL / OneBitHHL"]
-        SOLN["📈 Solution x̄"]
-        
+        CLASS["Classical CG"]
+        QUANT["Quantum HHL"]
+        SOLN["Solution"]
         HAM --> SOLVE
         SOLVE --> CLASS
         SOLVE --> QUANT
@@ -127,29 +135,31 @@ flowchart LR
         QUANT --> SOLN
     end
     
-    subgraph "4️⃣ RECONSTRUCTION"
-        direction TB
-        THRESH["🎯 Threshold<br/>x̄ > cutoff"]
-        GROUP["🔗 Group Segments<br/>Into tracks"]
-        RECO["🛤️ Reconstructed<br/>Tracks"]
-        
+    subgraph RECONSTRUCTION["4. RECONSTRUCTION"]
+        THRESH["Threshold"]
+        GROUP["Group Segments"]
+        RECO["Reco Tracks"]
         THRESH --> GROUP --> RECO
     end
     
-    subgraph "5️⃣ VALIDATION"
-        direction TB
-        MATCH["🟡 Match Tracks<br/>• Purity<br/>• Completeness"]
-        METRICS["📊 Metrics<br/>• Efficiency<br/>• Ghost Rate<br/>• Clone Rate"]
-        PLOTS["📈 Plots"]
-        
+    subgraph VALIDATION["5. VALIDATION"]
+        MATCH["Match Tracks"]
+        METRICS["Metrics"]
+        PLOTS["Plots"]
         MATCH --> METRICS --> PLOTS
     end
     
-    CONFIG --> GEN
+    CONFIG --> GEN2
     NOISE --> HAM
     SOLN --> THRESH
     RECO --> MATCH
-    EVT -.->|"truth"| MATCH
+    EVT -.->|truth| MATCH
+    
+    style INPUT fill:#f5f5f5,stroke:#9e9e9e
+    style GENERATION fill:#e3f2fd,stroke:#1976d2
+    style SOLVING fill:#e8f5e9,stroke:#388e3c
+    style RECONSTRUCTION fill:#fff3e0,stroke:#f57c00
+    style VALIDATION fill:#fff8e1,stroke:#fbc02d
 ```
 
 ### Detailed Step-by-Step Process
