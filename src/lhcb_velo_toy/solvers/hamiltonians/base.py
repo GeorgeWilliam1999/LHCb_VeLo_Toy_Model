@@ -14,7 +14,7 @@ from scipy.sparse import csc_matrix
 
 if TYPE_CHECKING:
     from lhcb_velo_toy.solvers.reconstruction.segment import Segment
-    from lhcb_velo_toy.generation.models.event import Event
+    from lhcb_velo_toy.generation.entities.event import Event
     from lhcb_velo_toy.generation.generators.state_event import StateEventGenerator
 
 

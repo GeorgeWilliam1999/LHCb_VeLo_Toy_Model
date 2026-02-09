@@ -25,7 +25,7 @@ graph TB
     subgraph generation["Generation Module"]
         GEO[Geometry Classes]
         EVG[Event Generators]
-        DAT[Data Models]
+        DAT[Entities]
     end
     
     subgraph solvers["Solvers Module"]
@@ -650,7 +650,7 @@ sequenceDiagram
     Ham-->>User: reco_tracks
     
     User->>Val: Create(truth_event, reco_tracks)
-    User->>Val: match_tracks(purity_min, completeness_min)
+    User->>Val: match_tracks(purity_min, hit_efficiency_min)
     Val->>Val: compute overlaps
     Val->>Val: classify tracks
     Val-->>User: (matches, metrics)

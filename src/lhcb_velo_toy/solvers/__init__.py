@@ -25,8 +25,15 @@ from lhcb_velo_toy.solvers.hamiltonians import (
 
 # Reconstruction
 from lhcb_velo_toy.solvers.reconstruction import (
+    Segment,
     get_tracks,
+    get_tracks_fast,
     find_segments,
+    construct_event,
+    get_segments_from_event,
+    get_segments_from_track,
+    get_candidate_segments,
+    get_all_possible_segments,
 )
 
 __all__ = [
@@ -35,6 +42,13 @@ __all__ = [
     "SimpleHamiltonian",
     "SimpleHamiltonianFast",
     # Reconstruction
+    "Segment",
     "get_tracks",
+    "get_tracks_fast",
     "find_segments",
+    "construct_event",
+    "get_segments_from_event",
+    "get_segments_from_track",
+    "get_candidate_segments",
+    "get_all_possible_segments",
 ]

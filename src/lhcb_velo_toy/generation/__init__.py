@@ -6,21 +6,26 @@ for simulating particle interactions in the LHCb VELO detector.
 
 Submodules
 ----------
-models
-    Data structures: Hit, Segment, Track, Module, Event
+entities
+    Core data structures: Hit, Track, Module, Event, PrimaryVertex
 geometry
     Detector geometries: Geometry (ABC), PlaneGeometry, RectangularVoidGeometry
 generators
     Event generators: StateEventGenerator
+
+Note
+----
+Segments are NOT part of this module. They are computed on-demand during
+reconstruction using functions from `solvers.reconstruction.segment`.
 """
 
-# Models
-from lhcb_velo_toy.generation.models import (
+# Entities
+from lhcb_velo_toy.generation.entities import (
     Hit,
-    Segment,
     Track,
     Module,
     Event,
+    PrimaryVertex,
 )
 
 # Geometry
@@ -38,10 +43,10 @@ from lhcb_velo_toy.generation.generators import (
 __all__ = [
     # Models
     "Hit",
-    "Segment",
     "Track",
     "Module",
     "Event",
+    "PrimaryVertex",
     # Geometry
     "Geometry",
     "PlaneGeometry",

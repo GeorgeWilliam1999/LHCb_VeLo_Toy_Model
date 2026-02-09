@@ -23,6 +23,9 @@ SegmentID: TypeAlias = int
 TrackID: TypeAlias = int
 """Unique identifier for a particle track."""
 
+PVID: TypeAlias = int
+"""Unique identifier for a primary vertex."""
+
 Position: TypeAlias = tuple[float, float, float]
 """3D position as (x, y, z) coordinates in mm."""
 
@@ -78,6 +81,7 @@ __all__ = [
     "ModuleID", 
     "SegmentID",
     "TrackID",
+    "PVID",
     "Position",
     "StateVector",
     "SupportsPosition",

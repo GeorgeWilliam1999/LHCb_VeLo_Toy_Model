@@ -30,6 +30,7 @@ from lhcb_velo_toy.core.types import (
     ModuleID,
     SegmentID,
     TrackID,
+    PVID,
     Position,
     StateVector,
 )
@@ -37,10 +38,10 @@ from lhcb_velo_toy.core.types import (
 # Generation submodule
 from lhcb_velo_toy.generation import (
     Hit,
-    Segment,
     Track,
     Module,
     Event,
+    PrimaryVertex,
     Geometry,
     PlaneGeometry,
     RectangularVoidGeometry,
@@ -54,6 +55,15 @@ from lhcb_velo_toy.solvers import (
     SimpleHamiltonianFast,
     get_tracks,
     find_segments,
+)
+
+# Segment from reconstruction (computed on-demand, not stored in Event)
+from lhcb_velo_toy.solvers.reconstruction import (
+    Segment,
+    get_segments_from_event,
+    get_segments_from_track,
+    get_all_possible_segments,
+    construct_event,
 )
 
 # Analysis submodule
@@ -70,14 +80,15 @@ __all__ = [
     "ModuleID",
     "SegmentID",
     "TrackID",
+    "PVID",
     "Position",
     "StateVector",
     # Generation
     "Hit",
-    "Segment",
     "Track",
     "Module",
     "Event",
+    "PrimaryVertex",
     "Geometry",
     "PlaneGeometry",
     "RectangularVoidGeometry",
@@ -88,6 +99,12 @@ __all__ = [
     "SimpleHamiltonianFast",
     "get_tracks",
     "find_segments",
+    # Reconstruction
+    "Segment",
+    "get_segments_from_event",
+    "get_segments_from_track",
+    "get_all_possible_segments",
+    "construct_event",
     # Analysis
     "Match",
     "EventValidator",

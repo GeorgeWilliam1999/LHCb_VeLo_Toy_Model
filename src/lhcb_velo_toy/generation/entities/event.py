@@ -15,10 +15,10 @@ from typing import TYPE_CHECKING, Optional, Any
 import numpy as np
 
 if TYPE_CHECKING:
-    from lhcb_velo_toy.generation.models.hit import Hit
-    from lhcb_velo_toy.generation.models.track import Track
-    from lhcb_velo_toy.generation.models.module import Module
-    from lhcb_velo_toy.generation.models.primary_vertex import PrimaryVertex
+    from lhcb_velo_toy.generation.entities.hit import Hit
+    from lhcb_velo_toy.generation.entities.track import Track
+    from lhcb_velo_toy.generation.entities.module import Module
+    from lhcb_velo_toy.generation.entities.primary_vertex import PrimaryVertex
     from lhcb_velo_toy.generation.geometry.base import Geometry
 
 
@@ -278,10 +278,10 @@ class Event:
         Event
             The reconstructed event.
         """
-        from lhcb_velo_toy.generation.models.hit import Hit
-        from lhcb_velo_toy.generation.models.track import Track
-        from lhcb_velo_toy.generation.models.module import Module
-        from lhcb_velo_toy.generation.models.primary_vertex import PrimaryVertex
+        from lhcb_velo_toy.generation.entities.hit import Hit
+        from lhcb_velo_toy.generation.entities.track import Track
+        from lhcb_velo_toy.generation.entities.module import Module
+        from lhcb_velo_toy.generation.entities.primary_vertex import PrimaryVertex
         
         return cls(
             detector_geometry=detector_geometry,

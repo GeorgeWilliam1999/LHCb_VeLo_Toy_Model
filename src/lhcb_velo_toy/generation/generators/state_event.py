@@ -12,7 +12,7 @@ import numpy as np
 
 from lhcb_velo_toy.core.types import StateVector, Position
 from lhcb_velo_toy.generation.geometry.base import Geometry
-from lhcb_velo_toy.generation.models.event import Event
+from lhcb_velo_toy.generation.entities.event import Event
 
 
 class StateEventGenerator:

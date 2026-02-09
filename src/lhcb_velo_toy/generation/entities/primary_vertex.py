@@ -9,11 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from lhcb_velo_toy.core.types import TrackID
-
-
-# Type alias for PV identifier
-PVID = int
+from lhcb_velo_toy.core.types import TrackID, PVID
 
 
 @dataclass

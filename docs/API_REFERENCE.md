@@ -10,7 +10,7 @@
 
 1. [Package Overview](#package-overview)
 2. [Module: generation](#module-generation)
-   - [Data Models](#data-models)
+   - [Entities](#entities)
    - [Geometry Classes](#geometry-classes)
    - [Event Generators](#event-generators)
 3. [Module: solvers](#module-solvers)
@@ -71,7 +71,7 @@ tracks = get_tracks(ham, solution, event)
 
 ## Module: generation
 
-### Data Models
+### Entities
 
 #### `class Hit`
 
@@ -197,12 +197,28 @@ A detector module (sensor plane) at a specific z position.
 ```python
 @dataclass
 class Module:
-    module_id: int      # Unique identifier
-    z: float            # Z position (mm)
-    lx: float           # Half-width in x (mm)
-    ly: float           # Half-width in y (mm)
-    hits: list[Hit]     # Hits on this module
+    module_id: int       # Unique identifier
+    z: float             # Z position (mm)
+    lx: float            # Half-width in x (mm)
+    ly: float            # Half-width in y (mm)
+    hit_ids: list[int]   # IDs of hits on this module
 ```
+
+**Properties:**
+
+| Property | Returns | Description |
+|----------|---------|-------------|
+| `n_hits` | `int` | Number of hits on this module |
+
+**Methods:**
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `add_hit_id(hit_id)` | `None` | Add a hit ID to this module |
+| `clear_hits()` | `None` | Remove all hits from module |
+| `contains_point(x, y)` | `bool` | Check if (x,y) is within module bounds |
+| `to_dict()` | `dict` | JSON-serializable dictionary |
+| `from_dict(data)` | `Module` | Create Module from dictionary |
 
 ---
 

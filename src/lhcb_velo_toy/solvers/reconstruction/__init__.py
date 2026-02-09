@@ -20,8 +20,8 @@ using the segment generation functions in this module.
 
 from lhcb_velo_toy.solvers.reconstruction.segment import (
     Segment,
-    get_segments_from_event,
     get_segments_from_track,
+    get_segments_from_event,
     get_candidate_segments,
 )
 from lhcb_velo_toy.solvers.reconstruction.track_finder import (

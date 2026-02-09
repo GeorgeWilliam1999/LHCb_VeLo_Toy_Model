@@ -11,11 +11,11 @@ from typing import TYPE_CHECKING, Optional, Union
 import numpy as np
 
 if TYPE_CHECKING:
-    from lhcb_velo_toy.generation.models.hit import Hit
+    from lhcb_velo_toy.generation.entities.hit import Hit
     from lhcb_velo_toy.solvers.reconstruction.segment import Segment
-    from lhcb_velo_toy.generation.models.track import Track
-    from lhcb_velo_toy.generation.models.module import Module
-    from lhcb_velo_toy.generation.models.event import Event
+    from lhcb_velo_toy.generation.entities.track import Track
+    from lhcb_velo_toy.generation.entities.module import Module
+    from lhcb_velo_toy.generation.entities.event import Event
     from lhcb_velo_toy.generation.geometry.base import Geometry
     from lhcb_velo_toy.generation.generators.state_event import StateEventGenerator
     from lhcb_velo_toy.solvers.hamiltonians.base import Hamiltonian
@@ -104,7 +104,7 @@ def get_tracks(
     4. Convert each component to a Track object
     5. Order hits within each track by z coordinate
     """
-    from lhcb_velo_toy.generation.models.track import Track
+    from lhcb_velo_toy.generation.entities.track import Track
     
     # Get active segments
     active_indices = np.where(solution > threshold)[0]
@@ -200,7 +200,7 @@ def construct_event(
     Segments are NOT passed to this function. They are computed on-demand
     using `get_segments_from_event()` when needed.
     """
-    from lhcb_velo_toy.generation.models.event import Event
+    from lhcb_velo_toy.generation.entities.event import Event
     
     return Event(
         detector_geometry=detector_geometry,
@@ -276,7 +276,7 @@ def _segments_to_track(
     Track
         The constructed track with ordered hits.
     """
-    from lhcb_velo_toy.generation.models.track import Track
+    from lhcb_velo_toy.generation.entities.track import Track
     
     # Collect all unique hits from segments
     hit_set: set[int] = set()

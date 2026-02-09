@@ -13,8 +13,8 @@ if TYPE_CHECKING:
     import matplotlib.pyplot as plt
     from matplotlib.figure import Figure
     from matplotlib.axes import Axes
-    from lhcb_velo_toy.generation.models.event import Event
-    from lhcb_velo_toy.generation.models.track import Track
+    from lhcb_velo_toy.generation.entities.event import Event
+    from lhcb_velo_toy.generation.entities.track import Track
     from lhcb_velo_toy.solvers.reconstruction.segment import Segment
 
 

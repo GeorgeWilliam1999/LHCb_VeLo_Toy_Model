@@ -16,9 +16,9 @@ from typing import TYPE_CHECKING, Any
 from lhcb_velo_toy.core.types import SegmentID
 
 if TYPE_CHECKING:
-    from lhcb_velo_toy.generation.models.hit import Hit
-    from lhcb_velo_toy.generation.models.track import Track
-    from lhcb_velo_toy.generation.models.event import Event
+    from lhcb_velo_toy.generation.entities.hit import Hit
+    from lhcb_velo_toy.generation.entities.track import Track
+    from lhcb_velo_toy.generation.entities.event import Event
 
 
 @dataclass

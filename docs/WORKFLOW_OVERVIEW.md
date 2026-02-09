@@ -39,7 +39,7 @@ The **LHCb VELO Toy Model** is a simulation and reconstruction framework for par
 │  │   🔵 GENERATION │───▶│   🟢 SOLVERS   │───▶│   🟡 ANALYSIS  │         │
 │  │                 │     │                 │    │                 │         │
 │  │ • Geometry      │     │ • Hamiltonians  │    │ • Validation    │         │
-│  │ • Models        │     │ • Classical     │    │ • Plotting      │         │
+│  │ • Entities      │     │ • Classical     │    │ • Plotting      │         │
 │  │ • Generators    │     │ • Quantum       │    │                 │         │
 │  │                 │     │ • Reconstruction│    │                 │         │
 │  └─────────────────┘     └─────────────────┘    └─────────────────┘         │
@@ -59,7 +59,7 @@ The **LHCb VELO Toy Model** is a simulation and reconstruction framework for par
 graph TB
     subgraph PKG["lhcb_velo_toy Package"]
         subgraph GEN["generation"]
-            G1["models/"]
+            G1["entities/"]
             G1a["Hit, Track, Module, Event, PrimaryVertex"]
             G2["geometry/"]
             G2a["PlaneGeometry, RectangularVoidGeometry"]
@@ -344,11 +344,11 @@ The **generation** module creates simulated particle collision events that mimic
 
 | Component | File | Description |
 |-----------|------|-------------|
-| **Hit** | `models/hit.py` | A measurement point (x, y, z) on a detector module |
-| **Track** | `models/track.py` | A particle trajectory with `hit_ids` and `pv_id` |
-| **PrimaryVertex** | `models/primary_vertex.py` | Collision point with associated `track_ids` |
-| **Module** | `models/module.py` | A detector layer at fixed z position |
-| **Event** | `models/event.py` | Container for all PVs, tracks, hits, modules (JSON-serializable) |
+| **Hit** | `entities/hit.py` | A measurement point (x, y, z) on a detector module |
+| **Track** | `entities/track.py` | A particle trajectory with `hit_ids` and `pv_id` |
+| **PrimaryVertex** | `entities/primary_vertex.py` | Collision point with associated `track_ids` |
+| **Module** | `entities/module.py` | A detector layer at fixed z position |
+| **Event** | `entities/event.py` | Container for all PVs, tracks, hits, modules (JSON-serializable) |
 | **PlaneGeometry** | `geometry/plane.py` | Simple rectangular detector planes |
 | **RectangularVoidGeometry** | `geometry/rectangular_void.py` | Planes with beam pipe hole |
 | **StateEventGenerator** | `generators/state_event.py` | Main event simulation engine |

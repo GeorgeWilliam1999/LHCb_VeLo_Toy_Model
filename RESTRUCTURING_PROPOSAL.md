@@ -42,7 +42,7 @@ lhcb_velo_toy/                          # Main package
 │
 ├── generation/                         # SUBMODULE 1: Data Generation
 │   ├── __init__.py
-│   ├── models/                         # Data structures
+│   ├── entities/                       # Core data structures
 │   │   ├── __init__.py
 │   │   ├── hit.py                      # Hit dataclass (with track_id)
 │   │   ├── track.py                    # Track dataclass (with hit_ids, pv_id)
@@ -139,8 +139,8 @@ candidates = get_candidate_segments(event, max_delta_z=100)
 - [ ] Set up `pyproject.toml` with dependencies
 
 ### Phase 2: Generation Module
-- [x] Implement `models/` dataclasses (Hit, Track, Module, Event, PrimaryVertex)
-- [x] Implement JSON serialization for all models
+- [x] Implement `entities/` dataclasses (Hit, Track, Module, Event, PrimaryVertex)
+- [x] Implement JSON serialization for all entities
 - [ ] Implement `geometry/` classes (Geometry ABC, PlaneGeometry, RectangularVoidGeometry)
 - [ ] Implement `generators/` (StateEventGenerator)
 

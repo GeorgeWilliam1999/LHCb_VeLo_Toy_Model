@@ -30,7 +30,7 @@ Welcome to the documentation for the **LHCb VELO Toy Model** package—a compreh
 | I want to... | Go to... |
 |--------------|----------|
 | Generate simulated events | [StateEventGenerator API](API_REFERENCE.md#class-stateeventgenerator) |
-| Understand data structures | [Data Models](API_REFERENCE.md#data-models) |
+| Understand data structures | [Entities](API_REFERENCE.md#entities) |
 | Solve with classical methods | [Hamiltonians](API_REFERENCE.md#hamiltonians) |
 | Use quantum HHL | [Quantum Algorithms](API_REFERENCE.md#quantum-algorithms) |
 | Validate reconstruction | [EventValidator](API_REFERENCE.md#class-eventvalidator) |
@@ -42,7 +42,7 @@ Welcome to the documentation for the **LHCb VELO Toy Model** package—a compreh
 
 | Module | API Reference | Flow Diagram |
 |--------|---------------|--------------|
-| `generation` | [Data Models & Generators](API_REFERENCE.md#module-generation) | [Event Generation Flow](FLOW_DIAGRAMS.md#event-generation-flow) |
+| `generation` | [Entities & Generators](API_REFERENCE.md#module-generation) | [Event Generation Flow](FLOW_DIAGRAMS.md#event-generation-flow) |
 | `solvers` | [Hamiltonians & Algorithms](API_REFERENCE.md#module-solvers) | [Hamiltonian Flow](FLOW_DIAGRAMS.md#hamiltonian-construction-flow) |
 | `analysis` | [Validation & Plotting](API_REFERENCE.md#module-analysis) | [Validation Flow](FLOW_DIAGRAMS.md#validation-flow) |
 
@@ -53,7 +53,7 @@ Welcome to the documentation for the **LHCb VELO Toy Model** package—a compreh
 ```
 lhcb_velo_toy/
 ├── generation/           # Data generation module
-│   ├── models/          # Hit, Track, Module, Event, PrimaryVertex
+│   ├── entities/        # Hit, Track, Module, Event, PrimaryVertex
 │   ├── geometry/        # Geometry, PlaneGeometry, RectangularVoidGeometry
 │   └── generators/      # StateEventGenerator, MultiScatteringGenerator
 │
