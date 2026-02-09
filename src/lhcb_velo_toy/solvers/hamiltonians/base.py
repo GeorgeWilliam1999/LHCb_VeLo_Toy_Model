@@ -133,7 +133,15 @@ class Hamiltonian(ABC):
         ValueError
             If construct_hamiltonian has not been called.
         """
-        raise NotImplementedError
+        from scipy.sparse.linalg import cg
+
+        if self.A is None or self.b is None:
+            raise ValueError(
+                "Hamiltonian not constructed. "
+                "Call construct_hamiltonian() first."
+            )
+        solution, _ = cg(self.A, self.b, atol=0)
+        return solution
     
     def get_matrix_dense(self) -> np.ndarray:
         """
@@ -144,8 +152,18 @@ class Hamiltonian(ABC):
         numpy.ndarray
             Dense representation of A.
         
+        Raises
+        ------
+        ValueError
+            If construct_hamiltonian has not been called.
+        
         Warnings
         --------
         This can consume significant memory for large matrices.
         """
-        raise NotImplementedError
+        if self.A is None:
+            raise ValueError(
+                "Hamiltonian not constructed. "
+                "Call construct_hamiltonian() first."
+            )
+        return self.A.toarray()

@@ -372,8 +372,7 @@ flowchart TD
     MLOOP --> PROP["1. Propagate TRUE state to module z"]
     PROP --> BULK{"2. On bulk?"}
     
-    BULK -->|No| SCATTER_SKIP["4. Apply multiple scattering to TRUE tx, ty"]
-    SCATTER_SKIP --> NEXT
+    BULK -->|No ─ skip completely| NEXT
     
     BULK -->|Yes| HIT["3. Record Hit at smeared coords\n x_meas = x_true + N 0 sigma_meas\n y_meas = y_true + N 0 sigma_meas"]
     HIT --> SCATTER["4. Apply multiple scattering to TRUE tx, ty\n tx += tan N 0 sigma_scatter\n ty += tan N 0 sigma_scatter"]
@@ -401,7 +400,6 @@ flowchart TD
 
     style HIT fill:#e3f2fd,stroke:#1565c0
     style SCATTER fill:#fce4ec,stroke:#c62828
-    style SCATTER_SKIP fill:#fce4ec,stroke:#c62828
     style PROP fill:#e8f5e9,stroke:#2e7d32
 ```
 
@@ -418,8 +416,9 @@ flowchart TD
 **Correct ordering at each module:**
 1. Propagate true state to module z → true (x, y)
 2. Check if true (x, y) is on the active bulk
+   - **Not on bulk → skip entirely** (no hit, no scattering, no material interaction). The particle continues to the next module and may be detected there.
 3. Record Hit at (x + noise, y + noise) — measurement error on stored Hit only
-4. Apply multiple scattering — modify true (tx, ty) for next propagation
+4. Apply multiple scattering — modify true (tx, ty) for next propagation (material is only traversed when the particle is on the bulk)
 
 ---
 

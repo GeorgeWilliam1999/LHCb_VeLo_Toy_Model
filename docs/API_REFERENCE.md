@@ -442,8 +442,9 @@ class StateEventGenerator:
 >
 > The correct processing order at each module is:
 > 1. Propagate true state to module z → true (x, y)
-> 2. Record Hit at `(x + N(0, σ_meas), y + N(0, σ_meas))`
-> 3. Apply scattering to true `tx += tan(N(0, σ_scatter))`
+> 2. Check acceptance — **not on bulk → skip entirely** (no hit, no scattering, no material). Particle continues to next module.
+> 3. Record Hit at `(x + N(0, σ_meas), y + N(0, σ_meas))`
+> 4. Apply scattering to true `tx += tan(N(0, σ_scatter))` (material interaction on bulk only)
 
 **Methods:**
 

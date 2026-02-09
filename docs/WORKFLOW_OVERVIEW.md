@@ -476,6 +476,10 @@ classDiagram
 >
 > The ordering below is **critical**: the Hit is recorded with smeared (x, y)
 > while the true state remains unmodified until scattering is applied.
+> If the particle is **not on the bulk** (not in the active detector area),
+> the module is **skipped entirely** — no hit is recorded and no scattering
+> occurs, because there is no material interaction. The particle continues
+> propagating to the next module where it may be detected.
 
 ```mermaid
 flowchart TD

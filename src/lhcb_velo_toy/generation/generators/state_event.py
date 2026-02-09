@@ -500,8 +500,9 @@ class StateEventGenerator:
 
                     # 2. Check acceptance
                     if not self.detector_geometry.point_on_bulk(state):
-                        # Still scatter even if particle misses the sensor
-                        state = self.collision_update(state)
+                        # Not on active detector area — no hit recorded and
+                        # no material interaction so no scattering.  The
+                        # particle may still hit a later module.
                         continue
 
                     # 3. Record hit (measurement error on recorded coords only)
