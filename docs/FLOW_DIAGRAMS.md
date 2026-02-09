@@ -551,72 +551,45 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    subgraph Input
-        TRUE[Truth Event]
-        RECO[Reconstructed Tracks]
-    end
+    TRUE[Truth Event] --> FILT{Reconstructible filter?}
+    FILT -->|Yes| RECON[Filter truth tracks]
+    FILT -->|No| PASS[Use all truth tracks]
     
-    subgraph Filtering
-        FILT{Reconstructible filter?}
-        FILT -->|Yes| RECON[Filter truth tracks]
-        FILT -->|No| PASS[Use all truth tracks]
-    end
+    RECO[Reco Tracks] --> CAND[For each reco track]
+    CAND --> NHIT{n_hits >= min?}
+    NHIT -->|No| REJECT[Reject]
+    NHIT -->|Yes| CANDOK[Mark CANDIDATE]
     
-    subgraph CandidateSelection[Candidate Selection]
-        CAND[For each reco track]
-        NHIT{n_hits >= min?}
-        NHIT -->|Yes| CANDOK[Mark CANDIDATE]
-        NHIT -->|No| REJECT[Reject]
-    end
+    RECON --> STARTMATCH
+    PASS --> STARTMATCH
+    CANDOK --> STARTMATCH[Start Matching]
     
-    subgraph Matching
-        LOOP[For each candidate]
-        ASSOC[For each truth track]
-        CALC[Compute shared hits, purity, hit_efficiency]
-        BEST[Find best truth match]
-    end
+    STARTMATCH --> LOOP[For each candidate]
+    LOOP --> ASSOC[Find truth with most shared hits]
+    ASSOC --> CALC[Compute purity and hit_efficiency]
     
-    subgraph Classification[Classification - Non-Greedy]
-        PURE{purity >= thresh?}
-        PURE -->|Yes| HITEFF{hit_efficiency >= thresh?}
-        PURE -->|No| GHOST[Mark GHOST]
-        HITEFF -->|Yes| ACCEPT[ACCEPTED]
-        HITEFF -->|No| ACCEPT
-        
-        ALREADY{Truth already matched?}
-        ALREADY -->|No| PRIMARY[Mark PRIMARY]
-        ALREADY -->|Yes| BETTER{New match better?}
-        BETTER -->|Yes| REPLACE[Replace existing]
-        BETTER -->|No| CLONEMARK[Mark CLONE]
-        REPLACE --> LOOP
-    end
+    CALC --> PURE{purity >= thresh?}
+    PURE -->|No| GHOST[Mark GHOST]
+    PURE -->|Yes| ACCEPT[ACCEPTED]
     
-    subgraph Metrics
-        EFF[Efficiency]
-        GR[Ghost Rate]
-        CR[Clone Rate]
-        PUR[Mean Purity]
-        HITEFFM[Mean Hit Efficiency]
-    end
+    ACCEPT --> ALREADY{Truth already matched?}
+    ALREADY -->|No| PRIMARY[Mark PRIMARY]
+    ALREADY -->|Yes| BETTER{New match better?}
+    BETTER -->|Yes| REPLACE[Replace existing match]
+    BETTER -->|No| CLONE[Mark CLONE]
+    REPLACE --> REEVAL[Re-evaluate displaced track]
+    REEVAL --> LOOP
     
-    TRUE --> FILT
-    RECO --> CAND
-    RECON --> LOOP
-    PASS --> LOOP
-    CANDOK --> LOOP
-    LOOP --> ASSOC
-    ASSOC --> CALC
-    CALC --> BEST
-    BEST --> PURE
-    ACCEPT --> ALREADY
-    GHOST --> DONE[Done]
-    CLONEMARK --> DONE
-    PRIMARY --> DONE
-    DONE --> EFF
-    DONE --> GR
-    DONE --> CR
-    DONE --> PUR
-    DONE --> HITEFFM
+    GHOST --> NEXTTRACK{More candidates?}
+    PRIMARY --> NEXTTRACK
+    CLONE --> NEXTTRACK
+    NEXTTRACK -->|Yes| LOOP
+    NEXTTRACK -->|No| METRICS[Compute Metrics]
+    REJECT --> NEXTTRACK
+    
+    METRICS --> EFF[Efficiency]
+    METRICS --> GR[Ghost Rate]
+    METRICS --> CR[Clone Rate]
 ```
 
 **Non-Greedy Algorithm:**
