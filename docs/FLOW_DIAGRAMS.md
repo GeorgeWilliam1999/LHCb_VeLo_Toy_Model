@@ -68,7 +68,7 @@ flowchart LR
     
     subgraph Generation
         GEN[StateEventGenerator]
-        EVT[Event<br/>- hits<br/>- segments<br/>- tracks]
+        EVT[Event<br/>- primary_vertices<br/>- tracks<br/>- hits]
         NOISE[make_noisy_event]
     end
     
@@ -197,19 +197,38 @@ classDiagram
         +z: float
         +module_id: int
         +track_id: int
+        +position tuple
+        +is_ghost bool
+        +to_dict() dict
+        +from_dict(data) Hit
     }
     
     class Segment {
-        +hits: list[Hit]
+        +hit_start: Hit
+        +hit_end: Hit
         +segment_id: int
+        +track_id: int
+        +pv_id: int
         +to_vect() tuple
         +__mul__(other) float
+        +shares_hit_with(other) bool
     }
     
     class Track {
         +track_id: int
-        +hits: list[Hit]
-        +segments: list[Segment]
+        +pv_id: int
+        +hit_ids: list[int]
+        +to_dict() dict
+        +from_dict(data) Track
+    }
+    
+    class PrimaryVertex {
+        +pv_id: int
+        +x: float
+        +y: float
+        +z: float
+        +track_ids: list[int]
+        +to_dict() dict
     }
     
     class Module {
@@ -217,26 +236,31 @@ classDiagram
         +z: float
         +lx: float
         +ly: float
-        +hits: list[Hit]
+        +hit_ids: list[int]
+        +to_dict() dict
     }
     
     class Event {
         +detector_geometry: Geometry
+        +primary_vertices: list[PrimaryVertex]
         +tracks: list[Track]
         +hits: list[Hit]
-        +segments: list[Segment]
         +modules: list[Module]
-        +plot_segments()
+        +to_dict() dict
+        +to_json(filepath)
+        +from_dict(data, geometry) Event
+        +from_json(filepath, geometry) Event
     }
     
-    Segment --> Hit : contains 2
-    Track --> Hit : contains many
-    Track --> Segment : contains many
-    Module --> Hit : contains many
-    Event --> Track : contains many
-    Event --> Hit : contains many
-    Event --> Segment : contains many
-    Event --> Module : contains many
+    Segment --> Hit : connects 2
+    Track o-- Hit : hit_ids
+    Track o-- PrimaryVertex : pv_id
+    PrimaryVertex o-- Track : track_ids
+    Module o-- Hit : hit_ids
+    Event *-- PrimaryVertex : contains many
+    Event *-- Track : contains many
+    Event *-- Hit : contains many
+    Event *-- Module : contains many
     Event --> Geometry : uses
 ```
 
@@ -529,7 +553,7 @@ flowchart TD
 
 ---
 
-## Validation Flow
+## Validation Flow (Non-Greedy Matching)
 
 ```mermaid
 flowchart TD
@@ -554,20 +578,23 @@ flowchart TD
     subgraph "Matching"
         LOOP[For each candidate R_i]
         ASSOC[For each truth T_j]
-        CALC[Compute:<br/>• shared = |R_i ∩ T_j|<br/>• purity = shared/|R_i|<br/>• completeness = shared/|T_j|]
+        CALC[Compute:<br/>• shared = |R_i ∩ T_j|<br/>• purity = shared/|R_i|<br/>• hit_efficiency = shared/|T_j|]
         BEST[Find best T_j:<br/>max shared hits]
     end
     
-    subgraph "Classification"
+    subgraph "Classification (Non-Greedy)"
         PURE{purity ≥ thresh?}
-        PURE -->|Yes| COMP{completeness ≥ thresh?}
+        PURE -->|Yes| HITEFF{hit_efficiency ≥ thresh?}
         PURE -->|No| GHOST[Mark as GHOST]
-        COMP -->|Yes| ACCEPT[Mark as ACCEPTED]
-        COMP -->|No| ACCEPT
+        HITEFF -->|Yes| ACCEPT[ACCEPTED candidate]
+        HITEFF -->|No| ACCEPT
         
-        CLONE{Another track<br/>matched same T_j?}
-        CLONE -->|Yes| CLONEMARK[Mark as CLONE]
-        CLONE -->|No| PRIMARY[Mark as PRIMARY]
+        ALREADY{Truth already<br/>matched?}
+        ALREADY -->|No| PRIMARY[Mark as PRIMARY]
+        ALREADY -->|Yes| BETTER{New match<br/>better?}
+        BETTER -->|Yes| REPLACE[Replace existing<br/>Return displaced to pool]
+        BETTER -->|No| CLONEMARK[Mark as CLONE]
+        REPLACE --> LOOP
     end
     
     subgraph "Metrics"
@@ -575,7 +602,7 @@ flowchart TD
         GR[Ghost Rate = ghosts/candidates]
         CR[Clone Rate = clones/primaries]
         PUR[Mean Purity]
-        HITEFF[Hit Efficiency]
+        HITEFFM[Mean Hit Efficiency]
     end
     
     TRUE --> FILT
@@ -587,7 +614,7 @@ flowchart TD
     ASSOC --> CALC
     CALC --> BEST
     BEST --> PURE
-    ACCEPT --> CLONE
+    ACCEPT --> ALREADY
     GHOST --> METRICS
     CLONEMARK --> METRICS
     PRIMARY --> METRICS
@@ -595,8 +622,13 @@ flowchart TD
     METRICS --> GR
     METRICS --> CR
     METRICS --> PUR
-    METRICS --> HITEFF
+    METRICS --> HITEFFM
 ```
+
+**Non-Greedy Algorithm:**
+- When a truth track is already matched, compare match quality
+- If new match is better, replace existing and re-evaluate displaced track
+- This ensures globally optimal matching, not first-come-first-served
 
 ---
 
@@ -702,7 +734,7 @@ sequenceDiagram
 
 ---
 
-## State Machine: Track Matching
+## State Machine: Track Matching (Non-Greedy)
 
 ```mermaid
 stateDiagram-v2
@@ -712,8 +744,15 @@ stateDiagram-v2
     Candidate --> Accepted: purity ≥ threshold
     Candidate --> Ghost: purity < threshold
     
-    Accepted --> Primary: unique truth match
-    Accepted --> Clone: duplicate truth match
+    Accepted --> CheckExisting: truth already matched?
+    CheckExisting --> Primary: no existing match
+    CheckExisting --> CompareQuality: existing match found
+    
+    CompareQuality --> Primary: new match is better
+    CompareQuality --> Clone: existing match is better
+    
+    Primary --> DisplaceOld: (if replaced existing)
+    DisplaceOld --> Candidate: re-evaluate displaced
     
     Ghost --> [*]
     Primary --> [*]
@@ -723,6 +762,11 @@ stateDiagram-v2
     note right of Candidate
         Track passed minimum
         hit count requirement
+    end note
+    
+    note right of CompareQuality
+        Non-greedy: compare
+        match quality scores
     end note
     
     note right of Primary
@@ -737,34 +781,42 @@ stateDiagram-v2
 
 ```mermaid
 erDiagram
+    Event ||--o{ PrimaryVertex : contains
     Event ||--o{ Track : contains
     Event ||--o{ Hit : contains
-    Event ||--o{ Segment : contains
     Event ||--o{ Module : contains
     Event ||--|| Geometry : uses
     
-    Track ||--o{ Hit : "ordered by z"
-    Track ||--o{ Segment : "connecting"
+    PrimaryVertex ||--o{ Track : "track_ids"
+    Track ||--o{ Hit : "hit_ids"
+    Track }o--|| PrimaryVertex : "pv_id"
+    Hit }o--|| Track : "track_id"
     
-    Segment ||--|{ Hit : "exactly 2"
-    
-    Module ||--o{ Hit : "at same z"
+    Module ||--o{ Hit : "hit_ids"
     
     Match ||--|| Track : "reco track"
     Match }o--|| Track : "truth track"
     
     Event {
         Geometry detector_geometry
+        list primary_vertices
         list tracks
         list hits
-        list segments
         list modules
+    }
+    
+    PrimaryVertex {
+        int pv_id
+        float x
+        float y
+        float z
+        list track_ids
     }
     
     Track {
         int track_id
-        list hits
-        list segments
+        int pv_id
+        list hit_ids
     }
     
     Hit {
@@ -776,17 +828,12 @@ erDiagram
         int track_id
     }
     
-    Segment {
-        list hits
-        int segment_id
-    }
-    
     Module {
         int module_id
         float z
         float lx
         float ly
-        list hits
+        list hit_ids
     }
     
     Match {
@@ -795,11 +842,14 @@ erDiagram
         int truth_hits
         int correct_hits
         float purity
-        float completeness
+        float hit_efficiency
         bool accepted
         bool is_clone
     }
 ```
+
+> **Note:** Segments are NOT stored in Events. They are computed on-demand
+> using `get_segments_from_event()` from `solvers.reconstruction`.
 
 ---
 

@@ -53,21 +53,31 @@ Welcome to the documentation for the **LHCb VELO Toy Model** package—a compreh
 ```
 lhcb_velo_toy/
 ├── generation/           # Data generation module
-│   ├── models.py        # Hit, Segment, Track, Event, Module
-│   ├── geometry.py      # Geometry, PlaneGeometry, RectangularVoidGeometry
-│   └── generator.py     # StateEventGenerator, MultiScatteringGenerator
+│   ├── models/          # Hit, Track, Module, Event, PrimaryVertex
+│   ├── geometry/        # Geometry, PlaneGeometry, RectangularVoidGeometry
+│   └── generators/      # StateEventGenerator, MultiScatteringGenerator
 │
 ├── solvers/             # Solving algorithms
-│   ├── hamiltonian.py   # Hamiltonian (ABC)
-│   ├── classical.py     # SimpleHamiltonian, SimpleHamiltonianFast
-│   ├── cpp_wrapper.py   # SimpleHamiltonianCPPWrapper
-│   ├── hhl.py           # HHLAlgorithm
-│   └── onebqf.py        # OneBQF (1-Bit Quantum Filter)
+│   ├── hamiltonians/    # Hamiltonian (ABC), SimpleHamiltonian, Fast
+│   ├── classical/       # Conjugate gradient, direct solvers
+│   ├── quantum/         # HHL, OneBQF (1-Bit Quantum Filter)
+│   └── reconstruction/  # Segment (on-demand), get_tracks
 │
 └── analysis/            # Analysis and validation
-    ├── validator.py     # EventValidator, Match
-    └── plotting.py      # LHCb-style performance plots
+    ├── validation/      # EventValidator, Match
+    └── plotting/        # LHCb-style performance plots
 ```
+
+**Data Hierarchy:**
+```
+Event (JSON-serializable)
+├── Primary Vertices → track_ids
+├── Tracks → hit_ids, pv_id
+├── Hits → track_id, module_id
+└── Modules → hit_ids
+```
+
+> **Note:** Segments are computed on-demand, not stored in Events.
 
 ---
 

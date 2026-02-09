@@ -33,12 +33,12 @@ class Match:
         Number of shared hits |R_i ∩ T_j|.
     purity : float
         Fraction of reco hits that are correct: |R_i ∩ T_j| / |R_i|.
-    completeness : float
+    hit_efficiency : float
         Fraction of truth hits that are found: |R_i ∩ T_j| / |T_j|.
     candidate : bool
         True if the track passed minimum hit count requirements.
     accepted : bool
-        True if the track passed purity/completeness thresholds.
+        True if the track passed purity/hit_efficiency thresholds.
     truth_id : int or None
         Assigned truth ID after matching (same as best_truth_id if accepted).
     is_clone : bool
@@ -52,7 +52,7 @@ class Match:
     ...     truth_hits=10,
     ...     correct_hits=7,
     ...     purity=0.875,
-    ...     completeness=0.7,
+    ...     hit_efficiency=0.7,
     ...     candidate=True,
     ...     accepted=True,
     ...     truth_id=5,
@@ -65,7 +65,7 @@ class Match:
     -----
     Track classification:
     - **Candidate**: Reco track passing minimum hit count
-    - **Accepted**: Candidate passing purity/completeness cuts
+    - **Accepted**: Candidate passing purity/hit_efficiency cuts
     - **Ghost**: Candidate that failed acceptance (no good truth match)
     - **Clone**: Accepted track matching same truth as another
     - **Primary**: Best accepted track per truth track
@@ -76,7 +76,7 @@ class Match:
     truth_hits: int
     correct_hits: int
     purity: float
-    completeness: float
+    hit_efficiency: float
     candidate: bool = True
     accepted: bool = False
     truth_id: Optional[TrackID] = None
@@ -92,7 +92,7 @@ class Match:
         bool
             True if the track is a candidate but not accepted.
         """
-        raise NotImplementedError
+        return self.candidate and not self.accepted
     
     @property
     def is_primary(self) -> bool:
@@ -104,7 +104,7 @@ class Match:
         bool
             True if accepted and not a clone.
         """
-        raise NotImplementedError
+        return self.accepted and not self.is_clone
     
     def to_dict(self) -> dict:
         """
@@ -115,4 +115,17 @@ class Match:
         dict
             Dictionary with all match attributes.
         """
-        raise NotImplementedError
+        return {
+            "best_truth_id": self.best_truth_id,
+            "rec_hits": self.rec_hits,
+            "truth_hits": self.truth_hits,
+            "correct_hits": self.correct_hits,
+            "purity": self.purity,
+            "hit_efficiency": self.hit_efficiency,
+            "candidate": self.candidate,
+            "accepted": self.accepted,
+            "truth_id": self.truth_id,
+            "is_clone": self.is_clone,
+            "is_ghost": self.is_ghost,
+            "is_primary": self.is_primary,
+        }

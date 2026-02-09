@@ -6,6 +6,31 @@ This document proposes restructuring the `LHCb_VeLo_Toy_Model` repository into t
 
 ---
 
+## Data Hierarchy
+
+The data model follows this hierarchy:
+
+```
+Event
+├── Primary Vertices (PV)
+│   └── track_ids → references to Tracks
+├── Tracks
+│   ├── hit_ids → references to Hits
+│   └── pv_id → reference to parent PV
+├── Hits
+│   ├── track_id → back-reference to parent Track (-1 for ghosts)
+│   └── module_id → reference to Module
+└── Modules
+    └── hit_ids → references to Hits on this module
+```
+
+**Key Design Decisions:**
+- All cross-references use **IDs** (not object references) for JSON serialization
+- **Segments are NOT stored** in the Event - they are computed on-demand in `solvers/reconstruction/`
+- The entire Event is serializable to JSON for storage and retrieval
+
+---
+
 ## Proposed Package Structure
 
 ```
@@ -19,11 +44,11 @@ lhcb_velo_toy/                          # Main package
 │   ├── __init__.py
 │   ├── models/                         # Data structures
 │   │   ├── __init__.py
-│   │   ├── hit.py                      # Hit dataclass
-│   │   ├── segment.py                  # Segment dataclass
-│   │   ├── track.py                    # Track dataclass
+│   │   ├── hit.py                      # Hit dataclass (with track_id)
+│   │   ├── track.py                    # Track dataclass (with hit_ids, pv_id)
+│   │   ├── primary_vertex.py           # PrimaryVertex dataclass
 │   │   ├── module.py                   # Module dataclass
-│   │   └── event.py                    # Event container
+│   │   └── event.py                    # Event container (JSON-serializable)
 │   ├── geometry/                       # Detector geometries
 │   │   ├── __init__.py
 │   │   ├── base.py                     # Abstract Geometry ABC
@@ -50,6 +75,7 @@ lhcb_velo_toy/                          # Main package
 │   │   └── one_bit_hhl.py              # 1-Bit HHL (OneBQF)
 │   └── reconstruction/                 # Track reconstruction utilities
 │       ├── __init__.py
+│       ├── segment.py                  # Segment class & generation functions
 │       └── track_finder.py             # get_tracks(), find_segments()
 │
 └── analysis/                           # SUBMODULE 3: Analysis & Validation
@@ -66,6 +92,45 @@ lhcb_velo_toy/                          # Main package
 
 ---
 
+## JSON Serialization
+
+All models support JSON serialization via `to_dict()` / `from_dict()` methods:
+
+```python
+# Save event to JSON
+event.to_json("my_event.json")
+
+# Load event from JSON (geometry provided separately)
+loaded_event = Event.from_json("my_event.json", geometry)
+
+# Individual model serialization
+track_dict = track.to_dict()
+track = Track.from_dict(track_dict)
+```
+
+---
+
+## Segment Generation (On-Demand)
+
+Segments are computed when needed, not stored:
+
+```python
+from lhcb_velo_toy.solvers.reconstruction import (
+    Segment,
+    get_segments_from_event,
+    get_segments_from_track,
+    get_candidate_segments,
+)
+
+# Get true segments from known tracks
+segments = get_segments_from_event(event)
+
+# Get all possible candidate segments for reconstruction
+candidates = get_candidate_segments(event, max_delta_z=100)
+```
+
+---
+
 ## Development Flow
 
 ### Phase 1: Foundation
@@ -74,7 +139,8 @@ lhcb_velo_toy/                          # Main package
 - [ ] Set up `pyproject.toml` with dependencies
 
 ### Phase 2: Generation Module
-- [ ] Implement `models/` dataclasses (Hit, Segment, Track, Module, Event)
+- [x] Implement `models/` dataclasses (Hit, Track, Module, Event, PrimaryVertex)
+- [x] Implement JSON serialization for all models
 - [ ] Implement `geometry/` classes (Geometry ABC, PlaneGeometry, RectangularVoidGeometry)
 - [ ] Implement `generators/` (StateEventGenerator)
 
@@ -82,6 +148,7 @@ lhcb_velo_toy/                          # Main package
 - [ ] Implement `hamiltonians/` (Hamiltonian ABC, SimpleHamiltonian, SimpleHamiltonianFast)
 - [ ] Implement `classical/` solvers
 - [ ] Implement `quantum/` algorithms (HHL, OneBitHHL)
+- [x] Implement `reconstruction/` segment generation
 - [ ] Implement `reconstruction/` track finder
 
 ### Phase 4: Analysis Module

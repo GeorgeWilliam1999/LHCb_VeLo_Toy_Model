@@ -110,10 +110,10 @@ validator = EventValidator(
     rec_tracks=reco_event
 )
 
-# Compute LHCb-style metrics
+# Compute LHCb-style metrics (with non-greedy matching)
 metrics = validator.compute_metrics(
     purity_min=0.7,
-    completeness_min=0.7
+    hit_efficiency_min=0.7
 )
 
 # Print results
@@ -230,7 +230,11 @@ Following LHCb conventions:
 | **Ghost Rate** | Fraction of reconstructed tracks not matching any truth |
 | **Clone Rate** | Fraction of duplicate reconstructions of the same truth |
 | **Purity** | |R ∩ T| / |R| - fraction of reco hits from the matched truth |
-| **Completeness** | |R ∩ T| / |T| - fraction of truth hits present in reco |
+| **Hit Efficiency** | |R ∩ T| / |T| - fraction of truth hits present in reco |
+
+**Non-Greedy Matching:** When multiple reco tracks match the same truth,
+the algorithm compares match quality and reassigns to find the optimal
+global matching (not first-come-first-served).
 
 ## Configuration Parameters
 

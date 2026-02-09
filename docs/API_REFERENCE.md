@@ -88,12 +88,20 @@ class Hit:
     track_id: int     # True particle track ID (-1 for ghosts)
 ```
 
+**Properties:**
+
+| Property | Returns | Description |
+|----------|---------|-------------|
+| `position` | `tuple[float, float, float]` | (x, y, z) coordinates |
+| `is_ghost` | `bool` | True if track_id == -1 |
+
 **Methods:**
 
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `__getitem__(index)` | `float` | Access coordinates: 0=x, 1=y, 2=z |
-| `__eq__(other)` | `bool` | Identity comparison (same object) |
+| `to_dict()` | `dict` | JSON-serializable dictionary |
+| `from_dict(data)` | `Hit` | Create Hit from dictionary |
 
 **Example:**
 ```python
@@ -108,11 +116,17 @@ print(hit[2])  # 100.0 (z coordinate)
 
 A track segment connecting two hits on adjacent detector layers.
 
+> **Note:** Segments are NOT stored in Events. They are computed on-demand
+> using functions in `solvers/reconstruction/segment.py`.
+
 ```python
 @dataclass
 class Segment:
-    hits: list[Hit]     # [start_hit, end_hit]
+    hit_start: Hit      # Starting hit (lower z)
+    hit_end: Hit        # Ending hit (higher z)
     segment_id: int     # Unique identifier
+    track_id: int       # Track this segment belongs to (-1 if unknown)
+    pv_id: int          # Primary vertex ID (-1 if unknown)
 ```
 
 **Methods:**
@@ -121,7 +135,8 @@ class Segment:
 |--------|---------|-------------|
 | `to_vect()` | `tuple[float, float, float]` | Direction vector (dx, dy, dz) |
 | `__mul__(other)` | `float` | Cosine of angle between segments |
-| `__eq__(other)` | `bool` | Identity comparison |
+| `shares_hit_with(other)` | `bool` | Check if segments share a hit |
+| `to_dict()` | `dict` | JSON-serializable dictionary |
 
 **Mathematical Details:**
 
@@ -152,18 +167,25 @@ A particle track through the detector.
 @dataclass
 class Track:
     track_id: int              # Unique identifier
-    hits: list[Hit]            # Ordered hits (by z)
-    segments: list[Segment]    # Connecting segments
+    pv_id: int                 # Primary vertex ID this track originates from
+    hit_ids: list[int]         # IDs of hits on this track (ordered by z)
 ```
+
+**Methods:**
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `to_dict()` | `dict` | JSON-serializable dictionary |
+| `from_dict(data)` | `Track` | Create Track from dictionary |
 
 **Example:**
 ```python
 track = Track(
     track_id=0,
-    hits=[hit1, hit2, hit3],
-    segments=[seg1, seg2]
+    pv_id=0,
+    hit_ids=[0, 1, 2, 3, 4]
 )
-print(f"Track has {len(track.hits)} hits")
+print(f"Track has {len(track.hit_ids)} hits")
 ```
 
 ---
@@ -186,17 +208,70 @@ class Module:
 
 #### `class Event`
 
-A complete collision event container.
+A complete collision event container (JSON-serializable).
 
 ```python
 @dataclass
 class Event:
-    detector_geometry: Geometry     # Detector configuration
-    tracks: list[Track]             # Particle tracks
-    hits: list[Hit]                 # All hits
-    segments: list[Segment]         # All segments
-    modules: list[Module]           # Detector modules
+    detector_geometry: Geometry         # Detector configuration
+    primary_vertices: list[PrimaryVertex]  # Collision points
+    tracks: list[Track]                 # Particle tracks
+    hits: list[Hit]                     # All hits
+    modules: list[Module]               # Detector modules
 ```
+
+> **Note:** Segments are NOT stored in Events. Use `get_segments_from_event(event)`
+> from `solvers.reconstruction` to compute them on-demand.
+
+**Data Hierarchy:**
+```
+Event
+├── Primary Vertices (collision points)
+│   └── track_ids → references to Tracks
+├── Tracks
+│   ├── hit_ids → references to Hits
+│   └── pv_id → reference to parent PV
+├── Hits
+│   ├── track_id → back-reference to Track (-1 for ghosts)
+│   └── module_id → reference to Module
+└── Modules
+    └── hit_ids → references to Hits
+```
+
+**Methods:**
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `to_dict()` | `dict` | Convert to JSON-serializable dictionary |
+| `to_json(filepath)` | `None` | Save event to JSON file |
+| `from_dict(data, geometry)` | `Event` | Create Event from dictionary |
+| `from_json(filepath, geometry)` | `Event` | Load event from JSON file |
+| `get_hit_by_id(hit_id)` | `Hit` | Lookup hit by ID |
+| `get_hits_by_ids(hit_ids)` | `list[Hit]` | Lookup multiple hits |
+| `get_track_by_id(track_id)` | `Track` | Lookup track by ID |
+
+---
+
+#### `class PrimaryVertex`
+
+A primary vertex (collision point) in the detector.
+
+```python
+@dataclass
+class PrimaryVertex:
+    pv_id: int              # Unique identifier
+    x: float                # X position (mm)
+    y: float                # Y position (mm)
+    z: float                # Z position (mm)
+    track_ids: list[int]    # IDs of tracks from this vertex
+```
+
+**Methods:**
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `to_dict()` | `dict` | JSON-serializable dictionary |
+| `from_dict(data)` | `PrimaryVertex` | Create from dictionary |
 
 **Methods:**
 
@@ -725,20 +800,41 @@ def get_tracks(
 
 ---
 
-#### `construct_event(detector_geometry, tracks, hits, segments, modules)`
+#### `construct_event(detector_geometry, primary_vertices, tracks, hits, modules)`
 
 Construct an Event object from components.
 
 ```python
 def construct_event(
     detector_geometry: Geometry,
+    primary_vertices: list[PrimaryVertex],
     tracks: list[Track],
     hits: list[Hit],
-    segments: list[Segment],
     modules: list[Module]
 ) -> Event:
     """Factory function for creating Event objects."""
 ```
+
+---
+
+#### Segment Generation Functions
+
+Segments are computed on-demand using these functions from `solvers.reconstruction`:
+
+```python
+from lhcb_velo_toy.solvers.reconstruction import (
+    Segment,
+    get_segments_from_event,
+    get_segments_from_track,
+    get_candidate_segments,
+)
+```
+
+| Function | Parameters | Returns | Description |
+|----------|------------|---------|-------------|
+| `get_segments_from_track(track, event)` | Track, Event | `list[Segment]` | Segments for one track (with track_id, pv_id) |
+| `get_segments_from_event(event)` | Event | `list[Segment]` | All segments from all tracks |
+| `get_candidate_segments(event, max_delta_z)` | Event, float | `list[Segment]` | All possible candidate segments |
 
 ---
 
@@ -758,9 +854,9 @@ class Match:
     truth_hits: int                  # |T_j| (truth hits)
     correct_hits: int                # |R_i ∩ T_j| (shared hits)
     purity: float                    # |R_i ∩ T_j| / |R_i|
-    completeness: float              # |R_i ∩ T_j| / |T_j|
+    hit_efficiency: float            # |R_i ∩ T_j| / |T_j|
     candidate: bool = True           # Passed min_rec_hits cut
-    accepted: bool = False           # Passed purity/completeness cuts
+    accepted: bool = False           # Passed purity/hit_efficiency cuts
     truth_id: Optional[int] = None   # Accepted truth ID
     is_clone: bool = False           # Marked as clone
 ```
@@ -795,9 +891,19 @@ class EventValidator:
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `match_tracks(purity_min=0.7, ...)` | `tuple` | Match reco to truth tracks |
+| `match_tracks(purity_min=0.7, hit_efficiency_min=0.0, ...)` | `tuple` | Match reco to truth tracks (non-greedy) |
 | `summary_table()` | `pd.DataFrame` | Per-track summary |
 | `truth_table()` | `pd.DataFrame` | Per-truth summary |
+
+**Non-Greedy Matching Algorithm:**
+
+When multiple reco tracks match the same truth track:
+1. Compare match quality (e.g., purity × hit_efficiency or shared hits)
+2. If new match is better, **replace** the existing assignment
+3. Return displaced track to candidate pool for re-evaluation
+4. Repeat until no more reassignments needed
+
+This ensures globally optimal matching rather than first-come-first-served.
 
 **Metrics:**
 

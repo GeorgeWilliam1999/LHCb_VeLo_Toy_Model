@@ -7,7 +7,7 @@ leaving an electronic signal that was recorded.
 
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Union
+from typing import Any
 
 from lhcb_velo_toy.core.types import HitID, ModuleID, TrackID
 
@@ -47,8 +47,9 @@ class Hit:
     
     Notes
     -----
-    Hits are immutable in practice, though not enforced by frozen=True
-    to allow flexibility in event generation.
+    Hits store a back-reference to their track via track_id for easy
+    lookup. The Hit and Track cross-reference each other via IDs to
+    enable JSON serialization of the entire Event.
     """
     
     hit_id: HitID
@@ -56,7 +57,7 @@ class Hit:
     y: float
     z: float
     module_id: ModuleID
-    track_id: TrackID
+    track_id: TrackID = -1  # -1 indicates ghost/noise hit
     
     def __getitem__(self, index: int) -> float:
         """
@@ -76,52 +77,78 @@ class Hit:
         ------
         IndexError
             If index is not 0, 1, or 2.
-        
-        Examples
-        --------
-        >>> hit = Hit(0, 1.0, 2.0, 3.0, 0, 0)
-        >>> hit[0], hit[1], hit[2]
-        (1.0, 2.0, 3.0)
         """
-        raise NotImplementedError
+        if index == 0:
+            return self.x
+        elif index == 1:
+            return self.y
+        elif index == 2:
+            return self.z
+        else:
+            raise IndexError(f"Hit index must be 0, 1, or 2, got {index}")
     
-    def __eq__(self, other: object) -> bool:
+    @property
+    def position(self) -> tuple[float, float, float]:
         """
-        Check equality by identity (same object in memory).
-        
-        This uses identity comparison rather than value comparison to
-        properly handle duplicate coordinates in different hits.
-        
-        Parameters
-        ----------
-        other : object
-            Object to compare with.
-        
-        Returns
-        -------
-        bool
-            True if other is the same Hit instance.
-        """
-        raise NotImplementedError
-    
-    def __hash__(self) -> int:
-        """
-        Hash by object identity.
-        
-        Returns
-        -------
-        int
-            Hash value based on object id.
-        """
-        raise NotImplementedError
-    
-    def to_tuple(self) -> tuple[float, float, float]:
-        """
-        Convert hit position to a tuple.
+        Get the hit position as a tuple.
         
         Returns
         -------
         tuple[float, float, float]
-            Position as (x, y, z).
+            Position as (x, y, z) in mm.
         """
-        raise NotImplementedError
+        return (self.x, self.y, self.z)
+    
+    @property
+    def is_ghost(self) -> bool:
+        """
+        Check if this is a ghost (noise) hit.
+        
+        Returns
+        -------
+        bool
+            True if track_id == -1.
+        """
+        return self.track_id == -1
+    
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Convert to dictionary for JSON serialization.
+        
+        Returns
+        -------
+        dict
+            Dictionary representation of the hit.
+        """
+        return {
+            "hit_id": self.hit_id,
+            "x": self.x,
+            "y": self.y,
+            "z": self.z,
+            "module_id": self.module_id,
+            "track_id": self.track_id,
+        }
+    
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Hit":
+        """
+        Create a Hit from a dictionary.
+        
+        Parameters
+        ----------
+        data : dict
+            Dictionary with hit_id, x, y, z, module_id, track_id keys.
+        
+        Returns
+        -------
+        Hit
+            The reconstructed hit.
+        """
+        return cls(
+            hit_id=data["hit_id"],
+            x=data["x"],
+            y=data["y"],
+            z=data["z"],
+            module_id=data["module_id"],
+            track_id=data.get("track_id", -1),
+        )

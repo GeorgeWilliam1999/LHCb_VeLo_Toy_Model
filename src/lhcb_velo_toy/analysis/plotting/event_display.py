@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from lhcb_velo_toy.generation.models.event import Event
     from lhcb_velo_toy.generation.models.track import Track
-    from lhcb_velo_toy.generation.models.segment import Segment
+    from lhcb_velo_toy.solvers.reconstruction.segment import Segment
 
 
 def plot_event_3d(
