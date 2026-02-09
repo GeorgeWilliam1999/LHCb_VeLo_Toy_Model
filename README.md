@@ -286,9 +286,6 @@ Contributions are welcome! Please feel free to submit issues and pull requests.
 ## Authors
 
 - George William
-- Marcel Kunze
-- Alain Chancé
-- Contributors
 
 ## License
 
