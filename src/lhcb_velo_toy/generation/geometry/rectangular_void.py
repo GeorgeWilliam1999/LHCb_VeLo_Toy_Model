@@ -86,7 +86,14 @@ class RectangularVoidGeometry(Geometry):
         IndexError
             If index is out of range.
         """
-        raise NotImplementedError
+        return (
+            self.module_id[index],
+            self.z[index],
+            self.void_x_boundary[index],
+            self.void_y_boundary[index],
+            self.lx[index],
+            self.ly[index],
+        )
     
     def point_on_bulk(self, state: StateVector) -> bool:
         """
@@ -105,19 +112,25 @@ class RectangularVoidGeometry(Geometry):
         bool
             True if the point is in the active region.
         """
-        raise NotImplementedError
+        x, y = abs(state['x']), abs(state['y'])
+        # Must be inside outer boundary
+        inside_outer = x <= self.lx[0] and y <= self.ly[0]
+        # Must be outside void region
+        outside_void = x >= self.void_x_boundary[0] or y >= self.void_y_boundary[0]
+        return inside_outer and outside_void
     
     def __len__(self) -> int:
         """Return the number of modules."""
-        raise NotImplementedError
+        return len(self.module_id)
     
     def __iter__(self) -> Iterator[tuple[int, float, float, float, float, float]]:
         """Iterate over module geometry data."""
-        raise NotImplementedError
+        for i in range(len(self)):
+            yield self[i]
     
     def get_z_positions(self) -> list[float]:
         """Return the z positions of all modules."""
-        raise NotImplementedError
+        return list(self.z)
     
     def is_in_void(self, x: float, y: float, module_index: int = 0) -> bool:
         """
@@ -137,4 +150,7 @@ class RectangularVoidGeometry(Geometry):
         bool
             True if the point is in the void region.
         """
-        raise NotImplementedError
+        return (
+            abs(x) < self.void_x_boundary[module_index]
+            and abs(y) < self.void_y_boundary[module_index]
+        )

@@ -99,7 +99,7 @@ class Geometry(ABC):
         int
             Number of modules.
         """
-        raise NotImplementedError
+        return len(self.module_id)
     
     def __iter__(self) -> Iterator[tuple]:
         """
@@ -110,7 +110,8 @@ class Geometry(ABC):
         tuple
             Geometry data for each module.
         """
-        raise NotImplementedError
+        for i in range(len(self)):
+            yield self[i]
     
     def get_z_positions(self) -> list[float]:
         """
@@ -121,4 +122,4 @@ class Geometry(ABC):
         list[float]
             Z positions in order.
         """
-        raise NotImplementedError
+        return [self[i][-1] for i in range(len(self))]

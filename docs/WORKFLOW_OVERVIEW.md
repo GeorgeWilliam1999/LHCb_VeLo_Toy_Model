@@ -197,9 +197,13 @@ flowchart LR
 │     │      /  |  \     ← Particles with momentum (tx, ty, p/q)     │        │
 │     │     ●   ●   ●     ← Hits at each module crossing             │        │
 │     │     │   │   │                                                │        │
-│     │     ●   ●   ●     ← Measurement error applied                │        │
-│     │     │   │   │                                                │        │
-│     │     ●   ●   ●     ← Multiple scattering effects              │        │
+│     │     │   │   │   At each module the generator:                │        │
+│     │     │   │   │   1. Propagates TRUE state to module z          │        │
+│     │     │   │   │   2. Checks acceptance (on bulk?)               │        │
+│     │     │   │   │   3. Records Hit with SMEARED (x,y)             │        │
+│     │     │   │   │      ↳ measurement_error ≠ true state           │        │
+│     │     │   │   │   4. Applies scattering to TRUE (tx,ty)         │        │
+│     │     │   │   │      ↳ collision_noise feeds forward            │        │
 │     │                                                              │        │
 │     └──────────────────────────────────────────────────────────────┘        │
 │                                                                             │
@@ -462,19 +466,29 @@ classDiagram
 
 #### Event Generation Process
 
+> **⚠️ Physics Note – Measurement Error vs Multiple Scattering**
+>
+> | | Measurement Error | Multiple Scattering |
+> |---|---|---|
+> | **Nature** | Detector artefact (finite resolution) | Real physics (Coulomb scattering in material) |
+> | **Affects** | Recorded Hit coordinates only | True particle slopes (tx, ty) |
+> | **Feeds back?** | ❌ Never modifies the true state | ✅ Accumulates through every subsequent module |
+>
+> The ordering below is **critical**: the Hit is recorded with smeared (x, y)
+> while the true state remains unmodified until scattering is applied.
+
 ```mermaid
 flowchart TD
     A[Initialize Generator] --> B[Define Detector Geometry]
     B --> C[Generate Primary Vertices]
     C --> D[Create Particles with Momentum]
-    D --> E[Propagate Through Detector]
+    D --> E["1. Propagate TRUE state\nto next module z"]
     
-    E --> F{Hit Detector?}
-    F -->|Yes| G[Record Hit Position]
+    E --> F{"2. On detector bulk?"}
     F -->|No| H[Skip Module]
+    F -->|Yes| G["3. Record Hit\nx_meas = x_true + N 0 σ_meas\ny_meas = y_true + N 0 σ_meas\n⚡ Does NOT modify true state"]
     
-    G --> I[Apply Measurement Error]
-    I --> J[Apply Multiple Scattering]
+    G --> J["4. Apply Multiple Scattering\ntx += tan N 0 σ_scat\nty += tan N 0 σ_scat\n⚡ Modifies TRUE state"]
     J --> K{More Modules?}
     
     H --> K
@@ -484,6 +498,10 @@ flowchart TD
     L -->|Yes| D
     L -->|No| M[Build Event Object]
     M --> N[Return Truth Event]
+    
+    style G fill:#e3f2fd,stroke:#1565c0
+    style J fill:#ffebee,stroke:#c62828
+    style E fill:#e8f5e9,stroke:#2e7d32
 ```
 
 ---

@@ -426,8 +426,24 @@ class StateEventGenerator:
 | `theta_min`, `theta_max` | `float` | ±0.2 | Range for $t_y$ slope angle (rad) |
 | `events` | `int` | 3 | Number of collision events |
 | `n_particles` | `list[int]` | `None` | Particles per event |
-| `measurement_error` | `float` | 0.0 | Hit position resolution σ (mm) |
-| `collision_noise` | `float` | 1e-4 | Multiple scattering σ (rad) |
+| `measurement_error` | `float` | 0.0 | Hit position resolution σ (mm) — detector artefact only |
+| `collision_noise` | `float` | 1e-4 | Multiple scattering σ (rad) — real physical deflection |
+
+> **⚠️ Important — Measurement Error vs Multiple Scattering:**
+>
+> These two parameters model fundamentally different physics:
+>
+> | | `measurement_error` | `collision_noise` |
+> |---|---|---|
+> | **Nature** | Detector artefact | Real physical process |
+> | **Affects** | Recorded Hit (x, y) only | True particle slopes (tx, ty) |
+> | **Accumulates?** | No — each Hit is independently smeared | Yes — deflections compound through the detector |
+> | **Feeds back?** | No — the true state is unchanged | Yes — trajectory is permanently altered |
+>
+> The correct processing order at each module is:
+> 1. Propagate true state to module z → true (x, y)
+> 2. Record Hit at `(x + N(0, σ_meas), y + N(0, σ_meas))`
+> 3. Apply scattering to true `tx += tan(N(0, σ_scatter))`
 
 **Methods:**
 
@@ -435,7 +451,10 @@ class StateEventGenerator:
 |--------|------------|---------|-------------|
 | `generate_random_primary_vertices(variance)` | `dict[str, float]` | `list[tuple]` | Generate Gaussian-distributed vertices |
 | `set_primary_vertices(vertices)` | `list[tuple]` | `None` | Set explicit vertex positions |
-| `generate_particles(particles)` | `list[list[dict]]` | `list[dict]` | Generate particle states |
+| `generate_particles(particles)` | `list[list[dict]]` | `list[list[dict]]` | Generate particle states |
+| `propagate(state, z_target)` | `dict, float` | `dict` | Propagate true state to target z |
+| `collision_update(state)` | `dict` | `dict` | Apply multiple scattering to true state |
+| `measurement_error_update(x, y)` | `float, float` | `tuple[float, float]` | Smear hit coordinates (does **not** modify true state) |
 | `generate_complete_events()` | | `Event` | Propagate particles and record hits |
 | `make_noisy_event(drop_rate, ghost_rate)` | `float, float` | `Event` | Add hit inefficiency and ghosts |
 

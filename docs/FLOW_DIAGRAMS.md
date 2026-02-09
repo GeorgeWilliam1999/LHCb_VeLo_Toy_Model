@@ -346,6 +346,10 @@ graph TD
 
 ## Event Generation Flow
 
+> **Key distinction:** Measurement error and multiple scattering are two
+> fundamentally different effects that must be applied at different points.
+> See the "Physics Notes" box in the diagram below.
+
 ```mermaid
 flowchart TD
     START([Start]) --> INIT["Initialize StateEventGenerator with Geometry"]
@@ -363,40 +367,59 @@ flowchart TD
     PV --> PLOOP[For each particle]
     
     PLOOP --> STATE["Create state vector: x, y, z, tx, ty"]
-    STATE --> PROP[propagate to first module]
+    STATE --> MLOOP[For each module]
+
+    MLOOP --> PROP["1. Propagate TRUE state to module z"]
+    PROP --> BULK{"2. On bulk?"}
     
-    PROP --> MLOOP[For each module]
-    MLOOP --> BULK{On bulk?}
+    BULK -->|No| SCATTER_SKIP["4. Apply multiple scattering to TRUE tx, ty"]
+    SCATTER_SKIP --> NEXT
     
-    BULK -->|Yes| HIT[Create Hit]
-    BULK -->|No| SKIP[Skip module]
+    BULK -->|Yes| HIT["3. Record Hit at smeared coords\n x_meas = x_true + N 0 sigma_meas\n y_meas = y_true + N 0 sigma_meas"]
+    HIT --> SCATTER["4. Apply multiple scattering to TRUE tx, ty\n tx += tan N 0 sigma_scatter\n ty += tan N 0 sigma_scatter"]
+    SCATTER --> NEXT{More modules?}
     
-    HIT --> MEAS[Apply measurement error]
-    MEAS --> COLL[Apply multiple scattering]
-    COLL --> NEXT{More modules?}
-    
-    SKIP --> NEXT
-    NEXT -->|Yes| PROP2[propagate to next z]
-    NEXT -->|No| NEXTP{More particles?}
-    
-    PROP2 --> MLOOP
-    
+    NEXT -->|Yes| MLOOP
+    NEXT -->|No| BUILD_TRACK[Build Track from hit_ids]
+
+    BUILD_TRACK --> NEXTP{More particles?}
     NEXTP -->|Yes| PLOOP
     NEXTP -->|No| NEXTE{More events?}
     
     NEXTE -->|Yes| LOOP
-    NEXTE -->|No| BUILD[Build Event object]
+    NEXTE -->|No| BUILD[Build Event: PVs + Tracks + Hits + Modules]
     
-    BUILD --> EVT["Event with: modules, hits, tracks"]
+    BUILD --> EVT["Event with: primary_vertices, tracks, hits, modules"]
     EVT --> NOISE{Add noise?}
     
     NOISE -->|Yes| DROP[Apply drop_rate: Remove random hits]
     DROP --> GHOST[Apply ghost_rate: Add random ghost hits]
-    GHOST --> REBUILD[rebuild modules]
+    GHOST --> REBUILD[Rebuild modules]
     
     NOISE -->|No| DONE([Return Event])
     REBUILD --> DONE
+
+    style HIT fill:#e3f2fd,stroke:#1565c0
+    style SCATTER fill:#fce4ec,stroke:#c62828
+    style SCATTER_SKIP fill:#fce4ec,stroke:#c62828
+    style PROP fill:#e8f5e9,stroke:#2e7d32
 ```
+
+### Physics: Measurement Error vs Multiple Scattering
+
+| Property | Measurement Error | Multiple Scattering |
+|----------|-------------------|---------------------|
+| **What it is** | Detector artefact | Real physical process |
+| **What it affects** | Recorded Hit (x, y) only | True particle slopes (tx, ty) |
+| **Feeds into next step?** | **No** — true state is unchanged | **Yes** — trajectory is permanently altered |
+| **Typical scale** | ~10 µm (σ) | ~0.1 mrad (σ) |
+| **Parameter** | `measurement_error` | `collision_noise` |
+
+**Correct ordering at each module:**
+1. Propagate true state to module z → true (x, y)
+2. Check if true (x, y) is on the active bulk
+3. Record Hit at (x + noise, y + noise) — measurement error on stored Hit only
+4. Apply multiple scattering — modify true (tx, ty) for next propagation
 
 ---
 
