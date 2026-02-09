@@ -151,7 +151,7 @@ graph LR
         H --> S{Solver}
         S --> |Classical| CG[Conjugate Gradient]
         S --> |Quantum| HHL[HHL/OneBQF]
-        CG --> X[Solution x̄]
+        CG --> X[Solution vector]
         HHL --> X
     end
     

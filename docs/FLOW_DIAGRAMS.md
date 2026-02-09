@@ -22,23 +22,21 @@ This document contains Mermaid diagrams showing the data flow, architecture, and
 
 ```mermaid
 graph TB
-    subgraph "📦 lhcb_velo_toy Package"
-        subgraph "🔵 generation"
-            GEO[Geometry Classes]
-            EVG[Event Generators]
-            DAT[Data Models]
-        end
-        
-        subgraph "🟢 solvers"
-            HAM[Hamiltonians]
-            CLS[Classical Solvers]
-            QUA[Quantum Algorithms]
-        end
-        
-        subgraph "🟡 analysis"
-            VAL[Validators]
-            PLT[Plotting]
-        end
+    subgraph generation["Generation Module"]
+        GEO[Geometry Classes]
+        EVG[Event Generators]
+        DAT[Data Models]
+    end
+    
+    subgraph solvers["Solvers Module"]
+        HAM[Hamiltonians]
+        CLS[Classical Solvers]
+        QUA[Quantum Algorithms]
+    end
+    
+    subgraph analysis["Analysis Module"]
+        VAL[Validators]
+        PLT[Plotting]
     end
     
     GEO --> EVG
@@ -49,10 +47,6 @@ graph TB
     CLS --> VAL
     QUA --> VAL
     VAL --> PLT
-    
-    style generation fill:#e3f2fd,stroke:#1976d2
-    style solvers fill:#e8f5e9,stroke:#388e3c
-    style analysis fill:#fff8e1,stroke:#fbc02d
 ```
 
 ---
@@ -68,18 +62,18 @@ flowchart LR
     
     subgraph Generation
         GEN[StateEventGenerator]
-        EVT[Event<br/>- primary_vertices<br/>- tracks<br/>- hits]
+        EVT["Event: PVs, tracks, hits"]
         NOISE[make_noisy_event]
     end
     
     subgraph Solving
         HAM[SimpleHamiltonian]
-        MAT[A matrix + b vector]
+        MAT["A matrix + b vector"]
         SOL{Solver}
         CG[Conjugate Gradient]
         HHL[HHL Algorithm]
         ONEBQF[1-Bit Filter]
-        VEC[x̄ solution vector]
+        VEC[solution vector]
     end
     
     subgraph Reconstruction
@@ -90,7 +84,7 @@ flowchart LR
     
     subgraph Validation
         VAL[EventValidator]
-        MET[Metrics:<br/>• Efficiency<br/>• Ghost Rate<br/>• Purity]
+        MET["Metrics: Efficiency, Ghost Rate, Purity"]
         PLT[Plots]
     end
     
@@ -99,7 +93,7 @@ flowchart LR
     GEN --> EVT
     EVT --> NOISE
     NOISE --> HAM
-    EVT -->|"true tracks"| VAL
+    EVT -->|true tracks| VAL
     
     HAM --> MAT
     MAT --> SOL
@@ -354,31 +348,31 @@ graph TD
 
 ```mermaid
 flowchart TD
-    START([Start]) --> INIT[Initialize StateEventGenerator<br/>with Geometry]
+    START([Start]) --> INIT["Initialize StateEventGenerator with Geometry"]
     
     INIT --> VTX{Primary Vertices?}
-    VTX -->|Generate| GVX[generate_random_primary_vertices<br/>Gaussian: μ=0, σ from variance dict]
+    VTX -->|Generate| GVX["generate_random_primary_vertices: Gaussian distribution"]
     VTX -->|Provided| SVX[set_primary_vertices]
     GVX --> PAR
     SVX --> PAR
     
     PAR[Define particles per event] --> GPRT[generate_particles]
     
-    GPRT --> LOOP[For each event e ∈ events]
-    LOOP --> PV[Get primary vertex PV_e]
-    PV --> PLOOP[For each particle p ∈ particles_e]
+    GPRT --> LOOP[For each event]
+    LOOP --> PV[Get primary vertex]
+    PV --> PLOOP[For each particle]
     
-    PLOOP --> STATE[Create state vector<br/>x, y, z, tx, ty, p/q]
+    PLOOP --> STATE["Create state vector: x, y, z, tx, ty"]
     STATE --> PROP[propagate to first module]
     
-    PROP --> MLOOP[For each module m]
+    PROP --> MLOOP[For each module]
     MLOOP --> BULK{On bulk?}
     
     BULK -->|Yes| HIT[Create Hit]
     BULK -->|No| SKIP[Skip module]
     
-    HIT --> MEAS[Apply measurement_error<br/>Gaussian σ_x, σ_y]
-    MEAS --> COLL[Apply collision_update<br/>Multiple scattering σ_θ]
+    HIT --> MEAS[Apply measurement error]
+    MEAS --> COLL[Apply multiple scattering]
     COLL --> NEXT{More modules?}
     
     SKIP --> NEXT
@@ -393,12 +387,12 @@ flowchart TD
     NEXTE -->|Yes| LOOP
     NEXTE -->|No| BUILD[Build Event object]
     
-    BUILD --> EVT[Event with:<br/>• modules<br/>• hits<br/>• segments<br/>• tracks]
+    BUILD --> EVT["Event with: modules, hits, tracks"]
     EVT --> NOISE{Add noise?}
     
-    NOISE -->|Yes| DROP[Apply drop_rate<br/>Remove random hits]
-    DROP --> GHOST[Apply ghost_rate<br/>Add random ghost hits]
-    GHOST --> REBUILD[_rebuild_modules]
+    NOISE -->|Yes| DROP[Apply drop_rate: Remove random hits]
+    DROP --> GHOST[Apply ghost_rate: Add random ghost hits]
+    GHOST --> REBUILD[rebuild modules]
     
     NOISE -->|No| DONE([Return Event])
     REBUILD --> DONE
@@ -412,40 +406,40 @@ flowchart TD
 flowchart TD
     START([Event]) --> SEGS[construct_segments]
     
-    SEGS --> PAIR[For each pair of adjacent modules<br/>m_i, m_{i+1}]
-    PAIR --> H1[For each hit h_1 ∈ m_i.hits]
-    H1 --> H2[For each hit h_2 ∈ m_{i+1}.hits]
-    H2 --> CREATE[Create Segment s_k = h_1, h_2]
+    SEGS --> PAIR["For each pair of adjacent modules"]
+    PAIR --> H1["For each hit h1 in module i"]
+    H1 --> H2["For each hit h2 in module i+1"]
+    H2 --> CREATE["Create Segment: h1 to h2"]
     CREATE --> NEXT{More pairs?}
     NEXT -->|Yes| PAIR
     NEXT -->|No| NSEG[n_segments = total segments]
     
-    NSEG --> INIT[Initialize:<br/>A = sparse matrix n×n<br/>b = zeros n]
+    NSEG --> INIT["Initialize: A = sparse matrix, b = zeros"]
     
-    INIT --> DIAG[Set diagonal<br/>A_ii = -(γ + δ)]
+    INIT --> DIAG["Set diagonal: A_ii = -(gamma + delta)"]
     
-    DIAG --> OFF[For each segment pair s_i, s_j]
+    DIAG --> OFF[For each segment pair]
     OFF --> SHARE{Share endpoint?}
     
     SHARE -->|No| NEXTOFF
-    SHARE -->|Yes| ANGLE[Compute cos(θ) = s_i * s_j]
+    SHARE -->|Yes| ANGLE["Compute cos angle"]
     
     ANGLE --> CONV{convolution?}
     
-    CONV -->|No| HARD[Hard threshold:<br/>θ < ε ?]
-    HARD -->|Yes| SET1[A_ij = 1]
-    HARD -->|No| SET0[A_ij = 0]
+    CONV -->|No| HARD{angle less than epsilon?}
+    HARD -->|Yes| SET1["A_ij = 1"]
+    HARD -->|No| SET0["A_ij = 0"]
     
-    CONV -->|Yes| ERF[ERF smoothed:<br/>A_ij = 1 + erf((ε-θ)/(θ_d√2))]
+    CONV -->|Yes| ERF["ERF smoothed A_ij"]
     
     SET1 --> NEXTOFF{More pairs?}
     SET0 --> NEXTOFF
     ERF --> NEXTOFF
     
     NEXTOFF -->|Yes| OFF
-    NEXTOFF -->|No| BIAS[Set bias vector<br/>b_i = γ + δ]
+    NEXTOFF -->|No| BIAS["Set bias vector: b_i = gamma + delta"]
     
-    BIAS --> RET([Return A, b])
+    BIAS --> RET(["Return A, b"])
 ```
 
 ---
@@ -461,35 +455,35 @@ flowchart TD
         B[Vector b]
     end
     
-    subgraph "Circuit Construction"
+    subgraph CircuitConstruction["Circuit Construction"]
         PAD[Pad to power of 2]
-        NORM[Normalize b → |b⟩]
+        NORM["Normalize b"]
         
-        subgraph "State Prep"
-            SPREP[Amplitude encoding<br/>|b⟩ = Σ b_i |i⟩]
+        subgraph StatePrep["State Prep"]
+            SPREP["Amplitude encoding"]
         end
         
-        subgraph "Phase Estimation"
-            HGATE[H⊗n on time register]
-            CEVO[Controlled e^{iAt}]
+        subgraph PhaseEstimation["Phase Estimation"]
+            HGATE[Hadamard on time register]
+            CEVO[Controlled evolution]
             IQFT[Inverse QFT]
         end
         
-        subgraph "Rotation"
+        subgraph Rotation
             ANCILLA[Ancilla qubit]
-            CROT[Controlled R_y(arcsin(C/λ))]
+            CROT[Controlled rotation]
         end
         
-        subgraph "Uncompute"
+        subgraph Uncompute
             QFT2[QFT]
-            CEVO2[Controlled e^{-iAt}]
-            HGATE2[H⊗n]
+            CEVO2[Controlled inverse evolution]
+            HGATE2[Hadamard gates]
         end
     end
     
-    subgraph "Measurement"
+    subgraph Measurement
         MEAS[Measure ancilla + system]
-        POST[Post-select ancilla = |1⟩]
+        POST[Post-select ancilla = 1]
         EXTRACT[Extract solution from counts]
     end
     
@@ -508,7 +502,7 @@ flowchart TD
     HGATE2 --> MEAS
     MEAS --> POST
     POST --> EXTRACT
-    EXTRACT --> SOL[Solution x̄]
+    EXTRACT --> SOL[Solution vector]
 ```
 
 ### 1-Bit Quantum Filter (OneBQF)
@@ -520,22 +514,22 @@ flowchart TD
         B[Vector b]
     end
     
-    subgraph "Suzuki-Trotter"
-        DEC[Decompose A = Σ_k α_k P_k]
-        TROT[Build e^{iAt} ≈ Π_k e^{iα_k P_k t}]
+    subgraph SuzukiTrotter["Suzuki-Trotter"]
+        DEC[Decompose A into Pauli terms]
+        TROT[Build time evolution operator]
     end
     
-    subgraph "1-Bit Phase Est"
-        SPREP[State prep |b⟩]
-        H1[H on single time qubit]
+    subgraph OneBitPhaseEst["1-Bit Phase Estimation"]
+        SPREP[State prep]
+        H1[Hadamard on time qubit]
         CTRL[Controlled U_A]
-        H2[H on time qubit]
+        H2[Hadamard on time qubit]
     end
     
-    subgraph "Rotation & Measure"
-        CROT[R_y rotation on ancilla]
+    subgraph RotationMeasure["Rotation and Measure"]
+        CROT[Rotation on ancilla]
         MEAS[Measure all]
-        POST[Post-select ancilla = |1⟩]
+        POST[Post-select ancilla = 1]
     end
     
     A --> DEC
@@ -548,7 +542,7 @@ flowchart TD
     H2 --> CROT
     CROT --> MEAS
     MEAS --> POST
-    POST --> SOL[Solution x̄]
+    POST --> SOL[Solution vector]
 ```
 
 ---
@@ -558,49 +552,49 @@ flowchart TD
 ```mermaid
 flowchart TD
     subgraph Input
-        TRUE[Truth Event<br/>True tracks T_j]
-        RECO[Reconstructed Tracks R_i]
+        TRUE[Truth Event]
+        RECO[Reconstructed Tracks]
     end
     
-    subgraph "Filtering"
-        FILT{Apply reconstructible<br/>filter?}
-        FILT -->|Yes| RECON[Filter truth tracks<br/>≥ n hits in acceptance]
+    subgraph Filtering
+        FILT{Reconstructible filter?}
+        FILT -->|Yes| RECON[Filter truth tracks]
         FILT -->|No| PASS[Use all truth tracks]
     end
     
-    subgraph "Candidate Selection"
-        CAND[For each reco track R_i]
-        NHIT{n_hits ≥ min?}
-        NHIT -->|Yes| CANDOK[Mark as CANDIDATE]
+    subgraph CandidateSelection[Candidate Selection]
+        CAND[For each reco track]
+        NHIT{n_hits >= min?}
+        NHIT -->|Yes| CANDOK[Mark CANDIDATE]
         NHIT -->|No| REJECT[Reject]
     end
     
-    subgraph "Matching"
-        LOOP[For each candidate R_i]
-        ASSOC[For each truth T_j]
-        CALC[Compute:<br/>• shared = |R_i ∩ T_j|<br/>• purity = shared/|R_i|<br/>• hit_efficiency = shared/|T_j|]
-        BEST[Find best T_j:<br/>max shared hits]
+    subgraph Matching
+        LOOP[For each candidate]
+        ASSOC[For each truth track]
+        CALC[Compute shared hits, purity, hit_efficiency]
+        BEST[Find best truth match]
     end
     
-    subgraph "Classification (Non-Greedy)"
-        PURE{purity ≥ thresh?}
-        PURE -->|Yes| HITEFF{hit_efficiency ≥ thresh?}
-        PURE -->|No| GHOST[Mark as GHOST]
-        HITEFF -->|Yes| ACCEPT[ACCEPTED candidate]
+    subgraph Classification[Classification - Non-Greedy]
+        PURE{purity >= thresh?}
+        PURE -->|Yes| HITEFF{hit_efficiency >= thresh?}
+        PURE -->|No| GHOST[Mark GHOST]
+        HITEFF -->|Yes| ACCEPT[ACCEPTED]
         HITEFF -->|No| ACCEPT
         
-        ALREADY{Truth already<br/>matched?}
-        ALREADY -->|No| PRIMARY[Mark as PRIMARY]
-        ALREADY -->|Yes| BETTER{New match<br/>better?}
-        BETTER -->|Yes| REPLACE[Replace existing<br/>Return displaced to pool]
-        BETTER -->|No| CLONEMARK[Mark as CLONE]
+        ALREADY{Truth already matched?}
+        ALREADY -->|No| PRIMARY[Mark PRIMARY]
+        ALREADY -->|Yes| BETTER{New match better?}
+        BETTER -->|Yes| REPLACE[Replace existing]
+        BETTER -->|No| CLONEMARK[Mark CLONE]
         REPLACE --> LOOP
     end
     
-    subgraph "Metrics"
-        EFF[Efficiency = matched/reconstructible]
-        GR[Ghost Rate = ghosts/candidates]
-        CR[Clone Rate = clones/primaries]
+    subgraph Metrics
+        EFF[Efficiency]
+        GR[Ghost Rate]
+        CR[Clone Rate]
         PUR[Mean Purity]
         HITEFFM[Mean Hit Efficiency]
     end
@@ -615,14 +609,14 @@ flowchart TD
     CALC --> BEST
     BEST --> PURE
     ACCEPT --> ALREADY
-    GHOST --> METRICS
-    CLONEMARK --> METRICS
-    PRIMARY --> METRICS
-    METRICS --> EFF
-    METRICS --> GR
-    METRICS --> CR
-    METRICS --> PUR
-    METRICS --> HITEFFM
+    GHOST --> DONE[Done]
+    CLONEMARK --> DONE
+    PRIMARY --> DONE
+    DONE --> EFF
+    DONE --> GR
+    DONE --> CR
+    DONE --> PUR
+    DONE --> HITEFFM
 ```
 
 **Non-Greedy Algorithm:**
@@ -660,7 +654,7 @@ sequenceDiagram
     Gen->>Gen: add ghost hits
     Gen-->>User: noisy_event
     
-    User->>Ham: Create with ε, γ, δ
+    User->>Ham: Create with epsilon, gamma, delta
     User->>Ham: construct_hamiltonian(noisy_event)
     Ham->>Ham: construct_segments()
     Ham->>Ham: build A matrix
@@ -738,41 +732,26 @@ sequenceDiagram
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Candidate: n_hits ≥ min
+    [*] --> Candidate: n_hits >= min
     [*] --> Rejected: n_hits < min
     
-    Candidate --> Accepted: purity ≥ threshold
+    Candidate --> Accepted: purity >= threshold
     Candidate --> Ghost: purity < threshold
     
-    Accepted --> CheckExisting: truth already matched?
-    CheckExisting --> Primary: no existing match
-    CheckExisting --> CompareQuality: existing match found
+    Accepted --> CheckExisting: truth matched?
+    CheckExisting --> Primary: no existing
+    CheckExisting --> CompareQuality: existing found
     
-    CompareQuality --> Primary: new match is better
-    CompareQuality --> Clone: existing match is better
+    CompareQuality --> Primary: new is better
+    CompareQuality --> Clone: existing is better
     
-    Primary --> DisplaceOld: (if replaced existing)
-    DisplaceOld --> Candidate: re-evaluate displaced
+    Primary --> DisplaceOld: replaced existing
+    DisplaceOld --> Candidate: re-evaluate
     
     Ghost --> [*]
     Primary --> [*]
     Clone --> [*]
     Rejected --> [*]
-    
-    note right of Candidate
-        Track passed minimum
-        hit count requirement
-    end note
-    
-    note right of CompareQuality
-        Non-greedy: compare
-        match quality scores
-    end note
-    
-    note right of Primary
-        Best match to a
-        truth track
-    end note
 ```
 
 ---
