@@ -1,0 +1,34 @@
+\frametitle{Why Segments Are Not Stored}
+\begin{columns}[T]
+    \begin{column}{0.46\textwidth}
+      \textbf{\color{lhcbred}Old approach}
+      \begin{itemize}
+        \item \texttt{Event.segments} and \texttt{Track.segments}
+              stored pre-computed segments
+        \item Duplicated data (same info derivable from hits)
+        \item Complicated serialisation
+        \item Tight coupling to the generation phase
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.50\textwidth}
+      \textbf{\color{lhcbgreen}New approach}
+      \begin{itemize}
+        \item Segments created \emph{on-demand} by\\
+              \texttt{Hamiltonian.construct\_hamiltonian()}
+        \item Live only in the reconstruction layer
+        \item No duplication, no serialisation burden
+        \item Different Hamiltonians can define different
+              segment-building strategies
+      \end{itemize}
+
+      \begin{lstlisting}[basicstyle=\ttfamily\tiny]
+# Segment built from two consecutive hits
+seg = Segment(
+    hit_start=hit_a,
+    hit_end=hit_b,
+    segment_id=next_id,
+    track_id=-1   # unknown until reco
+)
+      \end{lstlisting}
+    \end{column}
+  \end{columns}
