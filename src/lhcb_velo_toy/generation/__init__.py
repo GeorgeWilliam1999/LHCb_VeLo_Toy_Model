@@ -11,7 +11,7 @@ entities
 geometry
     Detector geometries: Geometry (ABC), PlaneGeometry, RectangularVoidGeometry
 generators
-    Event generators: StateEventGenerator
+    Event generators: EventGenerator (ABC), StateEventGenerator
 
 Note
 ----
@@ -37,6 +37,7 @@ from lhcb_velo_toy.generation.geometry import (
 
 # Generators
 from lhcb_velo_toy.generation.generators import (
+    EventGenerator,
     StateEventGenerator,
 )
 
@@ -52,5 +53,6 @@ __all__ = [
     "PlaneGeometry",
     "RectangularVoidGeometry",
     # Generators
+    "EventGenerator",
     "StateEventGenerator",
 ]

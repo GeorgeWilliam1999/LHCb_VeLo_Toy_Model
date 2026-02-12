@@ -33,6 +33,15 @@ Correct ordering at each detector module:
 
 This ensures measurement noise never contaminates the true trajectory,
 while scattering correctly accumulates through the detector.
+
+.. todo:: Bidirectional propagation
+   Currently particles are propagated strictly forward (increasing z)
+   through the detector modules. In the real LHCb VELO the primary
+   vertex can occur *inside* the detector acceptance — not necessarily
+   before the first module. Particles should therefore propagate both
+   forward and backward from the PV, hitting modules on either side.
+   Investigate adapting ``generate_complete_events`` to sort modules
+   relative to PV z and propagate in both directions.
 """
 
 from __future__ import annotations
@@ -43,6 +52,7 @@ import numpy as np
 
 from lhcb_velo_toy.core.types import StateVector, Position
 from lhcb_velo_toy.generation.geometry.base import Geometry
+from lhcb_velo_toy.generation.generators.base import EventGenerator
 from lhcb_velo_toy.generation.entities.event import Event
 from lhcb_velo_toy.generation.entities.hit import Hit
 from lhcb_velo_toy.generation.entities.track import Track
@@ -50,7 +60,7 @@ from lhcb_velo_toy.generation.entities.module import Module
 from lhcb_velo_toy.generation.entities.primary_vertex import PrimaryVertex
 
 
-class StateEventGenerator:
+class StateEventGenerator(EventGenerator):
     """
     Event generator using LHCb state vectors.
 
@@ -150,7 +160,7 @@ class StateEventGenerator:
         collision_noise: float = 1e-4,
     ) -> None:
         """Initialize the event generator."""
-        self.detector_geometry = detector_geometry
+        super().__init__(detector_geometry)
         self.primary_vertices: list[Position] = (
             primary_vertices if primary_vertices is not None else []
         )
