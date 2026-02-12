@@ -9,7 +9,7 @@ A Python package for simulating and analyzing particle tracking in the LHCb VELO
 Hamiltonian-based track reconstruction, quantum algorithm exploration, and
 performance validation.
 
-**Authors:** George William Scriven · Xenofon Chiotopoulos · Alain Chancé  
+**Authors:** George William Scriven · Xenofon Chiotopoulos  
 **Institutes:** Maastricht University · UHasselt · Nikhef
 
 ## Overview
