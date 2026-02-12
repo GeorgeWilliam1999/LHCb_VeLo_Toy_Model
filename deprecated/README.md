@@ -10,13 +10,13 @@ modular, installable `lhcb_velo_toy` package under `src/`.
 
 | Old file | New location |
 |----------|-------------|
-| `state_event_model.py` | `src/lhcb_velo_toy/generation/models/` (split into `hit.py`, `track.py`, `module.py`, `event.py`, `segment.py`) |
+| `state_event_model.py` | `src/lhcb_velo_toy/generation/entities/` (split into `hit.py`, `track.py`, `module.py`, `event.py`, `primary_vertex.py`) |
 | `state_event_generator.py` | `src/lhcb_velo_toy/generation/generators/state_event.py` |
-| `multi_scattering_generator.py` | *Not yet migrated* |
+| `multi_scattering_generator.py` | *Not migrated — functionality subsumed by `StateEventGenerator`* |
 | `hamiltonian.py` | `src/lhcb_velo_toy/solvers/hamiltonians/base.py` |
 | `simple_hamiltonian.py` | `src/lhcb_velo_toy/solvers/hamiltonians/simple.py` |
 | `simple_hamiltonian_fast.py` | `src/lhcb_velo_toy/solvers/hamiltonians/fast.py` |
-| `simple_hamiltonian_cpp.py` | *Not yet migrated* |
+| `simple_hamiltonian_cpp.py` | *Not migrated — C++ extension not included in v2.0* |
 | `toy_validator.py` | `src/lhcb_velo_toy/analysis/validation/validator.py` |
 | `lhcb_tracking_plots.py` | `src/lhcb_velo_toy/analysis/plotting/` (split into `event_display.py`, `performance.py`) |
 | `HHL.py` | `src/lhcb_velo_toy/solvers/quantum/hhl.py` |

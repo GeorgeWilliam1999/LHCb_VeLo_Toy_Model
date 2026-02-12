@@ -5,5 +5,5 @@
 \beamer@sectionintoc {5}{Key Differences}{10}{0}{5}
 \beamer@sectionintoc {6}{Segments: On-Demand Construction}{12}{0}{6}
 \beamer@sectionintoc {7}{Solver Architecture}{13}{0}{7}
-\beamer@sectionintoc {8}{Visualisation}{14}{0}{8}
+\beamer@sectionintoc {8}{Validation \& Reconstruction}{14}{0}{8}
 \beamer@sectionintoc {9}{Summary}{15}{0}{9}

@@ -210,7 +210,6 @@ flowchart LR
 │     Output: Event containing:                                               │
 │     • Truth tracks (T_1, T_2, ..., T_n)                                     │
 │     • Hits on modules                                                       │
-│     • Segments connecting adjacent hits                                     │
 │                                                                             │
 │                                  │                                          │
 │                                  ▼                                          │
@@ -620,13 +619,17 @@ classDiagram
     class HHL {
         +int n_qubits
         +QuantumCircuit circuit
-        +solve(A, b) ndarray
-        +build_circuit()
+        +build_circuit() QuantumCircuit
+        +run() dict
+        +get_solution() ndarray
+        +simulate_statevector() Statevector
     }
     
     class OneBitHHL {
-        +solve(A, b) ndarray
-        +estimate_eigenvalue()
+        +build_circuit() QuantumCircuit
+        +run(use_noise_model, backend_name) dict
+        +get_solution(counts) tuple
+        +get_success_probability() float
     }
     
     Hamiltonian <|-- SimpleHamiltonian
@@ -809,7 +812,7 @@ flowchart LR
     
     subgraph PERFORMANCE["performance.py"]
         P_IN["INPUT:<br/>metrics: list[dict]<br/>labels: list[str]"]
-        P_FN["plot_efficiency_vs_noise()<br/>plot_ghost_rate()<br/>plot_roc_curve()"]
+        P_FN["plot_efficiency_vs_parameter()<br/>plot_ghost_rate_vs_parameter()<br/>generate_performance_report()"]
         P_OUT["OUTPUT:<br/>matplotlib Figure<br/>performance plots"]
         P_IN --> P_FN --> P_OUT
     end
@@ -902,11 +905,13 @@ erDiagram
     }
     
     MATCH {
-        int reco_track_id
-        int truth_track_id
+        int best_truth_id
+        int rec_hits
+        int truth_hits
+        int correct_hits
         float purity
         float hit_efficiency
-        bool is_ghost
+        bool accepted
         bool is_clone
     }
 ```
@@ -964,7 +969,6 @@ truth_event = generator.generate_complete_events()
 # STEP 5: (Optional) Add noise
 # ═══════════════════════════════════════════════════════════════════════════
 noisy_event = generator.make_noisy_event(
-    event=truth_event,
     drop_rate=0.05,    # 5% hit inefficiency
     ghost_rate=0.02    # 2% ghost hit rate
 )
@@ -999,14 +1003,14 @@ validator = EventValidator(
     reco_tracks=reco_tracks
 )
 
-metrics = validator.match_tracks(purity_threshold=0.75)
+matches, metrics = validator.match_tracks(purity_min=0.75)
 print(f"Efficiency: {metrics['efficiency']:.2%}")
 print(f"Ghost Rate: {metrics['ghost_rate']:.2%}")
 
 # ═══════════════════════════════════════════════════════════════════════════
 # STEP 10: Visualize
 # ═══════════════════════════════════════════════════════════════════════════
-truth_event.plot_segments()
+truth_event.plot_event(title="Truth Event")
 ```
 
 ---
@@ -1029,4 +1033,4 @@ truth_event.plot_segments()
 
 ---
 
-*Last updated: January 2026*
+*Last updated: February 2026*

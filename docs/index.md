@@ -13,12 +13,12 @@ Welcome to the documentation for the **LHCb VELO Toy Model** package—a compreh
 | [**API Reference**](API_REFERENCE.md) | Complete API documentation for all classes, methods, and functions |
 | [**Flow Diagrams**](FLOW_DIAGRAMS.md) | Mermaid diagrams showing data flow, architecture, and class hierarchies |
 | [**Dependencies**](DEPENDENCIES.md) | Package dependencies, I/O specifications, and requirements |
+| [**Workflow Overview**](WORKFLOW_OVERVIEW.md) | End-to-end workflow guide with step-by-step examples |
 
 ### Project Planning
 
 | Document | Description |
 |----------|-------------|
-| [**Restructuring Proposal**](../RESTRUCTURING_PROPOSAL.md) | Proposed package restructuring into submodules |
 | [**README**](../README.md) | Project overview, installation, and quick start |
 
 ---
@@ -55,7 +55,7 @@ lhcb_velo_toy/
 ├── generation/           # Data generation module
 │   ├── entities/        # Hit, Track, Module, Event, PrimaryVertex
 │   ├── geometry/        # Geometry, PlaneGeometry, RectangularVoidGeometry
-│   └── generators/      # StateEventGenerator, MultiScatteringGenerator
+│   └── generators/      # StateEventGenerator
 │
 ├── solvers/             # Solving algorithms
 │   ├── hamiltonians/    # Hamiltonian (ABC), SimpleHamiltonian, Fast
@@ -124,8 +124,10 @@ noisy_event = gen.make_noisy_event(drop_rate=0.05, ghost_rate=0.1)
 
 # 4. Reconstruct tracks
 ham = SimpleHamiltonian(epsilon=0.01, gamma=1.5, delta=1.0)
-ham.construct_hamiltonian(noisy_event)
-solution = ham.solve_classicaly()
+A, b = ham.construct_hamiltonian(noisy_event)
+
+from lhcb_velo_toy.solvers.classical import solve_direct
+solution = solve_direct(A, b)
 reco_tracks = get_tracks(ham, solution, noisy_event)
 
 # 5. Validate

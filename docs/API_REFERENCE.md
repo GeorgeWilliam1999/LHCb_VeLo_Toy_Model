@@ -1,7 +1,7 @@
 # LHCb VELO Toy Model - API Reference
 
-> **Future Package Name**: `lhcb-velo-toy`  
-> **Version**: 2.0.0 (proposed)  
+> **Package Name**: `lhcb-velo-toy`  
+> **Version**: 2.0.0  
 > **License**: MIT
 
 ---
@@ -62,8 +62,11 @@ event = gen.generate_complete_events()
 
 # Reconstruct tracks
 ham = SimpleHamiltonian(epsilon=0.01, gamma=1.0, delta=1.0)
-ham.construct_hamiltonian(event)
-solution = ham.solve_classicaly()
+A, b = ham.construct_hamiltonian(event)
+
+from lhcb_velo_toy.solvers.classical import solve_direct
+solution = solve_direct(A, b)
+
 tracks = get_tracks(ham, solution, event)
 ```
 
@@ -148,8 +151,8 @@ where $\vec{v}_i$ is the direction vector of segment $i$.
 
 **Example:**
 ```python
-seg1 = Segment([hit1, hit2], segment_id=0)
-seg2 = Segment([hit2, hit3], segment_id=1)
+seg1 = Segment(hit_start=hit1, hit_end=hit2, segment_id=0)
+seg2 = Segment(hit_start=hit2, hit_end=hit3, segment_id=1)
 
 # Check angular compatibility
 cos_angle = seg1 * seg2
@@ -171,10 +174,17 @@ class Track:
     hit_ids: list[int]         # IDs of hits on this track (ordered by z)
 ```
 
+**Properties:**
+
+| Property | Returns | Description |
+|----------|---------|-------------|
+| `n_hits` | `int` | Number of hits on this track |
+
 **Methods:**
 
 | Method | Returns | Description |
 |--------|---------|-------------|
+| `add_hit_id(hit_id)` | `None` | Append a hit ID to this track |
 | `to_dict()` | `dict` | JSON-serializable dictionary |
 | `from_dict(data)` | `Track` | Create Track from dictionary |
 
@@ -254,6 +264,15 @@ Event
     └── hit_ids → references to Hits
 ```
 
+**Properties:**
+
+| Property | Returns | Description |
+|----------|---------|-------------|
+| `n_primary_vertices` | `int` | Number of primary vertices |
+| `n_tracks` | `int` | Number of tracks |
+| `n_hits` | `int` | Number of hits |
+| `n_modules` | `int` | Number of modules |
+
 **Methods:**
 
 | Method | Returns | Description |
@@ -265,6 +284,10 @@ Event
 | `get_hit_by_id(hit_id)` | `Hit` | Lookup hit by ID |
 | `get_hits_by_ids(hit_ids)` | `list[Hit]` | Lookup multiple hits |
 | `get_track_by_id(track_id)` | `Track` | Lookup track by ID |
+| `get_hits_by_module(module_id)` | `list[Hit]` | Get all hits on a module |
+| `get_hits_by_track(track_id)` | `list[Hit]` | Get all hits belonging to a track |
+| `get_tracks_by_pv(pv_id)` | `list[Track]` | Get tracks from a primary vertex |
+| `plot_event(title, show_ghosts, show_modules)` | `None` | Interactive 3D matplotlib visualisation |
 
 ---
 
@@ -282,25 +305,20 @@ class PrimaryVertex:
     track_ids: list[int]    # IDs of tracks from this vertex
 ```
 
+**Properties:**
+
+| Property | Returns | Description |
+|----------|---------|-------------|
+| `position` | `tuple[float, float, float]` | (x, y, z) vertex position |
+| `n_tracks` | `int` | Number of associated tracks |
+
 **Methods:**
 
 | Method | Returns | Description |
 |--------|---------|-------------|
+| `add_track(track_id)` | `None` | Associate a track with this vertex |
 | `to_dict()` | `dict` | JSON-serializable dictionary |
 | `from_dict(data)` | `PrimaryVertex` | Create from dictionary |
-
-**Methods:**
-
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `plot_segments()` | `None` | Interactive 3D visualization |
-| `save_plot_segments(filename, params=None)` | `None` | Save visualization to file |
-
-**Visualization:**
-- **Red dots**: Hits belonging to segments
-- **Blue lines**: Track segments
-- **Green X**: Ghost hits (not in any segment)
-- **Gray surfaces**: Detector planes
 
 ---
 
@@ -410,7 +428,7 @@ class StateEventGenerator:
         theta_max: float = 0.2,
         events: int = 3,
         n_particles: list[int] = None,
-        particles: list[dict] = None,
+        particles: list[list[dict]] = None,
         measurement_error: float = 0.0,
         collision_noise: float = 0.1e-3
     )
@@ -506,33 +524,8 @@ true_event = gen.generate_complete_events()
 noisy_event = gen.make_noisy_event(drop_rate=0.1, ghost_rate=0.1)
 
 # Visualize
-true_event.plot_segments()
+true_event.plot_event(title="Generated Event")
 ```
-
----
-
-#### `class MultiScatteringGenerator`
-
-Legacy event generator focused on multiple scattering physics.
-
-```python
-@dataclass
-class MultiScatteringGenerator:
-    detector_geometry: SimpleDetectorGeometry
-    primary_vertices: list = field(default_factory=list)
-    phi_min: float = 0.0
-    phi_max: float = 2*np.pi
-    theta_min: float = 0.0
-    theta_max: float = np.pi/10
-    rng: np.random.Generator = np.random.default_rng()
-```
-
-**Methods:**
-
-| Method | Parameters | Returns | Description |
-|--------|------------|---------|-------------|
-| `generate_random_primary_vertices(n_events, sigma)` | `int, tuple` | `list[tuple]` | Generate vertices |
-| `generate_event(n_particles, n_events, sigma)` | `int, int, tuple` | `Event` | Generate events |
 
 ---
 
@@ -645,35 +638,6 @@ class SimpleHamiltonianFast(Hamiltonian):
 
 ---
 
-#### `class SimpleHamiltonianCPPWrapper(Hamiltonian)`
-
-C++/CUDA accelerated implementation wrapper.
-
-```python
-class SimpleHamiltonianCPPWrapper(Hamiltonian):
-    def __init__(
-        self,
-        epsilon: float,
-        gamma: float,
-        delta: float,
-        use_cuda: bool = False
-    )
-```
-
-**Requirements:**
-```bash
-cd LHCB_Velo_Toy_Models/cpp_hamiltonian
-pip install .
-```
-
-**Performance:**
-| Event Size | Python | C++ CPU | CUDA GPU |
-|------------|--------|---------|----------|
-| 10,000 | 3s | 0.1s | 0.02s |
-| 100,000 | 300s | 5s | 0.5s |
-
----
-
 ### Classical Solvers
 
 #### `solve_classicaly()`
@@ -768,6 +732,7 @@ class OneBQF:
 | `build_circuit()` | `QuantumCircuit` | Construct 1-bit HHL circuit |
 | `run(use_noise_model=False, backend_name='ibm_torino')` | `dict` | Execute with optional noise |
 | `get_solution(counts=None)` | `tuple[np.ndarray, int]` | Solution vector and success count |
+| `get_success_probability()` | `float` | Post-selection success probability |
 
 **Noise Model Execution:**
 ```python
@@ -812,23 +777,26 @@ def find_segments(s0: Segment, active: list[Segment]) -> list[Segment]:
 
 ---
 
-#### `get_tracks(ham, classical_solution, event)`
+#### `get_tracks(hamiltonian, solution, event, threshold)`
 
 Extract tracks from Hamiltonian solution.
 
 ```python
 def get_tracks(
-    ham: SimpleHamiltonian,
-    classical_solution: np.ndarray,
-    event: StateEventGenerator
+    hamiltonian: Hamiltonian,
+    solution: np.ndarray,
+    event: Union[Event, StateEventGenerator],
+    threshold: float = 0.0,
 ) -> list[Track]:
     """
     Groups connected active segments into track candidates.
     
     Algorithm:
-    1. Filter segments where activation > min value
-    2. Grow tracks via depth-first search from arbitrary seed
-    3. Convert segment chains to Track objects
+    1. Filter segments where activation > threshold
+    2. Build adjacency graph of connected segments
+    3. Find connected components via depth-first search
+    4. Convert each component to a Track object
+    5. Order hits within each track by z coordinate
     
     Returns list of reconstructed Track objects.
     """
@@ -836,17 +804,17 @@ def get_tracks(
 
 ---
 
-#### `construct_event(detector_geometry, primary_vertices, tracks, hits, modules)`
+#### `construct_event(detector_geometry, tracks, hits, modules, primary_vertices)`
 
 Construct an Event object from components.
 
 ```python
 def construct_event(
     detector_geometry: Geometry,
-    primary_vertices: list[PrimaryVertex],
     tracks: list[Track],
     hits: list[Hit],
-    modules: list[Module]
+    modules: list[Module],
+    primary_vertices: Optional[list[PrimaryVertex]] = None,
 ) -> Event:
     """Factory function for creating Event objects."""
 ```
@@ -870,7 +838,8 @@ from lhcb_velo_toy.solvers.reconstruction import (
 |----------|------------|---------|-------------|
 | `get_segments_from_track(track, event)` | Track, Event | `list[Segment]` | Segments for one track (with track_id, pv_id) |
 | `get_segments_from_event(event)` | Event | `list[Segment]` | All segments from all tracks |
-| `get_candidate_segments(event, max_delta_z)` | Event, float | `list[Segment]` | All possible candidate segments |
+| `get_candidate_segments(event, max_delta_z=None)` | Event, float (opt.) | `list[Segment]` | All possible candidate segments |
+| `get_all_possible_segments(event, max_z_gap=1)` | Event, int | `list[Segment]` | All hit-to-hit segment candidates |
 
 ---
 
@@ -957,28 +926,19 @@ This ensures globally optimal matching rather than first-come-first-served.
 
 #### Core Plotting Functions
 
-```python
-def plot_all(
-    df: pd.DataFrame,
-    out_prefix: str = "perf",
-    ms_fixed: float = 2e-4,
-    save_csv: bool = True
-) -> dict:
-    """
-    Generate all standard LHCb-style plots.
-    
-    Returns dict with file paths.
-    """
-```
-
-**Generated Plots:**
-
-| Plot | X-axis | Y-axis | Description |
-|------|--------|--------|-------------|
-| Efficiency vs MS | Multiple scattering | Reco efficiency | Track finding performance |
-| Ghost rate vs MS | Multiple scattering | Ghost rate | Fake track rate |
-| Efficiency vs Drop | Hit inefficiency | Reco efficiency | Robustness to dropouts |
-| Purity vs ε | Epsilon threshold | Mean purity | Parameter optimization |
+| Function | Parameters | Returns | Description |
+|----------|------------|---------|-------------|
+| `plot_event_3d(event, title, show_modules)` | Event, str, bool | `Figure` | 3D event visualisation with detector planes |
+| `plot_segments_3d(event, segments, title)` | Event, list, str | `Figure` | 3D segment visualisation |
+| `plot_efficiency_vs_parameter(params, values, ...)` | arrays | `Figure` | Efficiency vs parameter curve |
+| `plot_ghost_rate_vs_parameter(params, values, ...)` | arrays | `Figure` | Ghost rate vs parameter curve |
+| `plot_purity_distribution(purities, ...)` | array | `Figure` | Purity histogram |
+| `plot_comparison(classical, quantum, params, ...)` | arrays | `Figure` | Side-by-side solver comparison |
+| `generate_performance_report(df, output_dir, prefix)` | DataFrame, str, str | `dict[str, str]` | Generate all standard plots and save to disk |
+| `plot_hit_distribution(event)` | Event | `Figure` | Hit spatial distribution |
+| `plot_reco_vs_truth(event, reco_tracks)` | Event, list | `Figure` | Overlay reco vs truth tracks |
+| `save_event_animation(event, filepath, ...)` | Event, str | `None` | Save rotating 3D animation |
+| `set_lhcb_style()` | — | `None` | Apply LHCb publication style to matplotlib |
 
 ---
 
@@ -994,9 +954,10 @@ HitID = int
 TrackID = int
 ModuleID = int
 SegmentID = int
+PVID = int
+StateVector = dict[str, float]  # {'x', 'y', 'z', 'tx', 'ty', 'p/q'}
 
 Position = tuple[float, float, float]  # (x, y, z)
-State = dict[str, float]  # {'x': ..., 'y': ..., 'z': ..., 'tx': ..., 'ty': ..., 'p/q': ...}
 
 # Geometry iteration
 GeometryItem = tuple[ModuleID, float, float, float]  # (module_id, lx, ly, z)
@@ -1026,7 +987,7 @@ class SupportsIteration(Protocol):
 | Exception | Raised When | Resolution |
 |-----------|-------------|------------|
 | `ValueError("Not initialised")` | Calling `solve_classicaly()` before `construct_hamiltonian()` | Call `construct_hamiltonian()` first |
-| `ImportError("C++ module not available")` | Using `SimpleHamiltonianCPPWrapper` without C++ build | Build C++ extension |
+| `ImportError` | Missing optional dependency (e.g. Qiskit for quantum) | Install with `pip install -e ".[quantum]"` |
 | `AssertionError` | Invalid primary vertex count | Ensure `len(vertices) == events` |
 
 ---
@@ -1053,6 +1014,6 @@ DEFAULT_THETA_D = 1e-4         # ERF smoothing
 
 ## See Also
 
-- [RESTRUCTURING_PROPOSAL.md](RESTRUCTURING_PROPOSAL.md) - Package restructuring plan
 - [FLOW_DIAGRAMS.md](FLOW_DIAGRAMS.md) - Data flow and architecture diagrams
 - [DEPENDENCIES.md](DEPENDENCIES.md) - Dependencies and requirements
+- [WORKFLOW_OVERVIEW.md](WORKFLOW_OVERVIEW.md) - End-to-end workflow guide

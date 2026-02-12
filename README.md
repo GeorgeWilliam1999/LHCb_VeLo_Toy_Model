@@ -20,7 +20,7 @@ the LHCb experiment at CERN's Large Hadron Collider. This toy model simulates:
 - **Particle collision events** with configurable detector geometry
 - **Multiple scattering effects** as particles traverse detector material
 - **Track reconstruction** using Hamiltonian-based optimization
-- **Quantum algorithms** (HHL) for solving the track-finding linear system
+- **Quantum algorithms** (HHL and OneBQF) for solving the track-finding linear system
 - **Validation metrics** following LHCb conventions
 
 ## Installation
@@ -114,22 +114,20 @@ validator = EventValidator(
     rec_tracks=reco_tracks
 )
 
-# Compute LHCb-style metrics
-metrics = validator.compute_metrics(
-    purity_min=0.7,
-    hit_efficiency_min=0.7
-)
+# Compute LHCb-style metrics (non-greedy matching)
+matches, metrics = validator.match_tracks(purity_min=0.7)
 
-# Print results
-validator.print_metrics()
+print(f"Efficiency:  {metrics['efficiency']:.1%}")
+print(f"Ghost rate:  {metrics['ghost_rate']:.1%}")
+print(f"Mean purity: {metrics['mean_purity']:.3f}")
 ```
 
 ### 4. Visualise an Event
 
 ```python
-from lhcb_velo_toy.analysis.plotting import plot_event_display
+from lhcb_velo_toy.analysis.plotting import plot_event_3d
 
-plot_event_display(generator, true_event, show_modules=True)
+fig = plot_event_3d(true_event, title="Truth Event", show_modules=True)
 ```
 
 ## Package Structure
@@ -145,11 +143,11 @@ LHCb_VeLo_Toy_Model/
 │       ├── generation/         # Event simulation
 │       │   ├── generators/     #   StateEventGenerator
 │       │   ├── geometry/       #   PlaneGeometry, RectangularVoidGeometry
-│       │   └── models/         #   Hit, Track, Module, Event, Segment
+│       │   └── entities/       #   Hit, Track, Module, Event, PrimaryVertex
 │       ├── solvers/            # Track reconstruction
 │       │   ├── hamiltonians/   #   Hamiltonian ABC, Simple, Fast
 │       │   ├── classical/      #   solve_direct, solve_conjugate_gradient
-│       │   ├── quantum/        #   HHL, OneBitHHL
+│       │   ├── quantum/        #   HHL, OneBQF (1-Bit HHL)
 │       │   └── reconstruction/ #   track_finder, get_tracks
 │       └── analysis/           # Validation & plots
 │           ├── validation/     #   EventValidator, Match
@@ -172,7 +170,7 @@ LHCb_VeLo_Toy_Model/
 | `generators.state_event` | Generate events using LHCb state vectors (x, y, tx, ty, p/q) |
 | `geometry.plane` | Planar detector module geometry |
 | `geometry.rectangular_void` | Geometry with a rectangular beam-pipe void |
-| `models.event` | `Event` dataclass — hits, tracks, modules, primary vertices |
+| `entities.event` | `Event` dataclass — hits, tracks, modules, primary vertices |
 
 ### Solvers (`lhcb_velo_toy.solvers`)
 
@@ -182,7 +180,7 @@ LHCb_VeLo_Toy_Model/
 | `hamiltonians.fast` | Optimised vectorised implementation |
 | `classical.solvers` | Direct (LU) and conjugate-gradient solvers |
 | `quantum.hhl` | Full HHL algorithm for linear systems |
-| `quantum.one_bit_hhl` | 1-bit HHL with Suzuki-Trotter decomposition |
+| `quantum.one_bit_hhl` | OneBQF — 1-bit HHL with Suzuki-Trotter decomposition |
 | `reconstruction.track_finder` | Extract tracks from solution vectors |
 
 ### Analysis (`lhcb_velo_toy.analysis`)
@@ -253,11 +251,10 @@ global matching (not first-come-first-served).
 
 ### Classical Solver
 
-| Implementation | Events/sec | Notes |
-|----------------|------------|-------|
-| `simple_hamiltonian` | ~10 | Reference implementation |
-| `simple_hamiltonian_fast` | ~100 | Vectorized operations |
-| `simple_hamiltonian_cpp` | ~1000 | Requires C++ compilation |
+| Implementation | Notes |
+|----------------|-------|
+| `SimpleHamiltonian` | Reference implementation |
+| `SimpleHamiltonianFast` | Vectorised COO construction, auto solver selection |
 
 ### Quantum (HHL) Limitations
 
@@ -267,9 +264,13 @@ global matching (not first-come-first-served).
 
 ## Examples
 
-- `demo_workflow.ipynb` — End-to-end notebook: generate → solve → validate → visualise
-- `test_pipeline.py` — Automated integration test of the full pipeline
-- `deprecated/HHL.py` — Standalone HHL example (old code, for reference)
+| Notebook | Description |
+|----------|-------------|
+| `notebooks/classical_end_to_end.ipynb` | Full classical pipeline with scalability and noise scans |
+| `notebooks/quantum_hhl_end_to_end.ipynb` | HHL quantum solver with time-qubit sweep |
+| `notebooks/quantum_1bqf_end_to_end.ipynb` | OneBQF (1-Bit HHL) solver with shot study and circuit comparison |
+| `demo_workflow.ipynb` | Quick-start demo: generate → solve → validate → visualise |
+| `test_pipeline.py` | Automated integration test of the full pipeline |
 
 ## Contributing
 

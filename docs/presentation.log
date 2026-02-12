@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.12.4)  10 FEB 2026 12:44
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.12.4)  12 FEB 2026 10:04
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1357,36 +1357,44 @@ hit.enc}] [14
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-01-04>
  ***********
-Package rerunfilecheck Info: File `presentation.out' has not changed.
-(rerunfilecheck)             Checksum: D29866D6AB8BB7CFACF8D671D0A12402;1113.
+
+
+Package rerunfilecheck Warning: File `presentation.out' has changed.
+(rerunfilecheck)                Rerun to get outlines right
+(rerunfilecheck)                or use package `bookmark'.
+
+Package rerunfilecheck Info: Checksums for `presentation.out':
+(rerunfilecheck)             Before: D29866D6AB8BB7CFACF8D671D0A12402;1113
+(rerunfilecheck)             After:  7A23804D08D046AB06FCEB15292491C3;1192.
  ) 
 Here is how much of TeX's memory you used:
- 28532 strings out of 474486
- 568202 string characters out of 5739979
+ 28535 strings out of 474486
+ 568263 string characters out of 5739979
  2147542 words of memory out of 5000000
- 50178 multiletter control sequences out of 15000+600000
+ 50181 multiletter control sequences out of 15000+600000
  640223 words of font info for 96 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  128i,11n,123p,390b,1654s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <C:/Users/GeorgeWilliam/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/l
-mmi7.pfb><C:/Users/GeorgeWilliam/AppData/Local/Programs/MiKTeX/fonts/type1/publ
-ic/lm/lmss10.pfb><C:/Users/GeorgeWilliam/AppData/Local/Programs/MiKTeX/fonts/ty
-pe1/public/lm/lmss12.pfb><C:/Users/GeorgeWilliam/AppData/Local/Programs/MiKTeX/
-fonts/type1/public/lm/lmss8.pfb><C:/Users/GeorgeWilliam/AppData/Local/Programs/
-MiKTeX/fonts/type1/public/lm/lmssbx10.pfb><C:/Users/GeorgeWilliam/AppData/Local
-/Programs/MiKTeX/fonts/type1/public/lm/lmsso10.pfb><C:/Users/GeorgeWilliam/AppD
-ata/Local/Programs/MiKTeX/fonts/type1/public/lm/lmsso8.pfb><C:/Users/GeorgeWill
-iam/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmsy10.pfb><C:/Users/Ge
-orgeWilliam/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmsy7.pfb><C:/U
-sers/GeorgeWilliam/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmtk10.p
+mmi10.pfb><C:/Users/GeorgeWilliam/AppData/Local/Programs/MiKTeX/fonts/type1/pub
+lic/lm/lmmi7.pfb><C:/Users/GeorgeWilliam/AppData/Local/Programs/MiKTeX/fonts/ty
+pe1/public/lm/lmss10.pfb><C:/Users/GeorgeWilliam/AppData/Local/Programs/MiKTeX/
+fonts/type1/public/lm/lmss12.pfb><C:/Users/GeorgeWilliam/AppData/Local/Programs
+/MiKTeX/fonts/type1/public/lm/lmss8.pfb><C:/Users/GeorgeWilliam/AppData/Local/P
+rograms/MiKTeX/fonts/type1/public/lm/lmssbx10.pfb><C:/Users/GeorgeWilliam/AppDa
+ta/Local/Programs/MiKTeX/fonts/type1/public/lm/lmsso10.pfb><C:/Users/GeorgeWill
+iam/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmsso8.pfb><C:/Users/Ge
+orgeWilliam/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmsy10.pfb><C:/
+Users/GeorgeWilliam/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmsy7.p
 fb><C:/Users/GeorgeWilliam/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/
-lmtt10.pfb><C:/Users/GeorgeWilliam/AppData/Local/Programs/MiKTeX/fonts/type1/pu
-blic/lm/lmtt8.pfb><C:/Users/GeorgeWilliam/AppData/Local/Programs/MiKTeX/fonts/t
-ype1/public/lm/lmtt9.pfb><C:/Users/GeorgeWilliam/AppData/Local/Programs/MiKTeX/
-fonts/type1/public/lm/lmtti10.pfb>
-Output written on presentation.pdf (17 pages, 350167 bytes).
+lmtk10.pfb><C:/Users/GeorgeWilliam/AppData/Local/Programs/MiKTeX/fonts/type1/pu
+blic/lm/lmtt10.pfb><C:/Users/GeorgeWilliam/AppData/Local/Programs/MiKTeX/fonts/
+type1/public/lm/lmtt8.pfb><C:/Users/GeorgeWilliam/AppData/Local/Programs/MiKTeX
+/fonts/type1/public/lm/lmtt9.pfb><C:/Users/GeorgeWilliam/AppData/Local/Programs
+/MiKTeX/fonts/type1/public/lm/lmtti10.pfb>
+Output written on presentation.pdf (17 pages, 355584 bytes).
 PDF statistics:
- 254 PDF objects out of 1000 (max. 8388607)
+ 259 PDF objects out of 1000 (max. 8388607)
  44 named destinations out of 1000 (max. 500000)
  163 words of extra memory for PDF output out of 10000 (max. 10000000)
 

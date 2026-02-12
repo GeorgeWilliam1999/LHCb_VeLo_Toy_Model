@@ -174,15 +174,8 @@ classDiagram
         -_construct_coo(event)
     }
     
-    class SimpleHamiltonianCPPWrapper {
-        +use_cuda: bool
-        -_cpp_hamiltonian: module
-        +construct_hamiltonian(event) tuple
-    }
-    
     Hamiltonian <|-- SimpleHamiltonian
     Hamiltonian <|-- SimpleHamiltonianFast
-    Hamiltonian <|-- SimpleHamiltonianCPPWrapper
     
     class Hit {
         +hit_id: int
@@ -275,43 +268,45 @@ graph TD
     end
     
     subgraph generation
-        SEM[state_event_model.py]
-        SEG[state_event_generator.py]
-        MSG[multi_scattering_generator.py]
+        ENT[entities/]
+        GEO2[geometry/]
+        GEN2[generators/state_event.py]
     end
     
     subgraph solvers
-        HAM[hamiltonian.py]
-        SH[simple_hamiltonian.py]
-        SHF[simple_hamiltonian_fast.py]
-        SHC[simple_hamiltonian_cpp.py]
-        HHL[hhl_algorithm.py]
-        OBQ[OneBQF.py]
+        HAM[hamiltonians/base.py]
+        SH[hamiltonians/simple.py]
+        SHF[hamiltonians/fast.py]
+        HHL[quantum/hhl.py]
+        OBQ[quantum/one_bit_hhl.py]
+        CLS2[classical/solvers.py]
+        REC[reconstruction/]
     end
     
     subgraph analysis
-        TV[toy_validator.py]
-        LTP[lhcb_tracking_plots.py]
+        TV[validation/validator.py]
+        LTP[plotting/]
     end
     
     %% External dependencies
-    NP --> SEM
-    NP --> SEG
-    NP --> MSG
+    NP --> ENT
+    NP --> GEO2
+    NP --> GEN2
     NP --> HAM
     NP --> SH
     NP --> SHF
-    NP --> SHC
+    NP --> CLS2
     NP --> TV
     NP --> LTP
     NP --> HHL
     NP --> OBQ
+    NP --> REC
     
     SP --> SH
     SP --> SHF
     SP --> HAM
+    SP --> CLS2
     
-    MPL --> SEM
     MPL --> LTP
     
     PD --> TV
@@ -324,15 +319,14 @@ graph TD
     IBM --> OBQ
     
     %% Internal dependencies
-    SEM --> SEG
-    SEG --> SH
-    SEG --> SHF
-    SEG --> SHC
+    ENT --> GEN2
+    GEO2 --> GEN2
+    GEN2 --> SH
+    GEN2 --> SHF
     HAM --> SH
     HAM --> SHF
-    HAM --> SHC
     
-    SEM --> TV
+    ENT --> TV
     SH --> TV
     TV --> LTP
     
@@ -831,4 +825,4 @@ erDiagram
 
 - [API_REFERENCE.md](API_REFERENCE.md) - Detailed class and method documentation
 - [DEPENDENCIES.md](DEPENDENCIES.md) - Package dependencies
-- [RESTRUCTURING_PROPOSAL.md](../RESTRUCTURING_PROPOSAL.md) - Package restructuring plan
+- [WORKFLOW_OVERVIEW.md](WORKFLOW_OVERVIEW.md) - End-to-end workflow guide

@@ -313,64 +313,64 @@ class Geometry(ABC):
 \begin{frame}{End-to-End Pipeline}
   \begin{center}
   \begin{tikzpicture}[
-      node distance=0.5cm and 0.4cm,
-      stage/.style={draw, rounded corners=4pt, minimum width=2.5cm,
-                    minimum height=0.75cm, align=center,
+      node distance=0.5cm and 0.6cm,
+      stage/.style={draw, rounded corners=4pt, minimum width=2.4cm,
+                    minimum height=0.7cm, align=center,
                     font=\footnotesize\bfseries},
       data/.style={font=\scriptsize\ttfamily, text=lhcbgray},
       arr/.style={-{Stealth[length=5pt]}, thick, lhcbblue},
     ]
-    % Row 1 — generation
+    % Row 1 — generation (green)
     \node[stage, fill=lhcbgreen!12] (geo)
       {1.\ Define\\Geometry};
-    \node[stage, fill=lhcbgreen!12, right=0.7cm of geo] (gen)
+    \node[stage, fill=lhcbgreen!12, right=0.6cm of geo] (gen)
       {2.\ Generate\\Events};
-    \node[stage, fill=lhcbgreen!12, right=0.7cm of gen] (noise)
+    \node[stage, fill=lhcbgreen!12, right=0.6cm of gen] (noise)
       {3.\ Add\\Noise};
 
-    % Row 2 — solving
-    \node[stage, fill=lhcbblue!12, right=0.7cm of noise] (ham)
+    % Row 2 — solvers (blue), below row 1
+    \node[stage, fill=lhcbblue!12, below=1.2cm of geo] (ham)
       {4.\ Build\\Hamiltonian};
-    \node[stage, fill=lhcbblue!12, below=0.8cm of ham] (solve)
+    \node[stage, fill=lhcbblue!12, right=0.6cm of ham] (solve)
       {5.\ Solve\\$Ax = b$};
-
-    % Row 3 — reconstruction + analysis
-    \node[stage, fill=lhcbblue!12, left=0.7cm of solve] (reco)
+    \node[stage, fill=lhcbblue!12, right=0.6cm of solve] (reco)
       {6.\ Extract\\Tracks};
-    \node[stage, fill=lhcbred!12, left=0.7cm of reco] (val)
+
+    % Row 3 — analysis (red), below row 2
+    \node[stage, fill=lhcbred!12, below=1.2cm of ham] (val)
       {7.\ Validate};
-    \node[stage, fill=lhcbred!12, left=0.7cm of val] (plot)
+    \node[stage, fill=lhcbred!12, right=0.6cm of val] (plot)
       {8.\ Visualise};
 
-    % Arrows
+    % Arrows — across rows
     \draw[arr] (geo)   -- (gen);
     \draw[arr] (gen)   -- (noise);
-    \draw[arr] (noise) -- (ham);
+    \draw[arr] (noise) -- (ham);     % down to row 2
     \draw[arr] (ham)   -- (solve);
     \draw[arr] (solve) -- (reco);
-    \draw[arr] (reco)  -- (val);
+    \draw[arr] (reco)  -- (val);     % down to row 3
     \draw[arr] (val)   -- (plot);
 
-    % Data labels
-    \node[data, below=1pt of geo]   {PlaneGeometry};
-    \node[data, below=1pt of gen]   {Event};
-    \node[data, below=1pt of noise] {noisy Event};
-    \node[data, above=1pt of ham]   {A (sparse), b};
-    \node[data, right=2pt of solve, anchor=west] {x (solution)};
-    \node[data, below=1pt of reco]  {list[Track]};
-    \node[data, below=1pt of val]   {metrics};
+    % Data labels (outside the fit boxes)
+    \node[data, above=1pt of geo]    {PlaneGeometry};
+    \node[data, above=1pt of gen]    {Event};
+    \node[data, above=1pt of noise]  {noisy Event};
+    \node[data, above=1pt of ham]    {A (sparse), b};
+    \node[data, above=1pt of solve]  {x (solution)};
+    \node[data, above=1pt of reco]   {list[Track]};
+    \node[data, above=1pt of val]    {metrics};
 
-    % Layer labels
+    % Layer boxes — each row is its own group, no overlap
     \begin{scope}[on background layer]
       \node[draw=lhcbgreen!50, fill=lhcbgreen!3, rounded corners,
-            fit=(geo)(gen)(noise), inner sep=6pt,
-            label={[font=\scriptsize\bfseries\color{lhcbgreen}]below:generation}] {};
+            fit=(geo)(gen)(noise), inner sep=8pt,
+            label={[font=\scriptsize\bfseries\color{lhcbgreen}]right:generation}] {};
       \node[draw=lhcbblue!50, fill=lhcbblue!3, rounded corners,
-            fit=(ham)(solve)(reco), inner sep=6pt,
-            label={[font=\scriptsize\bfseries\color{lhcbblue}]below:solvers}] {};
+            fit=(ham)(solve)(reco), inner sep=8pt,
+            label={[font=\scriptsize\bfseries\color{lhcbblue}]right:solvers}] {};
       \node[draw=lhcbred!50, fill=lhcbred!3, rounded corners,
-            fit=(val)(plot), inner sep=6pt,
-            label={[font=\scriptsize\bfseries\color{lhcbred}]below:analysis}] {};
+            fit=(val)(plot), inner sep=8pt,
+            label={[font=\scriptsize\bfseries\color{lhcbred}]right:analysis}] {};
     \end{scope}
   \end{tikzpicture}
   \end{center}
@@ -385,14 +385,18 @@ class Geometry(ABC):
 \begin{frame}[fragile]{Pipeline — Code Sketch}
 \begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
 # 1. Geometry
-geo = PlaneGeometry(n_modules=26, z_first=0, z_spacing=55,
-                     lx=50.0, ly=50.0)
+geo = PlaneGeometry(module_id=list(range(26)),
+        lx=[50.0]*26, ly=[50.0]*26,
+        z=[i * 55.0 for i in range(26)])
 # 2-3. Generation + noise
 gen = StateEventGenerator(detector_geometry=geo,
-        theta_max=0.40, phi_max=0.30, sigma_ms=0.01,
-        sigma_noise=0.02, n_events=1, n_tracks=8)
-event       = gen.events[0]
-noisy_event = gen.make_noisy_event(event, efficiency=0.95,
+        theta_max=0.40, phi_max=0.30,
+        collision_noise=0.01, measurement_error=0.02,
+        events=1, n_particles=[8])
+gen.generate_random_primary_vertices({'z': 50.0})
+gen.generate_particles([[{'type':'MIP','mass':139.6,'q':1}]*8])
+event       = gen.generate_complete_events()
+noisy_event = gen.make_noisy_event(drop_rate=0.05,
                                    ghost_rate=0.10)
 # 4. Hamiltonian
 ham = SimpleHamiltonian(epsilon=0.02, gamma=1.5,
@@ -400,7 +404,7 @@ ham = SimpleHamiltonian(epsilon=0.02, gamma=1.5,
 A, b = ham.construct_hamiltonian(gen, convolution=False)
 
 # 5. Solve
-x = ham.solve_classicaly()    # or solve_conjugate_gradient(A, b)
+x = ham.solve_classicaly()    # or solve_direct(A, b)
 
 # 6. Reconstruct
 reco_tracks = get_tracks(ham, x, gen, threshold=0.5)
@@ -581,44 +585,46 @@ seg = Segment(
   \textbf{Classical}: \texttt{solve\_direct} (dense),
   \texttt{solve\_conjugate\_gradient} (sparse, iterative),
   \texttt{select\_solver} (auto-dispatch).\\
-  \textbf{Quantum}: HHL and 1-bit HHL — ready for Qiskit integration.
+  \textbf{Quantum}: HHL and 1-bit HHL (OneBQF) — implemented with Qiskit.
 \end{frame}
 
 % ======================================================================
-\section{Visualisation}
+\section{Validation \& Reconstruction}
 % ======================================================================
 
 % ------------------------------------------------------------------
-\begin{frame}{3D Event Display}
+\begin{frame}{Non-Greedy Track Matching}
   \begin{columns}[T]
-    \begin{column}{0.50\textwidth}
-      \textbf{\color{lhcbred}Old} — \texttt{Event.plot\_segments()}
+    \begin{column}{0.48\textwidth}
+      \textbf{\color{lhcbred}Typical (greedy) approach}
       \begin{itemize}
-        \item Method on data class (671-line file)
-        \item Draws detector planes via\\
-              \texttt{plot\_surface} + \texttt{point\_on\_bulk}
-        \item Red dots, blue segment lines, green ghost crosses
-        \item Good visual output; poor separation
+        \item Match reconstructed tracks to truth tracks in
+              arbitrary order
+        \item First match ``wins'' — later, better matches
+              may be blocked
+        \item Can over-count clones and under-report efficiency
       \end{itemize}
     \end{column}
-    \begin{column}{0.50\textwidth}
-      \textbf{\color{lhcbgreen}New} — \texttt{event\_display.py}
+    \begin{column}{0.48\textwidth}
+      \textbf{\color{lhcbgreen}New non-greedy matching}
       \begin{itemize}
-        \item Standalone functions in \texttt{analysis/plotting/}
-        \item \texttt{plot\_event\_3d(event, ...)}
-        \item \texttt{plot\_segments\_3d(segments, event, ...)}
-        \item Same \texttt{plot\_surface} + \texttt{point\_on\_bulk} rendering,\\
-              now in a reusable \texttt{\_draw\_detector\_planes()} helper
-        \item Additional: \texttt{plot\_hit\_distribution()},
-              performance curves
+        \item Rank \emph{all} candidate matches by a composite
+              quality score: \texttt{purity $\times$ hit\_efficiency}
+        \item Assign the globally best match first, then
+              remove both tracks from the pool
+        \item Repeat until no candidates exceed the
+              \texttt{purity\_min} threshold
+        \item Remaining unmatched reco tracks $\to$ ghosts;
+              unmatched truth tracks $\to$ missed
       \end{itemize}
     \end{column}
   \end{columns}
 
-  \vspace{8pt}
-  \centering
+  \vspace{6pt}
   \footnotesize
-  Detector plane surfaces are drawn identically to the original — semi-transparent grey planes with beam-pipe void masking.
+  \textbf{Result}: metrics are globally optimal — no match ordering
+  artefacts. Implemented in \texttt{analysis/validation/validator.py}
+  (\texttt{EventValidator.match\_tracks}).
 \end{frame}
 
 % ======================================================================
@@ -638,10 +644,11 @@ seg = Segment(
 
     \item \textbf{On-demand segments} — computed in the solver, not pre-stored
 
-    \item \textbf{Decoupled visualisation} reusing the original detector-plane
-          rendering code
+    \item \textbf{Non-greedy track matching} — globally optimal assignment,
+          reliable efficiency and ghost-rate metrics
 
-    \item \textbf{Quantum-ready} scaffold (\texttt{solvers/quantum/})
+    \item \textbf{Quantum solvers} implemented and verified:
+          HHL (cosine sim $>0.99$) and 1-BQF ($3.4{\times}$ shallower circuit)
 
     \item \textbf{Full type coverage} with aliases, protocols, and
           \texttt{py.typed}
@@ -650,24 +657,28 @@ seg = Segment(
 \end{frame}
 
 % ------------------------------------------------------------------
-\begin{frame}{Call for Use Cases}
+\begin{frame}{A Common Framework — Let's Collaborate}
   \begin{center}
     \large
-    We would like to collect \textbf{use cases} from potential users!
+    The goal of this work is the \textbf{start of a common framework}\\
+    for quantum track-reconstruction research.
   \end{center}
 
   \vspace{6pt}
   \begin{itemize}
-    \item What detector configurations would you like to simulate?
-    \item Which physics scenarios are most relevant to your work?
-    \item What output formats or analysis hooks do you need?
-    \item Are there specific quantum-solver benchmarks you want to run?
+    \item \textbf{Shared codebase}: consistent event generation, Hamiltonian
+          construction, and validation across groups
+    \item \textbf{Easy to extend}: plug in new geometries, solvers, or
+          analysis modules without touching the core
+    \item \textbf{Reproducible benchmarks}: same metrics and matching
+          for fair comparison of classical vs.\ quantum approaches
+    \item \textbf{Open and pip-installable}: \texttt{pip install lhcb-velo-toy}
   \end{itemize}
 
-  \vspace{10pt}
+  \vspace{8pt}
   \centering
-  \footnotesize
-  Please get in touch — your input will shape the next development cycle.
+  We would love to \textbf{work together} on this —\\
+  contributions, feedback, and use cases are very welcome!
 \end{frame}
 
 % ------------------------------------------------------------------
