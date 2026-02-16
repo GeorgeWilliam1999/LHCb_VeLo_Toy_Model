@@ -13,12 +13,12 @@ Welcome to the documentation for the **LHCb VELO Toy Model** package—a compreh
 | [**API Reference**](API_REFERENCE.md) | Complete API documentation for all classes, methods, and functions |
 | [**Flow Diagrams**](FLOW_DIAGRAMS.md) | Mermaid diagrams showing data flow, architecture, and class hierarchies |
 | [**Dependencies**](DEPENDENCIES.md) | Package dependencies, I/O specifications, and requirements |
+| [**Workflow Overview**](WORKFLOW_OVERVIEW.md) | End-to-end workflow guide with step-by-step examples |
 
 ### Project Planning
 
 | Document | Description |
 |----------|-------------|
-| [**Restructuring Proposal**](../RESTRUCTURING_PROPOSAL.md) | Proposed package restructuring into submodules |
 | [**README**](../README.md) | Project overview, installation, and quick start |
 
 ---
@@ -30,7 +30,7 @@ Welcome to the documentation for the **LHCb VELO Toy Model** package—a compreh
 | I want to... | Go to... |
 |--------------|----------|
 | Generate simulated events | [StateEventGenerator API](API_REFERENCE.md#class-stateeventgenerator) |
-| Understand data structures | [Data Models](API_REFERENCE.md#data-models) |
+| Understand data structures | [Entities](API_REFERENCE.md#entities) |
 | Solve with classical methods | [Hamiltonians](API_REFERENCE.md#hamiltonians) |
 | Use quantum HHL | [Quantum Algorithms](API_REFERENCE.md#quantum-algorithms) |
 | Validate reconstruction | [EventValidator](API_REFERENCE.md#class-eventvalidator) |
@@ -42,7 +42,7 @@ Welcome to the documentation for the **LHCb VELO Toy Model** package—a compreh
 
 | Module | API Reference | Flow Diagram |
 |--------|---------------|--------------|
-| `generation` | [Data Models & Generators](API_REFERENCE.md#module-generation) | [Event Generation Flow](FLOW_DIAGRAMS.md#event-generation-flow) |
+| `generation` | [Entities & Generators](API_REFERENCE.md#module-generation) | [Event Generation Flow](FLOW_DIAGRAMS.md#event-generation-flow) |
 | `solvers` | [Hamiltonians & Algorithms](API_REFERENCE.md#module-solvers) | [Hamiltonian Flow](FLOW_DIAGRAMS.md#hamiltonian-construction-flow) |
 | `analysis` | [Validation & Plotting](API_REFERENCE.md#module-analysis) | [Validation Flow](FLOW_DIAGRAMS.md#validation-flow) |
 
@@ -53,9 +53,9 @@ Welcome to the documentation for the **LHCb VELO Toy Model** package—a compreh
 ```
 lhcb_velo_toy/
 ├── generation/           # Data generation module
-│   ├── models/          # Hit, Track, Module, Event, PrimaryVertex
+│   ├── entities/        # Hit, Track, Module, Event, PrimaryVertex
 │   ├── geometry/        # Geometry, PlaneGeometry, RectangularVoidGeometry
-│   └── generators/      # StateEventGenerator, MultiScatteringGenerator
+│   └── generators/      # StateEventGenerator
 │
 ├── solvers/             # Solving algorithms
 │   ├── hamiltonians/    # Hamiltonian (ABC), SimpleHamiltonian, Fast
@@ -124,8 +124,10 @@ noisy_event = gen.make_noisy_event(drop_rate=0.05, ghost_rate=0.1)
 
 # 4. Reconstruct tracks
 ham = SimpleHamiltonian(epsilon=0.01, gamma=1.5, delta=1.0)
-ham.construct_hamiltonian(noisy_event)
-solution = ham.solve_classicaly()
+A, b = ham.construct_hamiltonian(noisy_event)
+
+from lhcb_velo_toy.solvers.classical import solve_direct
+solution = solve_direct(A, b)
 reco_tracks = get_tracks(ham, solution, noisy_event)
 
 # 5. Validate

@@ -78,7 +78,7 @@ class PlaneGeometry(Geometry):
         IndexError
             If index is out of range.
         """
-        raise NotImplementedError
+        return (self.module_id[index], self.lx[index], self.ly[index], self.z[index])
     
     def point_on_bulk(self, state: StateVector) -> bool:
         """
@@ -102,16 +102,18 @@ class PlaneGeometry(Geometry):
         The check uses the first module's dimensions. For modules with
         varying sizes, override this method.
         """
-        raise NotImplementedError
+        x, y = state['x'], state['y']
+        return abs(x) <= self.lx[0] and abs(y) <= self.ly[0]
     
     def __len__(self) -> int:
         """Return the number of modules."""
-        raise NotImplementedError
+        return len(self.module_id)
     
     def __iter__(self) -> Iterator[tuple[int, float, float, float]]:
         """Iterate over (module_id, lx, ly, z) for each module."""
-        raise NotImplementedError
+        for i in range(len(self)):
+            yield self[i]
     
     def get_z_positions(self) -> list[float]:
         """Return the z positions of all modules."""
-        raise NotImplementedError
+        return list(self.z)

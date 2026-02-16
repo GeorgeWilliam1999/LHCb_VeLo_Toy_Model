@@ -71,7 +71,21 @@ def plot_efficiency_vs_parameter(
     ... )
     >>> plt.savefig("efficiency.pdf")
     """
-    raise NotImplementedError
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots(figsize=figsize)
+    plot_kwargs: dict = dict(color=color, marker=marker, linewidth=1.5, markersize=6)
+    if add_error_bars and errors is not None:
+        ax.errorbar(parameter_values, efficiencies, yerr=errors, capsize=3, **plot_kwargs)
+    else:
+        ax.plot(parameter_values, efficiencies, **plot_kwargs)
+    ax.set_xlabel(xlabel or parameter_name)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title or f"{ylabel} vs {parameter_name}")
+    ax.set_ylim(-0.05, 1.05)
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    return fig
 
 
 def plot_ghost_rate_vs_parameter(
@@ -105,7 +119,17 @@ def plot_ghost_rate_vs_parameter(
     matplotlib.figure.Figure
         The created figure.
     """
-    raise NotImplementedError
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.plot(parameter_values, ghost_rates, color=color, marker="s", linewidth=1.5, markersize=6)
+    ax.set_xlabel(parameter_name)
+    ax.set_ylabel("Ghost Rate")
+    ax.set_title(title or f"Ghost Rate vs {parameter_name}")
+    ax.set_ylim(-0.05, 1.05)
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    return fig
 
 
 def plot_purity_distribution(
@@ -133,7 +157,19 @@ def plot_purity_distribution(
     matplotlib.figure.Figure
         The created figure.
     """
-    raise NotImplementedError
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.hist(purities, bins=bins, edgecolor="black", alpha=0.7, color="steelblue")
+    ax.set_xlabel("Purity")
+    ax.set_ylabel("Count")
+    ax.set_title(title or "Track Purity Distribution")
+    ax.set_xlim(0, 1.05)
+    ax.axvline(x=np.mean(purities), color="red", linestyle="--", label=f"Mean = {np.mean(purities):.3f}")
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    return fig
 
 
 def plot_comparison(
@@ -170,7 +206,18 @@ def plot_comparison(
     matplotlib.figure.Figure
         The created figure with both curves.
     """
-    raise NotImplementedError
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.plot(parameter_values, classical_metric, "o-", color="blue", label="Classical", linewidth=1.5)
+    ax.plot(parameter_values, quantum_metric, "s--", color="red", label="Quantum", linewidth=1.5)
+    ax.set_xlabel(parameter_name)
+    ax.set_ylabel(metric_name)
+    ax.set_title(title or f"{metric_name}: Classical vs Quantum")
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    return fig
 
 
 def generate_performance_report(
@@ -206,7 +253,36 @@ def generate_performance_report(
     >>> print(paths['efficiency'])
     'plots/performance_efficiency.pdf'
     """
-    raise NotImplementedError
+    import matplotlib.pyplot as plt
+    from pathlib import Path as _Path
+
+    out = _Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    paths: dict[str, str] = {}
+
+    param_col = results_df.columns[0]  # first column as parameter
+    params = results_df[param_col].values
+
+    for metric_col, label in [
+        ("efficiency", "Reconstruction Efficiency"),
+        ("ghost_rate", "Ghost Rate"),
+        ("clone_fraction", "Clone Fraction"),
+        ("mean_purity", "Mean Purity"),
+    ]:
+        if metric_col not in results_df.columns:
+            continue
+        fig = plot_efficiency_vs_parameter(
+            params,
+            results_df[metric_col].values,
+            parameter_name=param_col,
+            ylabel=label,
+        )
+        fpath = out / f"{prefix}_{metric_col}.pdf"
+        fig.savefig(str(fpath), bbox_inches="tight")
+        plt.close(fig)
+        paths[metric_col] = str(fpath)
+
+    return paths
 
 
 def set_lhcb_style() -> None:
@@ -216,4 +292,21 @@ def set_lhcb_style() -> None:
     Sets font sizes, line widths, and other parameters to match
     LHCb style guidelines for publications.
     """
-    raise NotImplementedError
+    import matplotlib.pyplot as plt
+
+    plt.rcParams.update({
+        "font.family": "serif",
+        "font.size": 14,
+        "axes.labelsize": 16,
+        "axes.titlesize": 16,
+        "xtick.labelsize": 12,
+        "ytick.labelsize": 12,
+        "legend.fontsize": 12,
+        "lines.linewidth": 1.5,
+        "lines.markersize": 6,
+        "figure.figsize": (8, 6),
+        "figure.dpi": 150,
+        "axes.grid": True,
+        "grid.alpha": 0.3,
+        "savefig.bbox": "tight",
+    })

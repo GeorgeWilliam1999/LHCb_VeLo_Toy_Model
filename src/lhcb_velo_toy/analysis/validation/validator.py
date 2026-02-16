@@ -12,8 +12,8 @@ import numpy as np
 
 if TYPE_CHECKING:
     import pandas as pd
-    from lhcb_velo_toy.generation.models.event import Event
-    from lhcb_velo_toy.generation.models.track import Track
+    from lhcb_velo_toy.generation.entities.event import Event
+    from lhcb_velo_toy.generation.entities.track import Track
 
 from lhcb_velo_toy.analysis.validation.match import Match
 

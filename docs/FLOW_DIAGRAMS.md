@@ -25,7 +25,7 @@ graph TB
     subgraph generation["Generation Module"]
         GEO[Geometry Classes]
         EVG[Event Generators]
-        DAT[Data Models]
+        DAT[Entities]
     end
     
     subgraph solvers["Solvers Module"]
@@ -174,15 +174,8 @@ classDiagram
         -_construct_coo(event)
     }
     
-    class SimpleHamiltonianCPPWrapper {
-        +use_cuda: bool
-        -_cpp_hamiltonian: module
-        +construct_hamiltonian(event) tuple
-    }
-    
     Hamiltonian <|-- SimpleHamiltonian
     Hamiltonian <|-- SimpleHamiltonianFast
-    Hamiltonian <|-- SimpleHamiltonianCPPWrapper
     
     class Hit {
         +hit_id: int
@@ -275,43 +268,45 @@ graph TD
     end
     
     subgraph generation
-        SEM[state_event_model.py]
-        SEG[state_event_generator.py]
-        MSG[multi_scattering_generator.py]
+        ENT[entities/]
+        GEO2[geometry/]
+        GEN2[generators/state_event.py]
     end
     
     subgraph solvers
-        HAM[hamiltonian.py]
-        SH[simple_hamiltonian.py]
-        SHF[simple_hamiltonian_fast.py]
-        SHC[simple_hamiltonian_cpp.py]
-        HHL[hhl_algorithm.py]
-        OBQ[OneBQF.py]
+        HAM[hamiltonians/base.py]
+        SH[hamiltonians/simple.py]
+        SHF[hamiltonians/fast.py]
+        HHL[quantum/hhl.py]
+        OBQ[quantum/one_bit_hhl.py]
+        CLS2[classical/solvers.py]
+        REC[reconstruction/]
     end
     
     subgraph analysis
-        TV[toy_validator.py]
-        LTP[lhcb_tracking_plots.py]
+        TV[validation/validator.py]
+        LTP[plotting/]
     end
     
     %% External dependencies
-    NP --> SEM
-    NP --> SEG
-    NP --> MSG
+    NP --> ENT
+    NP --> GEO2
+    NP --> GEN2
     NP --> HAM
     NP --> SH
     NP --> SHF
-    NP --> SHC
+    NP --> CLS2
     NP --> TV
     NP --> LTP
     NP --> HHL
     NP --> OBQ
+    NP --> REC
     
     SP --> SH
     SP --> SHF
     SP --> HAM
+    SP --> CLS2
     
-    MPL --> SEM
     MPL --> LTP
     
     PD --> TV
@@ -324,15 +319,14 @@ graph TD
     IBM --> OBQ
     
     %% Internal dependencies
-    SEM --> SEG
-    SEG --> SH
-    SEG --> SHF
-    SEG --> SHC
+    ENT --> GEN2
+    GEO2 --> GEN2
+    GEN2 --> SH
+    GEN2 --> SHF
     HAM --> SH
     HAM --> SHF
-    HAM --> SHC
     
-    SEM --> TV
+    ENT --> TV
     SH --> TV
     TV --> LTP
     
@@ -345,6 +339,10 @@ graph TD
 ---
 
 ## Event Generation Flow
+
+> **Key distinction:** Measurement error and multiple scattering are two
+> fundamentally different effects that must be applied at different points.
+> See the "Physics Notes" box in the diagram below.
 
 ```mermaid
 flowchart TD
@@ -363,40 +361,58 @@ flowchart TD
     PV --> PLOOP[For each particle]
     
     PLOOP --> STATE["Create state vector: x, y, z, tx, ty"]
-    STATE --> PROP[propagate to first module]
+    STATE --> MLOOP[For each module]
+
+    MLOOP --> PROP["1. Propagate TRUE state to module z"]
+    PROP --> BULK{"2. On bulk?"}
     
-    PROP --> MLOOP[For each module]
-    MLOOP --> BULK{On bulk?}
+    BULK -->|No ─ skip completely| NEXT
     
-    BULK -->|Yes| HIT[Create Hit]
-    BULK -->|No| SKIP[Skip module]
+    BULK -->|Yes| HIT["3. Record Hit at smeared coords\n x_meas = x_true + N 0 sigma_meas\n y_meas = y_true + N 0 sigma_meas"]
+    HIT --> SCATTER["4. Apply multiple scattering to TRUE tx, ty\n tx += tan N 0 sigma_scatter\n ty += tan N 0 sigma_scatter"]
+    SCATTER --> NEXT{More modules?}
     
-    HIT --> MEAS[Apply measurement error]
-    MEAS --> COLL[Apply multiple scattering]
-    COLL --> NEXT{More modules?}
-    
-    SKIP --> NEXT
-    NEXT -->|Yes| PROP2[propagate to next z]
-    NEXT -->|No| NEXTP{More particles?}
-    
-    PROP2 --> MLOOP
-    
+    NEXT -->|Yes| MLOOP
+    NEXT -->|No| BUILD_TRACK[Build Track from hit_ids]
+
+    BUILD_TRACK --> NEXTP{More particles?}
     NEXTP -->|Yes| PLOOP
     NEXTP -->|No| NEXTE{More events?}
     
     NEXTE -->|Yes| LOOP
-    NEXTE -->|No| BUILD[Build Event object]
+    NEXTE -->|No| BUILD[Build Event: PVs + Tracks + Hits + Modules]
     
-    BUILD --> EVT["Event with: modules, hits, tracks"]
+    BUILD --> EVT["Event with: primary_vertices, tracks, hits, modules"]
     EVT --> NOISE{Add noise?}
     
     NOISE -->|Yes| DROP[Apply drop_rate: Remove random hits]
     DROP --> GHOST[Apply ghost_rate: Add random ghost hits]
-    GHOST --> REBUILD[rebuild modules]
+    GHOST --> REBUILD[Rebuild modules]
     
     NOISE -->|No| DONE([Return Event])
     REBUILD --> DONE
+
+    style HIT fill:#e3f2fd,stroke:#1565c0
+    style SCATTER fill:#fce4ec,stroke:#c62828
+    style PROP fill:#e8f5e9,stroke:#2e7d32
 ```
+
+### Physics: Measurement Error vs Multiple Scattering
+
+| Property | Measurement Error | Multiple Scattering |
+|----------|-------------------|---------------------|
+| **What it is** | Detector artefact | Real physical process |
+| **What it affects** | Recorded Hit (x, y) only | True particle slopes (tx, ty) |
+| **Feeds into next step?** | **No** — true state is unchanged | **Yes** — trajectory is permanently altered |
+| **Typical scale** | ~10 µm (σ) | ~0.1 mrad (σ) |
+| **Parameter** | `measurement_error` | `collision_noise` |
+
+**Correct ordering at each module:**
+1. Propagate true state to module z → true (x, y)
+2. Check if true (x, y) is on the active bulk
+   - **Not on bulk → skip entirely** (no hit, no scattering, no material interaction). The particle continues to the next module and may be detected there.
+3. Record Hit at (x + noise, y + noise) — measurement error on stored Hit only
+4. Apply multiple scattering — modify true (tx, ty) for next propagation (material is only traversed when the particle is on the bulk)
 
 ---
 
@@ -650,7 +666,7 @@ sequenceDiagram
     Ham-->>User: reco_tracks
     
     User->>Val: Create(truth_event, reco_tracks)
-    User->>Val: match_tracks(purity_min, completeness_min)
+    User->>Val: match_tracks(purity_min, hit_efficiency_min)
     Val->>Val: compute overlaps
     Val->>Val: classify tracks
     Val-->>User: (matches, metrics)
@@ -809,4 +825,4 @@ erDiagram
 
 - [API_REFERENCE.md](API_REFERENCE.md) - Detailed class and method documentation
 - [DEPENDENCIES.md](DEPENDENCIES.md) - Package dependencies
-- [RESTRUCTURING_PROPOSAL.md](../RESTRUCTURING_PROPOSAL.md) - Package restructuring plan
+- [WORKFLOW_OVERVIEW.md](WORKFLOW_OVERVIEW.md) - End-to-end workflow guide

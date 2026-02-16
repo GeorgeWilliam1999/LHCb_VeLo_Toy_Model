@@ -29,14 +29,14 @@ This document details all dependencies, input/output specifications, and require
 
 | Package | Version | Purpose | Used By |
 |---------|---------|---------|---------|
-| `pandas` | ≥1.3.0 | DataFrames, CSV I/O | Validation, plotting |
+| `pandas` | ≥1.4.0 | DataFrames, CSV I/O | Validation, plotting |
 
 ### Quantum Dependencies (Optional)
 
 | Package | Version | Purpose | Used By |
 |---------|---------|---------|---------|
 | `qiskit` | ≥1.0.0 | Quantum circuit construction | HHL, OneBQF |
-| `qiskit-aer` | ≥0.13.0 | Quantum simulation | HHL, OneBQF |
+| `qiskit-aer` | ≥0.14.0 | Quantum simulation | HHL, OneBQF |
 | `qiskit-ibm-runtime` | ≥0.20.0 | IBM backend access, noise models | OneBQF |
 
 ### Development Dependencies
@@ -45,10 +45,8 @@ This document details all dependencies, input/output specifications, and require
 |---------|---------|---------|
 | `pytest` | ≥7.0.0 | Unit testing |
 | `pytest-cov` | ≥4.0.0 | Coverage reporting |
-| `sphinx` | ≥6.0.0 | Documentation generation |
-| `black` | ≥23.0.0 | Code formatting |
-| `isort` | ≥5.12.0 | Import sorting |
 | `mypy` | ≥1.0.0 | Static type checking |
+| `ruff` | ≥0.1.0 | Fast linting and formatting |
 
 ---
 
@@ -62,35 +60,30 @@ name = "lhcb-velo-toy"
 version = "2.0.0"
 requires-python = ">=3.9"
 dependencies = [
-    "numpy>=1.20.0",
-    "scipy>=1.7.0",
-    "matplotlib>=3.5.0",
+    "numpy>=1.20",
+    "scipy>=1.7",
+    "matplotlib>=3.5",
 ]
 
 [project.optional-dependencies]
-analysis = [
-    "pandas>=1.3.0",
+quantum = [
+    "qiskit>=1.0",
+    "qiskit-aer>=0.14",
+    "qiskit-ibm-runtime>=0.20",
 ]
 
-quantum = [
-    "qiskit>=1.0.0",
-    "qiskit-aer>=0.13.0",
-    "qiskit-ibm-runtime>=0.20.0",
+analysis = [
+    "pandas>=1.4",
 ]
 
 dev = [
-    "pytest>=7.0.0",
-    "pytest-cov>=4.0.0",
-    "sphinx>=6.0.0",
-    "sphinx-rtd-theme>=2.0.0",
-    "black>=23.0.0",
-    "isort>=5.12.0",
-    "mypy>=1.0.0",
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "mypy>=1.0",
+    "ruff>=0.1",
 ]
 
-all = [
-    "lhcb-velo-toy[analysis,quantum,dev]",
-]
+all = ["lhcb-velo-toy[quantum,analysis,dev]"]
 ```
 
 ### Installation Commands
@@ -120,64 +113,61 @@ pip install -e ".[all]"
 
 | Module | numpy | scipy | matplotlib | pandas | qiskit | qiskit-aer | qiskit-ibm-runtime |
 |--------|:-----:|:-----:|:----------:|:------:|:------:|:----------:|:------------------:|
-| `state_event_model` | ✓ | | ✓ | | | | |
-| `state_event_generator` | ✓ | | | | | | |
-| `multi_scattering_generator` | ✓ | | | | | | |
-| `hamiltonian` | ✓ | ✓ | | | | | |
-| `simple_hamiltonian` | ✓ | ✓ | | | | | |
-| `simple_hamiltonian_fast` | ✓ | ✓ | | | | | |
-| `simple_hamiltonian_cpp` | ✓ | ✓ | | | | | |
-| `hhl_algorithm` | ✓ | | | | ✓ | ✓ | |
-| `OneBQF` | ✓ | | | | ✓ | ✓ | ✓ |
-| `toy_validator` | ✓ | | | ✓ | | | |
-| `lhcb_tracking_plots` | ✓ | | ✓ | ✓ | | | |
+| `generation.entities` | ✓ | | | | | | |
+| `generation.geometry` | ✓ | | | | | | |
+| `generation.generators` | ✓ | | | | | | |
+| `solvers.hamiltonians` | ✓ | ✓ | | | | | |
+| `solvers.classical` | ✓ | ✓ | | | | | |
+| `solvers.quantum.hhl` | ✓ | | | | ✓ | ✓ | |
+| `solvers.quantum.one_bit_hhl` | ✓ | | | | ✓ | ✓ | ✓ |
+| `solvers.reconstruction` | ✓ | | | | | | |
+| `analysis.validation` | ✓ | | | ✓ | | | |
+| `analysis.plotting` | ✓ | | ✓ | ✓ | | | |
 
 ### Import Graph
 
 ```
-state_event_model
-    └── numpy, matplotlib
+generation.entities
+    └── numpy
 
-state_event_generator
+generation.geometry
+    └── numpy
+
+generation.generators.state_event
     ├── numpy
-    └── state_event_model (Hit, Module, Segment, Track, Event, Geometry)
+    ├── generation.geometry (Geometry)
+    └── generation.entities (Hit, Track, Module, Event, PrimaryVertex)
 
-multi_scattering_generator
-    ├── numpy
-    └── state_event_model (Hit, Module, Segment, Track)
-
-hamiltonian (ABC)
+solvers.hamiltonians.base (ABC)
     ├── numpy
     └── scipy.sparse
 
-simple_hamiltonian
+solvers.hamiltonians.simple
     ├── numpy
     ├── scipy.sparse
     ├── scipy.special (erf)
     ├── scipy.sparse.linalg (cg)
-    ├── hamiltonian (Hamiltonian)
-    └── state_event_model (Segment, Track, Hit, Event)
+    ├── solvers.hamiltonians.base (Hamiltonian)
+    └── solvers.reconstruction.segment (Segment)
 
-simple_hamiltonian_fast
+solvers.hamiltonians.fast
     ├── numpy
     ├── scipy.sparse (coo_matrix, csc_matrix)
     ├── scipy.sparse.linalg (cg, spsolve)
-    └── hamiltonian (Hamiltonian)
+    └── solvers.hamiltonians.base (Hamiltonian)
 
-simple_hamiltonian_cpp
+solvers.classical.solvers
     ├── numpy
-    ├── scipy.sparse
-    ├── hamiltonian (Hamiltonian)
-    └── cpp_hamiltonian (optional C++ module)
+    └── scipy.sparse.linalg (spsolve, cg)
 
-hhl_algorithm
+solvers.quantum.hhl
     ├── numpy
     ├── qiskit (QuantumCircuit, QuantumRegister, ClassicalRegister)
     ├── qiskit.circuit.library (UnitaryGate)
     ├── qiskit.quantum_info (Statevector)
     └── qiskit_aer (AerSimulator)
 
-OneBQF
+solvers.quantum.one_bit_hhl
     ├── numpy
     ├── qiskit (QuantumCircuit, QuantumRegister, ClassicalRegister)
     ├── qiskit.circuit.library (UnitaryGate)
@@ -185,12 +175,16 @@ OneBQF
     ├── qiskit_aer.noise (NoiseModel)
     └── qiskit_ibm_runtime (QiskitRuntimeService)
 
-toy_validator
+solvers.reconstruction.track_finder
+    ├── numpy
+    └── generation.entities (Hit, Track, Event)
+
+analysis.validation.validator
     ├── numpy
     ├── pandas
-    └── state_event_model (Event, Track, Hit)
+    └── generation.entities (Event, Track, Hit)
 
-lhcb_tracking_plots
+analysis.plotting
     ├── numpy
     ├── pandas
     └── matplotlib.pyplot
@@ -309,7 +303,7 @@ lhcb_tracking_plots
 
 | Method | Input | Output |
 |--------|-------|--------|
-| `match_tracks(purity_min, completeness_min, min_rec_hits)` | `float, float, int` | `tuple[list[Match], dict]` |
+| `match_tracks(purity_min, hit_efficiency_min, min_rec_hits)` | `float, float, int` | `tuple[list[Match], dict]` |
 | `summary_table()` | | `pd.DataFrame` |
 | `truth_table()` | | `pd.DataFrame` |
 
@@ -324,7 +318,7 @@ lhcb_tracking_plots
 | 3.9 | ✓ Supported | Minimum version |
 | 3.10 | ✓ Supported | Recommended |
 | 3.11 | ✓ Supported | Best performance |
-| 3.12 | ⚠️ Testing | Check qiskit compatibility |
+| 3.12 | ✓ Supported | Tested and working |
 
 ### System Requirements
 
@@ -333,7 +327,7 @@ lhcb_tracking_plots
 | RAM | 4 GB | 16 GB |
 | CPU | 2 cores | 4+ cores |
 | Disk | 500 MB | 2 GB |
-| GPU | - | CUDA-capable (for cpp_hamiltonian) |
+| GPU | - | - |
 
 ### Platform Support
 
@@ -346,55 +340,6 @@ lhcb_tracking_plots
 
 ---
 
-## Optional Accelerators
-
-### C++ Hamiltonian Extension
-
-The `simple_hamiltonian_cpp` module wraps a C++ implementation for improved performance.
-
-#### Requirements
-
-| Component | Version |
-|-----------|---------|
-| C++ Compiler | C++17 compatible (GCC 9+, Clang 10+, MSVC 2019+) |
-| CMake | ≥ 3.18 |
-| pybind11 | ≥ 2.10.0 |
-
-#### CUDA Support
-
-| Component | Version |
-|-----------|---------|
-| CUDA Toolkit | ≥ 11.0 |
-| cuBLAS | Included with CUDA |
-| cuSPARSE | Included with CUDA |
-
-#### Installation
-
-```bash
-cd LHCB_Velo_Toy_Models/cpp_hamiltonian
-
-# CPU-only build
-pip install .
-
-# With CUDA support
-CMAKE_ARGS="-DUSE_CUDA=ON" pip install .
-```
-
-#### Fallback Behavior
-
-```python
-from lhcb_velo_toy.solvers import SimpleHamiltonianCPPWrapper
-
-try:
-    ham = SimpleHamiltonianCPPWrapper(epsilon=0.01, gamma=1.0, delta=1.0)
-except ImportError:
-    # Fall back to pure Python
-    from lhcb_velo_toy.solvers import SimpleHamiltonian
-    ham = SimpleHamiltonian(epsilon=0.01, gamma=1.0, delta=1.0)
-```
-
----
-
 ## Version Compatibility Matrix
 
 ### Qiskit Versions
@@ -402,7 +347,7 @@ except ImportError:
 | lhcb-velo-toy | qiskit | qiskit-aer | qiskit-ibm-runtime | Notes |
 |---------------|--------|------------|-------------------|-------|
 | 1.x | 0.45 | 0.12 | 0.15 | Legacy |
-| 2.0 | ≥1.0 | ≥0.13 | ≥0.20 | Current |
+| 2.0 | ≥1.0 | ≥0.14 | ≥0.20 | Current |
 
 ### NumPy/SciPy Versions
 
@@ -430,7 +375,7 @@ except ImportError:
 numpy>=1.20.0,<2.0.0
 scipy>=1.7.0,<1.14.0
 qiskit>=1.0.0,<2.0.0
-qiskit-aer>=0.13.0
+qiskit-aer>=0.14.0
 qiskit-ibm-runtime>=0.20.0
 ```
 
@@ -493,13 +438,6 @@ def check_dependencies():
     except ImportError:
         results['qiskit-ibm-runtime'] = 'Not installed (optional)'
     
-    # C++ extension
-    try:
-        import cpp_hamiltonian
-        results['cpp_hamiltonian'] = 'Available'
-    except ImportError:
-        results['cpp_hamiltonian'] = 'Not built (optional)'
-    
     return results
 
 
@@ -518,4 +456,4 @@ if __name__ == '__main__':
 
 - [API_REFERENCE.md](API_REFERENCE.md) - Detailed API documentation
 - [FLOW_DIAGRAMS.md](FLOW_DIAGRAMS.md) - Architecture diagrams
-- [RESTRUCTURING_PROPOSAL.md](../RESTRUCTURING_PROPOSAL.md) - Package restructuring plan
+- [WORKFLOW_OVERVIEW.md](WORKFLOW_OVERVIEW.md) - End-to-end workflow guide

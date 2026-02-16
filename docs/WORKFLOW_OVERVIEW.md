@@ -39,7 +39,7 @@ The **LHCb VELO Toy Model** is a simulation and reconstruction framework for par
 │  │   🔵 GENERATION │───▶│   🟢 SOLVERS   │───▶│   🟡 ANALYSIS  │         │
 │  │                 │     │                 │    │                 │         │
 │  │ • Geometry      │     │ • Hamiltonians  │    │ • Validation    │         │
-│  │ • Models        │     │ • Classical     │    │ • Plotting      │         │
+│  │ • Entities      │     │ • Classical     │    │ • Plotting      │         │
 │  │ • Generators    │     │ • Quantum       │    │                 │         │
 │  │                 │     │ • Reconstruction│    │                 │         │
 │  └─────────────────┘     └─────────────────┘    └─────────────────┘         │
@@ -59,7 +59,7 @@ The **LHCb VELO Toy Model** is a simulation and reconstruction framework for par
 graph TB
     subgraph PKG["lhcb_velo_toy Package"]
         subgraph GEN["generation"]
-            G1["models/"]
+            G1["entities/"]
             G1a["Hit, Track, Module, Event, PrimaryVertex"]
             G2["geometry/"]
             G2a["PlaneGeometry, RectangularVoidGeometry"]
@@ -197,16 +197,19 @@ flowchart LR
 │     │      /  |  \     ← Particles with momentum (tx, ty, p/q)     │        │
 │     │     ●   ●   ●     ← Hits at each module crossing             │        │
 │     │     │   │   │                                                │        │
-│     │     ●   ●   ●     ← Measurement error applied                │        │
-│     │     │   │   │                                                │        │
-│     │     ●   ●   ●     ← Multiple scattering effects              │        │
+│     │     │   │   │   At each module the generator:                │        │
+│     │     │   │   │   1. Propagates TRUE state to module z          │        │
+│     │     │   │   │   2. Checks acceptance (on bulk?)               │        │
+│     │     │   │   │   3. Records Hit with SMEARED (x,y)             │        │
+│     │     │   │   │      ↳ measurement_error ≠ true state           │        │
+│     │     │   │   │   4. Applies scattering to TRUE (tx,ty)         │        │
+│     │     │   │   │      ↳ collision_noise feeds forward            │        │
 │     │                                                              │        │
 │     └──────────────────────────────────────────────────────────────┘        │
 │                                                                             │
 │     Output: Event containing:                                               │
 │     • Truth tracks (T_1, T_2, ..., T_n)                                     │
 │     • Hits on modules                                                       │
-│     • Segments connecting adjacent hits                                     │
 │                                                                             │
 │                                  │                                          │
 │                                  ▼                                          │
@@ -344,11 +347,11 @@ The **generation** module creates simulated particle collision events that mimic
 
 | Component | File | Description |
 |-----------|------|-------------|
-| **Hit** | `models/hit.py` | A measurement point (x, y, z) on a detector module |
-| **Track** | `models/track.py` | A particle trajectory with `hit_ids` and `pv_id` |
-| **PrimaryVertex** | `models/primary_vertex.py` | Collision point with associated `track_ids` |
-| **Module** | `models/module.py` | A detector layer at fixed z position |
-| **Event** | `models/event.py` | Container for all PVs, tracks, hits, modules (JSON-serializable) |
+| **Hit** | `entities/hit.py` | A measurement point (x, y, z) on a detector module |
+| **Track** | `entities/track.py` | A particle trajectory with `hit_ids` and `pv_id` |
+| **PrimaryVertex** | `entities/primary_vertex.py` | Collision point with associated `track_ids` |
+| **Module** | `entities/module.py` | A detector layer at fixed z position |
+| **Event** | `entities/event.py` | Container for all PVs, tracks, hits, modules (JSON-serializable) |
 | **PlaneGeometry** | `geometry/plane.py` | Simple rectangular detector planes |
 | **RectangularVoidGeometry** | `geometry/rectangular_void.py` | Planes with beam pipe hole |
 | **StateEventGenerator** | `generators/state_event.py` | Main event simulation engine |
@@ -462,19 +465,33 @@ classDiagram
 
 #### Event Generation Process
 
+> **⚠️ Physics Note – Measurement Error vs Multiple Scattering**
+>
+> | | Measurement Error | Multiple Scattering |
+> |---|---|---|
+> | **Nature** | Detector artefact (finite resolution) | Real physics (Coulomb scattering in material) |
+> | **Affects** | Recorded Hit coordinates only | True particle slopes (tx, ty) |
+> | **Feeds back?** | ❌ Never modifies the true state | ✅ Accumulates through every subsequent module |
+>
+> The ordering below is **critical**: the Hit is recorded with smeared (x, y)
+> while the true state remains unmodified until scattering is applied.
+> If the particle is **not on the bulk** (not in the active detector area),
+> the module is **skipped entirely** — no hit is recorded and no scattering
+> occurs, because there is no material interaction. The particle continues
+> propagating to the next module where it may be detected.
+
 ```mermaid
 flowchart TD
     A[Initialize Generator] --> B[Define Detector Geometry]
     B --> C[Generate Primary Vertices]
     C --> D[Create Particles with Momentum]
-    D --> E[Propagate Through Detector]
+    D --> E["1. Propagate TRUE state\nto next module z"]
     
-    E --> F{Hit Detector?}
-    F -->|Yes| G[Record Hit Position]
+    E --> F{"2. On detector bulk?"}
     F -->|No| H[Skip Module]
+    F -->|Yes| G["3. Record Hit\nx_meas = x_true + N 0 σ_meas\ny_meas = y_true + N 0 σ_meas\n⚡ Does NOT modify true state"]
     
-    G --> I[Apply Measurement Error]
-    I --> J[Apply Multiple Scattering]
+    G --> J["4. Apply Multiple Scattering\ntx += tan N 0 σ_scat\nty += tan N 0 σ_scat\n⚡ Modifies TRUE state"]
     J --> K{More Modules?}
     
     H --> K
@@ -484,6 +501,10 @@ flowchart TD
     L -->|Yes| D
     L -->|No| M[Build Event Object]
     M --> N[Return Truth Event]
+    
+    style G fill:#e3f2fd,stroke:#1565c0
+    style J fill:#ffebee,stroke:#c62828
+    style E fill:#e8f5e9,stroke:#2e7d32
 ```
 
 ---
@@ -598,13 +619,17 @@ classDiagram
     class HHL {
         +int n_qubits
         +QuantumCircuit circuit
-        +solve(A, b) ndarray
-        +build_circuit()
+        +build_circuit() QuantumCircuit
+        +run() dict
+        +get_solution() ndarray
+        +simulate_statevector() Statevector
     }
     
     class OneBitHHL {
-        +solve(A, b) ndarray
-        +estimate_eigenvalue()
+        +build_circuit() QuantumCircuit
+        +run(use_noise_model, backend_name) dict
+        +get_solution(counts) tuple
+        +get_success_probability() float
     }
     
     Hamiltonian <|-- SimpleHamiltonian
@@ -787,7 +812,7 @@ flowchart LR
     
     subgraph PERFORMANCE["performance.py"]
         P_IN["INPUT:<br/>metrics: list[dict]<br/>labels: list[str]"]
-        P_FN["plot_efficiency_vs_noise()<br/>plot_ghost_rate()<br/>plot_roc_curve()"]
+        P_FN["plot_efficiency_vs_parameter()<br/>plot_ghost_rate_vs_parameter()<br/>generate_performance_report()"]
         P_OUT["OUTPUT:<br/>matplotlib Figure<br/>performance plots"]
         P_IN --> P_FN --> P_OUT
     end
@@ -880,11 +905,13 @@ erDiagram
     }
     
     MATCH {
-        int reco_track_id
-        int truth_track_id
+        int best_truth_id
+        int rec_hits
+        int truth_hits
+        int correct_hits
         float purity
         float hit_efficiency
-        bool is_ghost
+        bool accepted
         bool is_clone
     }
 ```
@@ -942,7 +969,6 @@ truth_event = generator.generate_complete_events()
 # STEP 5: (Optional) Add noise
 # ═══════════════════════════════════════════════════════════════════════════
 noisy_event = generator.make_noisy_event(
-    event=truth_event,
     drop_rate=0.05,    # 5% hit inefficiency
     ghost_rate=0.02    # 2% ghost hit rate
 )
@@ -977,14 +1003,14 @@ validator = EventValidator(
     reco_tracks=reco_tracks
 )
 
-metrics = validator.match_tracks(purity_threshold=0.75)
+matches, metrics = validator.match_tracks(purity_min=0.75)
 print(f"Efficiency: {metrics['efficiency']:.2%}")
 print(f"Ghost Rate: {metrics['ghost_rate']:.2%}")
 
 # ═══════════════════════════════════════════════════════════════════════════
 # STEP 10: Visualize
 # ═══════════════════════════════════════════════════════════════════════════
-truth_event.plot_segments()
+truth_event.plot_event(title="Truth Event")
 ```
 
 ---
@@ -1007,4 +1033,4 @@ truth_event.plot_segments()
 
 ---
 
-*Last updated: January 2026*
+*Last updated: February 2026*

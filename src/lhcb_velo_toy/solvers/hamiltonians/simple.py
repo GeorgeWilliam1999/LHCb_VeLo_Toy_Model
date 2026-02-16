@@ -17,7 +17,7 @@ from lhcb_velo_toy.solvers.hamiltonians.base import Hamiltonian
 
 if TYPE_CHECKING:
     from lhcb_velo_toy.solvers.reconstruction.segment import Segment
-    from lhcb_velo_toy.generation.models.event import Event
+    from lhcb_velo_toy.generation.entities.event import Event
     from lhcb_velo_toy.generation.generators.state_event import StateEventGenerator
 
 
@@ -89,7 +89,15 @@ class SimpleHamiltonian(Hamiltonian):
         theta_d: float = 1e-4,
     ) -> None:
         """Initialize the SimpleHamiltonian."""
-        raise NotImplementedError
+        self.epsilon = epsilon
+        self.gamma = gamma
+        self.delta = delta
+        self.theta_d = theta_d
+        self.A: Optional[csc_matrix] = None
+        self.b: Optional[np.ndarray] = None
+        self.segments: list["Segment"] = []
+        self.segments_grouped: list[list["Segment"]] = []
+        self.n_segments: int = 0
     
     def construct_segments(
         self,
@@ -111,7 +119,40 @@ class SimpleHamiltonian(Hamiltonian):
         For N_i hits on module i and N_{i+1} hits on module i+1,
         this creates N_i * N_{i+1} segment candidates.
         """
-        raise NotImplementedError
+        from itertools import product, count
+        from lhcb_velo_toy.solvers.reconstruction.segment import Segment
+
+        # Accept either an Event or a StateEventGenerator
+        evt = getattr(event, "true_event", event)
+
+        segments_grouped: list[list[Segment]] = []
+        segments: list[Segment] = []
+        n_segments = 0
+        segment_id = count()
+
+        for idx in range(len(evt.modules) - 1):
+            # Resolve hit objects from IDs
+            from_hit_ids = evt.modules[idx].hit_ids
+            to_hit_ids = evt.modules[idx + 1].hit_ids
+            from_hits = evt.get_hits_by_ids(from_hit_ids)
+            to_hits = evt.get_hits_by_ids(to_hit_ids)
+
+            group: list[Segment] = []
+            for from_hit, to_hit in product(from_hits, to_hits):
+                seg = Segment(
+                    hit_start=from_hit,
+                    hit_end=to_hit,
+                    segment_id=next(segment_id),
+                )
+                group.append(seg)
+                segments.append(seg)
+                n_segments += 1
+
+            segments_grouped.append(group)
+
+        self.segments_grouped = segments_grouped
+        self.segments = segments
+        self.n_segments = n_segments
     
     def construct_hamiltonian(
         self,
@@ -146,7 +187,36 @@ class SimpleHamiltonian(Hamiltonian):
         5. Set b[i] = γ + δ for all i
         6. Convert A to CSC format for efficient solving
         """
-        raise NotImplementedError
+        from itertools import product as iterproduct
+        from scipy.sparse import eye as speye
+
+        if not self.segments_grouped:
+            self.construct_segments(event)
+
+        n = self.n_segments
+
+        # Start with diagonal
+        A = speye(n, format="lil") * -(self.delta + self.gamma)
+        b = np.ones(n) * self.delta
+
+        # Off-diagonal: pairs of consecutive groups sharing a hit
+        for group_idx in range(len(self.segments_grouped) - 1):
+            for seg_i, seg_j in iterproduct(
+                self.segments_grouped[group_idx],
+                self.segments_grouped[group_idx + 1],
+            ):
+                # Segments must share the middle hit
+                if seg_i.hit_end.hit_id == seg_j.hit_start.hit_id:
+                    value = self._compute_compatibility(
+                        seg_i, seg_j, convolution
+                    )
+                    if value > 0:
+                        A[seg_i.segment_id, seg_j.segment_id] = value
+                        A[seg_j.segment_id, seg_i.segment_id] = value
+
+        A = A.tocsc()
+        self.A, self.b = -A, b
+        return -A, b
     
     def _compute_compatibility(
         self,
@@ -171,7 +241,21 @@ class SimpleHamiltonian(Hamiltonian):
         float
             Compatibility value in [0, 2] for ERF, {0, 1} for hard threshold.
         """
-        raise NotImplementedError
+        cosine = seg_i * seg_j  # __mul__ returns cos(angle)
+
+        if convolution:
+            angle = abs(np.arccos(np.clip(cosine, -1.0, 1.0)))
+            return float(
+                1 + erf(
+                    (self.epsilon - angle)
+                    / (self.theta_d * np.sqrt(2))
+                )
+            )
+        else:
+            # Hard threshold: compatible if nearly collinear
+            if abs(cosine - 1.0) < self.epsilon:
+                return 1.0
+            return 0.0
     
     def solve_classicaly(self) -> np.ndarray:
         """
@@ -187,7 +271,13 @@ class SimpleHamiltonian(Hamiltonian):
         ValueError
             If construct_hamiltonian has not been called.
         """
-        raise NotImplementedError
+        if self.A is None or self.b is None:
+            raise ValueError(
+                "Hamiltonian not constructed. "
+                "Call construct_hamiltonian() first."
+            )
+        solution, _ = cg(self.A, self.b, atol=0)
+        return solution
     
     def evaluate(self, solution: np.ndarray) -> float:
         """
@@ -205,4 +295,18 @@ class SimpleHamiltonian(Hamiltonian):
         float
             Hamiltonian energy.
         """
-        raise NotImplementedError
+        if self.A is None or self.b is None:
+            raise ValueError(
+                "Hamiltonian not constructed. "
+                "Call construct_hamiltonian() first."
+            )
+
+        if isinstance(solution, list):
+            sol = np.array(solution)
+        else:
+            sol = solution
+
+        if sol.ndim == 1:
+            sol = sol[:, np.newaxis]
+
+        return float(-0.5 * sol.T @ self.A @ sol + self.b.dot(sol.flatten()))

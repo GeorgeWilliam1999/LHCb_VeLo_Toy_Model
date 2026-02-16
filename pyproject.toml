@@ -7,7 +7,7 @@ name = "lhcb-velo-toy"
 version = "2.0.0"
 description = "LHCb VELO detector simulation and track reconstruction with quantum algorithms"
 readme = "README.md"
-license = {text = "MIT"}
+license = {file = "LICENSE"}
 authors = [
     {name = "George William Scriven"},
     {name = "Xenofon Chiotopoulos"},

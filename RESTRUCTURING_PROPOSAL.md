@@ -42,7 +42,7 @@ lhcb_velo_toy/                          # Main package
 │
 ├── generation/                         # SUBMODULE 1: Data Generation
 │   ├── __init__.py
-│   ├── models/                         # Data structures
+│   ├── entities/                       # Core data structures
 │   │   ├── __init__.py
 │   │   ├── hit.py                      # Hit dataclass (with track_id)
 │   │   ├── track.py                    # Track dataclass (with hit_ids, pv_id)
@@ -136,26 +136,26 @@ candidates = get_candidate_segments(event, max_delta_z=100)
 ### Phase 1: Foundation
 - [x] Create `src/lhcb_velo_toy/` directory structure
 - [x] Create skeleton files with signatures and documentation
-- [ ] Set up `pyproject.toml` with dependencies
+- [x] Set up `pyproject.toml` with dependencies
 
 ### Phase 2: Generation Module
-- [x] Implement `models/` dataclasses (Hit, Track, Module, Event, PrimaryVertex)
-- [x] Implement JSON serialization for all models
-- [ ] Implement `geometry/` classes (Geometry ABC, PlaneGeometry, RectangularVoidGeometry)
-- [ ] Implement `generators/` (StateEventGenerator)
+- [x] Implement `entities/` dataclasses (Hit, Track, Module, Event, PrimaryVertex)
+- [x] Implement JSON serialization for all entities
+- [x] Implement `geometry/` classes (Geometry ABC, PlaneGeometry, RectangularVoidGeometry)
+- [x] Implement `generators/` (EventGenerator ABC, StateEventGenerator)
 
 ### Phase 3: Solvers Module
-- [ ] Implement `hamiltonians/` (Hamiltonian ABC, SimpleHamiltonian, SimpleHamiltonianFast)
-- [ ] Implement `classical/` solvers
-- [ ] Implement `quantum/` algorithms (HHL, OneBitHHL)
+- [x] Implement `hamiltonians/` (Hamiltonian ABC, SimpleHamiltonian, SimpleHamiltonianFast)
+- [x] Implement `classical/` solvers
+- [x] Implement `quantum/` algorithms (HHL, OneBitHHL/OneBQF)
 - [x] Implement `reconstruction/` segment generation
-- [ ] Implement `reconstruction/` track finder
+- [x] Implement `reconstruction/` track finder
 
 ### Phase 4: Analysis Module
-- [ ] Implement `validation/` (Match, EventValidator)
-- [ ] Implement `plotting/` utilities
+- [x] Implement `validation/` (Match, EventValidator)
+- [x] Implement `plotting/` utilities
 
 ### Phase 5: Integration & Testing
-- [ ] Integration tests
-- [ ] Example notebooks
-- [ ] Release v2.0.0
+- [x] Integration tests (3 end-to-end notebooks)
+- [x] Example notebooks (classical, HHL, 1-BQF)
+- [x] Release v2.0.0

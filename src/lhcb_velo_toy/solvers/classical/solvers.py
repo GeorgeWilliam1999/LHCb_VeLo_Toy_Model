@@ -54,7 +54,10 @@ def solve_conjugate_gradient(
     -----
     Uses scipy.sparse.linalg.cg internally.
     """
-    raise NotImplementedError
+    if maxiter is None:
+        maxiter = 10 * A.shape[0]
+    solution, info = cg(A, b, x0=x0, rtol=tol, maxiter=maxiter, atol=0)
+    return solution, info
 
 
 def solve_direct(
@@ -88,7 +91,7 @@ def solve_direct(
     -----
     Uses scipy.sparse.linalg.spsolve internally.
     """
-    raise NotImplementedError
+    return spsolve(A, b)
 
 
 def select_solver(
@@ -116,4 +119,8 @@ def select_solver(
     ndarray
         The solution vector.
     """
-    raise NotImplementedError
+    n = A.shape[0]
+    if n < threshold:
+        return solve_direct(A, b)
+    solution, _ = solve_conjugate_gradient(A, b)
+    return solution

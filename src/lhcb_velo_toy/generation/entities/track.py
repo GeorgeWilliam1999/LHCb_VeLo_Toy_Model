@@ -7,12 +7,9 @@ charged particle traversing the detector.
 
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Any, TYPE_CHECKING
+from typing import Any
 
-from lhcb_velo_toy.core.types import TrackID, HitID
-
-if TYPE_CHECKING:
-    from lhcb_velo_toy.generation.models.primary_vertex import PVID
+from lhcb_velo_toy.core.types import TrackID, HitID, PVID
 
 
 @dataclass
@@ -54,7 +51,7 @@ class Track:
     """
     
     track_id: TrackID
-    pv_id: "PVID" = 0
+    pv_id: PVID = 0
     hit_ids: list[HitID] = field(default_factory=list)
     
     @property

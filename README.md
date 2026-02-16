@@ -1,44 +1,50 @@
 # LHCb VELO Toy Model
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![pip installable](https://img.shields.io/badge/pip-installable-brightgreen.svg)](https://pip.pypa.io/)
 
-A Python package for simulating and analyzing particle tracking in the LHCb VELO (Vertex Locator) detector. This package provides tools for event generation, Hamiltonian-based track reconstruction, quantum algorithm exploration, and performance validation.
+A Python package for simulating and analyzing particle tracking in the LHCb VELO
+(Vertex Locator) detector. This package provides tools for event generation,
+Hamiltonian-based track reconstruction, quantum algorithm exploration, and
+performance validation.
+
+**Authors:** George William Scriven · Xenofon Chiotopoulos (https://github.com/Xenofon-Chiotopoulos)
+
+**Institutes:** Maastricht University · UHasselt · Nikhef
 
 ## Overview
 
-The LHCb VELO is the silicon vertex detector closest to the interaction point at the LHCb experiment at CERN's Large Hadron Collider. This toy model simulates:
+The LHCb VELO is the silicon vertex detector closest to the interaction point at
+the LHCb experiment at CERN's Large Hadron Collider. This toy model simulates:
 
 - **Particle collision events** with configurable detector geometry
 - **Multiple scattering effects** as particles traverse detector material
 - **Track reconstruction** using Hamiltonian-based optimization
-- **Quantum algorithms** (HHL) for solving the track-finding linear system
+- **Quantum algorithms** (HHL and OneBQF) for solving the track-finding linear system
 - **Validation metrics** following LHCb conventions
 
 ## Installation
 
-### Basic Installation
+### From source (recommended)
 
 ```bash
-git clone https://github.com/YourUsername/LHCb_VeLo_Toy_Model.git
+git clone https://github.com/GeorgeWilliam1999/LHCb_VeLo_Toy_Model.git
 cd LHCb_VeLo_Toy_Model
 pip install -e .
 ```
 
-### Dependencies
+### With optional dependencies
 
 ```bash
-pip install numpy scipy matplotlib pandas
-```
+# Quantum algorithm support (Qiskit)
+pip install -e ".[quantum]"
 
-For quantum algorithm features:
-```bash
-pip install qiskit qiskit-aer
-```
+# Development tools (pytest, mypy, ruff)
+pip install -e ".[dev]"
 
-For IBM Quantum hardware simulation:
-```bash
-pip install qiskit-ibm-runtime
+# Everything
+pip install -e ".[all]"
 ```
 
 ## Quick Start
@@ -46,8 +52,7 @@ pip install qiskit-ibm-runtime
 ### 1. Generate a Simulated Event
 
 ```python
-from LHCB_Velo_Toy_Models.state_event_generator import StateEventGenerator
-from LHCB_Velo_Toy_Models.state_event_model import PlaneGeometry
+from lhcb_velo_toy.generation import PlaneGeometry, StateEventGenerator
 
 # Define detector geometry (10 planes)
 geometry = PlaneGeometry(
@@ -73,15 +78,13 @@ generator.generate_particles(particles)
 
 # Generate complete event with hits
 true_event = generator.generate_complete_events()
-
-# Visualize
-true_event.plot_segments()
 ```
 
 ### 2. Reconstruct Tracks Using Hamiltonian Method
 
 ```python
-from LHCB_Velo_Toy_Models.simple_hamiltonian import SimpleHamiltonian, get_tracks
+from lhcb_velo_toy.solvers import SimpleHamiltonian, get_tracks
+from lhcb_velo_toy.solvers.classical import solve_direct
 
 # Create Hamiltonian with parameters
 ham = SimpleHamiltonian(
@@ -90,9 +93,11 @@ ham = SimpleHamiltonian(
     delta=1.0      # Bias term
 )
 
-# Build and solve the linear system
+# Build the linear system
 A, b = ham.construct_hamiltonian(generator, convolution=False)
-solution = ham.solve_classicaly()
+
+# Solve classically
+solution = solve_direct(A, b)
 
 # Extract reconstructed tracks
 reco_tracks = get_tracks(ham, solution, generator)
@@ -102,103 +107,90 @@ print(f"Reconstructed {len(reco_tracks)} tracks")
 ### 3. Validate Reconstruction Performance
 
 ```python
-from LHCB_Velo_Toy_Models.toy_validator import EventValidator
+from lhcb_velo_toy.analysis import EventValidator
 
 # Create validator
 validator = EventValidator(
     truth_event=true_event,
-    rec_tracks=reco_event
+    rec_tracks=reco_tracks
 )
 
-# Compute LHCb-style metrics (with non-greedy matching)
-metrics = validator.compute_metrics(
-    purity_min=0.7,
-    hit_efficiency_min=0.7
-)
+# Compute LHCb-style metrics (non-greedy matching)
+matches, metrics = validator.match_tracks(purity_min=0.7)
 
-# Print results
-validator.print_metrics()
+print(f"Efficiency:  {metrics['efficiency']:.1%}")
+print(f"Ghost rate:  {metrics['ghost_rate']:.1%}")
+print(f"Mean purity: {metrics['mean_purity']:.3f}")
 ```
 
-### 4. Solve with Quantum Algorithm (HHL)
+### 4. Visualise an Event
 
 ```python
-import numpy as np
-from hhl_algorithm import HHLAlgorithm
+from lhcb_velo_toy.analysis.plotting import plot_event_3d
 
-# Get the Hamiltonian matrix (must be small for quantum simulation)
-A_dense = ham.A.toarray()
-b_vec = ham.b
-
-# Create HHL solver
-hhl = HHLAlgorithm(
-    A_dense, b_vec,
-    num_time_qubits=4,
-    shots=10000
-)
-
-# Build and run circuit
-circuit = hhl.build_circuit()
-counts = hhl.run()
-quantum_solution = hhl.get_solution()
-
-# Compare with classical solution
-classical_solution = np.linalg.solve(A_dense, b_vec)
-classical_normalized = classical_solution / np.linalg.norm(classical_solution)
-fidelity = np.abs(np.vdot(quantum_solution, classical_normalized))
-print(f"Quantum-Classical Fidelity: {fidelity:.4f}")
+fig = plot_event_3d(true_event, title="Truth Event", show_modules=True)
 ```
 
 ## Package Structure
 
 ```
 LHCb_VeLo_Toy_Model/
-├── LHCB_Velo_Toy_Models/
-│   ├── __init__.py                 # Package initialization
-│   ├── state_event_model.py        # Core data structures (Hit, Segment, Track, Event)
-│   ├── state_event_generator.py    # Event generation with LHCb state vectors
-│   ├── multi_scattering_generator.py  # Legacy generator with multiple scattering
-│   ├── hamiltonian.py              # Abstract Hamiltonian interface
-│   ├── simple_hamiltonian.py       # Reference Hamiltonian implementation
-│   ├── simple_hamiltonian_fast.py  # Optimized implementation (vectorized)
-│   ├── simple_hamiltonian_cpp.py   # C++/CUDA wrapper (optional)
-│   ├── toy_validator.py            # Track reconstruction validation
-│   └── lhcb_tracking_plots.py      # Visualization utilities
-├── hhl_algorithm.py                # Basic HHL quantum algorithm
-├── hhl_algorithm_1bit.py           # HHL with Suzuki-Trotter decomposition
-└── README.md
+├── pyproject.toml              # Package metadata & dependencies
+├── LICENSE                     # MIT licence
+├── README.md
+├── src/
+│   └── lhcb_velo_toy/         # Installable package
+│       ├── core/               # Shared type aliases
+│       ├── generation/         # Event simulation
+│       │   ├── generators/     #   StateEventGenerator
+│       │   ├── geometry/       #   PlaneGeometry, RectangularVoidGeometry
+│       │   └── entities/       #   Hit, Track, Module, Event, PrimaryVertex
+│       ├── solvers/            # Track reconstruction
+│       │   ├── hamiltonians/   #   Hamiltonian ABC, Simple, Fast
+│       │   ├── classical/      #   solve_direct, solve_conjugate_gradient
+│       │   ├── quantum/        #   HHL, OneBQF (1-Bit HHL)
+│       │   └── reconstruction/ #   track_finder, get_tracks
+│       └── analysis/           # Validation & plots
+│           ├── validation/     #   EventValidator, Match
+│           └── plotting/       #   event_display, performance
+├── deprecated/                 # Old monolithic code (reference only)
+│   ├── README.md               #   Migration guide
+│   ├── LHCB_Velo_Toy_Models/   #   Original flat package
+│   ├── HHL.py                  #   Standalone HHL script
+│   └── OneBQF.py               #   Standalone 1-bit HHL script
+├── docs/                       # Documentation & presentation
+└── tests/                      # Test suite
 ```
 
 ## Key Modules
 
-### Event Generation
+### Event Generation (`lhcb_velo_toy.generation`)
 
 | Module | Description |
 |--------|-------------|
-| `state_event_generator` | Generate events using LHCb state vectors (x, y, tx, ty, p/q) |
-| `multi_scattering_generator` | Simpler generator focused on multiple scattering physics |
+| `generators.state_event` | Generate events using LHCb state vectors (x, y, tx, ty, p/q) |
+| `geometry.plane` | Planar detector module geometry |
+| `geometry.rectangular_void` | Geometry with a rectangular beam-pipe void |
+| `entities.event` | `Event` dataclass — hits, tracks, modules, primary vertices |
 
-### Track Finding
-
-| Module | Description |
-|--------|-------------|
-| `simple_hamiltonian` | Reference implementation of Hamiltonian-based track finding |
-| `simple_hamiltonian_fast` | Optimized version with vectorized numpy operations |
-| `simple_hamiltonian_cpp` | C++/CUDA accelerated version for large events |
-
-### Validation & Visualization
+### Solvers (`lhcb_velo_toy.solvers`)
 
 | Module | Description |
 |--------|-------------|
-| `toy_validator` | LHCb-style track matching and metrics (efficiency, ghost rate, purity) |
-| `lhcb_tracking_plots` | Comprehensive plotting for performance analysis |
+| `hamiltonians.simple` | Reference Hamiltonian-based track finding |
+| `hamiltonians.fast` | Optimised vectorised implementation |
+| `classical.solvers` | Direct (LU) and conjugate-gradient solvers |
+| `quantum.hhl` | Full HHL algorithm for linear systems |
+| `quantum.one_bit_hhl` | OneBQF — 1-bit HHL with Suzuki-Trotter decomposition |
+| `reconstruction.track_finder` | Extract tracks from solution vectors |
 
-### Quantum Algorithms
+### Analysis (`lhcb_velo_toy.analysis`)
 
 | Module | Description |
 |--------|-------------|
-| `hhl_algorithm` | Standard HHL implementation for linear systems |
-| `hhl_algorithm_1bit` | Enhanced HHL with Suzuki-Trotter decomposition and noise simulation |
+| `validation.validator` | LHCb-style track matching and metrics |
+| `plotting.event_display` | 3D event visualisation with detector planes |
+| `plotting.performance` | Efficiency, ghost-rate, and purity plots |
 
 ## Hamiltonian Track Finding
 
@@ -260,11 +252,10 @@ global matching (not first-come-first-served).
 
 ### Classical Solver
 
-| Implementation | Events/sec | Notes |
-|----------------|------------|-------|
-| `simple_hamiltonian` | ~10 | Reference implementation |
-| `simple_hamiltonian_fast` | ~100 | Vectorized operations |
-| `simple_hamiltonian_cpp` | ~1000 | Requires C++ compilation |
+| Implementation | Notes |
+|----------------|-------|
+| `SimpleHamiltonian` | Reference implementation |
+| `SimpleHamiltonianFast` | Vectorised COO construction, auto solver selection |
 
 ### Quantum (HHL) Limitations
 
@@ -274,10 +265,13 @@ global matching (not first-come-first-served).
 
 ## Examples
 
-See the scripts in the repository root for complete examples:
-
-- `hhl_algorithm.py` - Run HHL on a sample matrix
-- `hhl_algorithm_1bit.py` - Run HHL with Trotter decomposition
+| Notebook | Description |
+|----------|-------------|
+| `notebooks/classical_end_to_end.ipynb` | Full classical pipeline with scalability and noise scans |
+| `notebooks/quantum_hhl_end_to_end.ipynb` | HHL quantum solver with time-qubit sweep |
+| `notebooks/quantum_1bqf_end_to_end.ipynb` | OneBQF (1-Bit HHL) solver with shot study and circuit comparison |
+| `demo_workflow.ipynb` | Quick-start demo: generate → solve → validate → visualise |
+| `test_pipeline.py` | Automated integration test of the full pipeline |
 
 ## Contributing
 
@@ -285,11 +279,13 @@ Contributions are welcome! Please feel free to submit issues and pull requests.
 
 ## Authors
 
-- George William
+- George William Scriven (Maastricht University)
+- Xenofon Chiotopoulos (UHasselt)
+- Alain Chancé (Nikhef)
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
 
 ## References
 

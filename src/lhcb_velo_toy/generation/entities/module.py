@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 from lhcb_velo_toy.core.types import ModuleID
 
 if TYPE_CHECKING:
-    from lhcb_velo_toy.generation.models.hit import Hit
+    from lhcb_velo_toy.generation.entities.hit import Hit
 
 
 @dataclass
