@@ -12,7 +12,7 @@ including:
 - get_tracks: Extract tracks from Hamiltonian solutions
 - get_tracks_fast: Optimized track extraction
 - find_segments: Find connected segments for track building
-- construct_event: Build reconstructed event from solution
+- construct_event: Build reconstructed event from tracks and hits
 
 Note: Segments are NOT stored in Events. They are computed on-demand
 using the segment generation functions in this module.

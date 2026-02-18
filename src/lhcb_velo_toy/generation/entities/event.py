@@ -316,6 +316,102 @@ class Event:
             data = json.load(f)
         return cls.from_dict(data, detector_geometry)
     
+    @staticmethod
+    def _build_modules_from_hits(
+        hits: list["Hit"],
+        detector_geometry: "Geometry",
+    ) -> list["Module"]:
+        """
+        Derive Module objects from hits and detector geometry.
+        
+        Each module's dimensions (z, lx, ly) come from the geometry,
+        and its hit_ids are collected from the hits that reference it.
+        
+        Parameters
+        ----------
+        hits : list[Hit]
+            The hits to assign to modules.
+        detector_geometry : Geometry
+            The detector geometry providing module dimensions.
+        
+        Returns
+        -------
+        list[Module]
+            One Module per geometry layer, populated with hit IDs.
+        """
+        from lhcb_velo_toy.generation.entities.module import Module
+        
+        modules: list[Module] = []
+        for mod_id, lx, ly, zpos in detector_geometry:
+            mod_hit_ids = [h.hit_id for h in hits if h.module_id == mod_id]
+            modules.append(
+                Module(
+                    module_id=mod_id,
+                    z=zpos,
+                    lx=lx,
+                    ly=ly,
+                    hit_ids=mod_hit_ids,
+                )
+            )
+        return modules
+    
+    @classmethod
+    def from_tracks(
+        cls,
+        detector_geometry: "Geometry",
+        tracks: list["Track"],
+        hits: list["Hit"],
+    ) -> "Event":
+        """
+        Construct a reconstructed Event from tracks and a hit pool.
+        
+        This is the recommended way to build an Event from reconstruction
+        output.  Only a geometry, the reconstructed tracks, and the hit
+        pool are required — modules are derived automatically, and
+        primary vertices are left empty (unknown after reconstruction).
+        
+        Hits are filtered to only those referenced by the supplied tracks
+        so the resulting event is self-consistent.
+        
+        Parameters
+        ----------
+        detector_geometry : Geometry
+            The detector geometry configuration.
+        tracks : list[Track]
+            Reconstructed tracks (each carrying ``hit_ids``).
+        hits : list[Hit]
+            Pool of available hits (e.g. from the original event).
+        
+        Returns
+        -------
+        Event
+            A reconstructed event with auto-derived modules and
+            empty primary vertices.
+        
+        Examples
+        --------
+        >>> reco_tracks = get_tracks(ham, solution, event)
+        >>> reco_event = Event.from_tracks(geometry, reco_tracks, event.hits)
+        """
+        # Collect all hit IDs referenced by the reconstructed tracks
+        referenced_ids: set[int] = set()
+        for t in tracks:
+            referenced_ids.update(t.hit_ids)
+        
+        # Filter the hit pool to only those used by these tracks
+        filtered_hits = [h for h in hits if h.hit_id in referenced_ids]
+        
+        # Auto-derive modules from the filtered hits + geometry
+        modules = cls._build_modules_from_hits(filtered_hits, detector_geometry)
+        
+        return cls(
+            detector_geometry=detector_geometry,
+            primary_vertices=[],
+            tracks=tracks,
+            hits=filtered_hits,
+            modules=modules,
+        )
+    
     # =========================================================================
     # Visualization
     # =========================================================================

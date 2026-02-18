@@ -281,6 +281,7 @@ Event
 | `to_json(filepath)` | `None` | Save event to JSON file |
 | `from_dict(data, geometry)` | `Event` | Create Event from dictionary |
 | `from_json(filepath, geometry)` | `Event` | Load event from JSON file |
+| `from_tracks(geometry, tracks, hits)` | `Event` | Build reconstructed event (modules auto-derived, PVs empty) |
 | `get_hit_by_id(hit_id)` | `Hit` | Lookup hit by ID |
 | `get_hits_by_ids(hit_ids)` | `list[Hit]` | Lookup multiple hits |
 | `get_track_by_id(track_id)` | `Track` | Lookup track by ID |
@@ -804,19 +805,20 @@ def get_tracks(
 
 ---
 
-#### `construct_event(detector_geometry, tracks, hits, modules, primary_vertices)`
+#### `construct_event(detector_geometry, tracks, hits)`
 
-Construct an Event object from components.
+Construct a reconstructed Event from tracks and a hit pool. Modules are
+derived automatically from the hits and geometry; primary vertices are
+left empty (unknown after reconstruction). Convenience wrapper around
+`Event.from_tracks`.
 
 ```python
 def construct_event(
     detector_geometry: Geometry,
     tracks: list[Track],
     hits: list[Hit],
-    modules: list[Module],
-    primary_vertices: Optional[list[PrimaryVertex]] = None,
 ) -> Event:
-    """Factory function for creating Event objects."""
+    """Build a reconstructed event — modules auto-derived, PVs empty."""
 ```
 
 ---

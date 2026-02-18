@@ -164,50 +164,43 @@ def construct_event(
     detector_geometry: "Geometry",
     tracks: list["Track"],
     hits: list["Hit"],
-    modules: list["Module"],
-    primary_vertices: Optional[list] = None,
 ) -> "Event":
     """
-    Construct an Event object from components.
+    Construct a reconstructed Event from tracks and a hit pool.
     
-    Factory function for creating Event objects with all required
-    data structures properly initialized.
+    Convenience wrapper around ``Event.from_tracks``.  Modules are
+    derived automatically from the hits and geometry; primary vertices
+    are left empty (unknown after reconstruction).
     
     Parameters
     ----------
     detector_geometry : Geometry
         The detector geometry configuration.
     tracks : list[Track]
-        List of particle tracks.
+        Reconstructed tracks (each carrying ``hit_ids``).
     hits : list[Hit]
-        List of all hits.
-    modules : list[Module]
-        List of detector modules.
-    primary_vertices : list[PrimaryVertex], optional
-        List of primary vertices. If None, creates an empty list.
+        Pool of available hits (e.g. from the original event).
     
     Returns
     -------
     Event
-        Constructed event object.
+        Reconstructed event with auto-derived modules.
     
     Examples
     --------
-    >>> event = construct_event(geometry, tracks, hits, modules)
+    >>> reco_tracks = get_tracks(ham, solution, event)
+    >>> reco_event = construct_event(geometry, reco_tracks, event.hits)
     
-    Notes
-    -----
-    Segments are NOT passed to this function. They are computed on-demand
-    using `get_segments_from_event()` when needed.
+    See Also
+    --------
+    Event.from_tracks : The underlying classmethod.
     """
     from lhcb_velo_toy.generation.entities.event import Event
     
-    return Event(
+    return Event.from_tracks(
         detector_geometry=detector_geometry,
-        primary_vertices=primary_vertices or [],
         tracks=tracks,
         hits=hits,
-        modules=modules,
     )
 
 
