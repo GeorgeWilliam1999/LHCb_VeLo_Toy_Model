@@ -54,6 +54,11 @@ class Event:
         All hits in this event (from all tracks + ghosts).
     modules : list[Module]
         Detector modules with their recorded hits.
+    metadata : dict[str, Any]
+        Generation hyper-parameters needed to reproduce the event
+        (geometry class, z-positions, phi/theta ranges, noise settings,
+        etc.).  Auto-populated with basic geometry info when not
+        supplied explicitly.
     
     Examples
     --------
@@ -86,19 +91,37 @@ class Event:
     tracks: list["Track"] = field(default_factory=list)
     hits: list["Hit"] = field(default_factory=list)
     modules: list["Module"] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
     
     # Internal lookup caches (not serialized)
     _hit_by_id: dict[int, "Hit"] = field(default_factory=dict, repr=False)
     _track_by_id: dict[int, "Track"] = field(default_factory=dict, repr=False)
     
     def __post_init__(self) -> None:
-        """Build internal lookup caches after initialization."""
+        """Build internal lookup caches and auto-populate metadata."""
         self._rebuild_caches()
+        if not self.metadata:
+            self.metadata = self._geometry_metadata()
     
     def _rebuild_caches(self) -> None:
         """Rebuild internal ID lookup caches."""
         self._hit_by_id = {h.hit_id: h for h in self.hits}
         self._track_by_id = {t.track_id: t for t in self.tracks}
+    
+    def _geometry_metadata(self) -> dict[str, Any]:
+        """Return basic geometry metadata extracted from the detector."""
+        geo = self.detector_geometry
+        z_positions: list[float] = []
+        module_ids: list[int] = []
+        for mod_id, _lx, _ly, zpos in geo:
+            module_ids.append(mod_id)
+            z_positions.append(zpos)
+        return {
+            "geometry_class": type(geo).__name__,
+            "n_modules": len(module_ids),
+            "z_positions": z_positions,
+            "module_ids": module_ids,
+        }
     
     @property
     def n_primary_vertices(self) -> int:
@@ -241,6 +264,7 @@ class Event:
             "tracks": [t.to_dict() for t in self.tracks],
             "hits": [h.to_dict() for h in self.hits],
             "modules": [m.to_dict() for m in self.modules],
+            "metadata": self.metadata.copy(),
         }
     
     def to_json(self, filepath: str, indent: int = 2) -> None:
@@ -289,6 +313,7 @@ class Event:
             tracks=[Track.from_dict(t) for t in data.get("tracks", [])],
             hits=[Hit.from_dict(h) for h in data.get("hits", [])],
             modules=[Module.from_dict(m) for m in data.get("modules", [])],
+            metadata=data.get("metadata", {}),
         )
     
     @classmethod
@@ -361,6 +386,8 @@ class Event:
         detector_geometry: "Geometry",
         tracks: list["Track"],
         hits: list["Hit"],
+        *,
+        metadata: dict[str, Any] | None = None,
     ) -> "Event":
         """
         Construct a reconstructed Event from tracks and a hit pool.
@@ -381,6 +408,9 @@ class Event:
             Reconstructed tracks (each carrying ``hit_ids``).
         hits : list[Hit]
             Pool of available hits (e.g. from the original event).
+        metadata : dict[str, Any], optional
+            Event-level metadata.  If *None* the Event will auto-populate
+            basic geometry metadata in ``__post_init__``.
         
         Returns
         -------
@@ -410,6 +440,7 @@ class Event:
             tracks=tracks,
             hits=filtered_hits,
             modules=modules,
+            metadata=metadata or {},
         )
     
     # =========================================================================

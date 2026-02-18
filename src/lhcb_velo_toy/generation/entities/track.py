@@ -7,7 +7,7 @@ charged particle traversing the detector.
 
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, ClassVar
 
 from lhcb_velo_toy.core.types import TrackID, HitID, PVID
 
@@ -29,6 +29,10 @@ class Track:
         ID of the primary vertex this track originates from.
     hit_ids : list[int]
         List of hit IDs belonging to this track, ordered by increasing z.
+    extra : dict[str, Any]
+        Arbitrary additional data (e.g. MC truth variables such as
+        momentum, PID, eta from an external source).  Auto-captured
+        from unknown keys in ``from_dict()``.
     
     Examples
     --------
@@ -50,9 +54,12 @@ class Track:
     To get actual Hit objects, use `event.get_hits_by_ids(track.hit_ids)`.
     """
     
+    _KNOWN_KEYS: ClassVar[frozenset[str]] = frozenset({"track_id", "pv_id", "hit_ids", "extra"})
+    
     track_id: TrackID
     pv_id: PVID = 0
     hit_ids: list[HitID] = field(default_factory=list)
+    extra: dict[str, Any] = field(default_factory=dict)
     
     @property
     def n_hits(self) -> int:
@@ -86,29 +93,39 @@ class Track:
         dict
             Dictionary representation of the track.
         """
-        return {
+        d: dict[str, Any] = {
             "track_id": self.track_id,
             "pv_id": self.pv_id,
             "hit_ids": self.hit_ids.copy(),
         }
+        if self.extra:
+            d["extra"] = self.extra.copy()
+        return d
     
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Track":
         """
         Create a Track from a dictionary.
         
+        Any keys not in the standard set (track_id, pv_id, hit_ids)
+        are automatically captured into ``extra``.
+        
         Parameters
         ----------
         data : dict
             Dictionary with track_id, pv_id, and hit_ids keys.
+            Additional keys are stored in extra.
         
         Returns
         -------
         Track
             The reconstructed track.
         """
+        extra = dict(data.get("extra", {}))
+        extra.update({k: v for k, v in data.items() if k not in cls._KNOWN_KEYS})
         return cls(
             track_id=data["track_id"],
             pv_id=data.get("pv_id", 0),
             hit_ids=data.get("hit_ids", []).copy(),
+            extra=extra,
         )

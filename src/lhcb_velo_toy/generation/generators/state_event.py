@@ -565,12 +565,36 @@ class StateEventGenerator(EventGenerator):
         self.tracks = all_tracks
         self.modules = modules
 
+        # Build generation metadata for reproducibility
+        z_positions: list[float] = []
+        module_ids: list[int] = []
+        for mid, _lx, _ly, zp in self.detector_geometry:
+            module_ids.append(mid)
+            z_positions.append(zp)
+
+        metadata: dict = {
+            "generator": type(self).__name__,
+            "geometry_class": type(self.detector_geometry).__name__,
+            "n_modules": len(module_ids),
+            "z_positions": z_positions,
+            "module_ids": module_ids,
+            "phi_min": self.phi_min,
+            "phi_max": self.phi_max,
+            "theta_min": self.theta_min,
+            "theta_max": self.theta_max,
+            "events": self.events_num,
+            "n_particles": self.n_particles,
+            "measurement_error": self.measurement_error,
+            "collision_noise": self.collision_noise,
+        }
+
         self.true_event = Event(
             detector_geometry=self.detector_geometry,
             primary_vertices=all_pvs,
             tracks=all_tracks,
             hits=all_hits,
             modules=modules,
+            metadata=metadata,
         )
 
         return self.true_event
@@ -683,6 +707,12 @@ class StateEventGenerator(EventGenerator):
             tracks=noisy_tracks,
             hits=remaining_hits,
             modules=noisy_modules,
+            metadata={
+                **self.true_event.metadata,
+                "drop_rate": drop_rate,
+                "ghost_rate": ghost_rate,
+                "is_noisy": True,
+            },
         )
         return noisy_event
 

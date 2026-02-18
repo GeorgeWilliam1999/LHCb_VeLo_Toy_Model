@@ -254,7 +254,7 @@ flowchart LR
 │     │                                                              │        │
 │     │   3. Build bias vector b:                                    │        │
 │     │                                                              │        │
-│     │      b_i = γ + δ  (favor all segments equally)               │        │
+│     │      b_i = δ  (favor all segments equally)                   │        │
 │     │                                                              │        │
 │     └──────────────────────────────────────────────────────────────┘        │
 │                                                                             │

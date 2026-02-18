@@ -7,7 +7,7 @@ where particles can leave hits.
 
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from lhcb_velo_toy.core.types import ModuleID
 
@@ -36,6 +36,9 @@ class Module:
         Half-width of the active area in y (mm).
     hit_ids : list[int]
         List of hit IDs recorded on this module.
+    extra : dict[str, Any]
+        Arbitrary additional data.  Auto-captured from unknown keys
+        in ``from_dict()``.
     
     Examples
     --------
@@ -52,11 +55,16 @@ class Module:
     The module stores hit_ids (not hit objects) to enable JSON serialization.
     """
     
+    _KNOWN_KEYS: ClassVar[frozenset[str]] = frozenset(
+        {"module_id", "z", "lx", "ly", "hit_ids", "extra"}
+    )
+    
     module_id: ModuleID
     z: float
     lx: float
     ly: float
     hit_ids: list[int] = field(default_factory=list)
+    extra: dict[str, Any] = field(default_factory=dict)
     
     @property
     def n_hits(self) -> int:
@@ -116,33 +124,43 @@ class Module:
         dict
             Dictionary representation of the module.
         """
-        return {
+        d: dict[str, Any] = {
             "module_id": self.module_id,
             "z": self.z,
             "lx": self.lx,
             "ly": self.ly,
             "hit_ids": self.hit_ids.copy(),
         }
+        if self.extra:
+            d["extra"] = self.extra.copy()
+        return d
     
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Module":
         """
         Create a Module from a dictionary.
         
+        Any keys not in the standard set are automatically captured
+        into ``extra``.
+        
         Parameters
         ----------
         data : dict
             Dictionary with module_id, z, lx, ly, hit_ids keys.
+            Additional keys are stored in extra.
         
         Returns
         -------
         Module
             The reconstructed module.
         """
+        extra = dict(data.get("extra", {}))
+        extra.update({k: v for k, v in data.items() if k not in cls._KNOWN_KEYS})
         return cls(
             module_id=data["module_id"],
             z=data["z"],
             lx=data["lx"],
             ly=data["ly"],
             hit_ids=data.get("hit_ids", []),
+            extra=extra,
         )

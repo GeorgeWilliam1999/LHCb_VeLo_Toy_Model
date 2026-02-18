@@ -6,8 +6,8 @@ leaving an electronic signal that was recorded.
 """
 
 from __future__ import annotations
-from dataclasses import dataclass
-from typing import Any
+from dataclasses import dataclass, field
+from typing import Any, ClassVar
 
 from lhcb_velo_toy.core.types import HitID, ModuleID, TrackID
 
@@ -36,6 +36,10 @@ class Hit:
     track_id : int
         Identifier of the true particle track that created this hit.
         Set to -1 for ghost hits (noise).
+    extra : dict[str, Any]
+        Arbitrary additional data (e.g. cluster size, charge deposition
+        from an external source).  Auto-captured from unknown keys
+        in ``from_dict()``.
     
     Examples
     --------
@@ -52,12 +56,17 @@ class Hit:
     enable JSON serialization of the entire Event.
     """
     
+    _KNOWN_KEYS: ClassVar[frozenset[str]] = frozenset(
+        {"hit_id", "x", "y", "z", "module_id", "track_id", "extra"}
+    )
+    
     hit_id: HitID
     x: float
     y: float
     z: float
     module_id: ModuleID
     track_id: TrackID = -1  # -1 indicates ghost/noise hit
+    extra: dict[str, Any] = field(default_factory=dict)
     
     def __getitem__(self, index: int) -> float:
         """
@@ -120,7 +129,7 @@ class Hit:
         dict
             Dictionary representation of the hit.
         """
-        return {
+        d: dict[str, Any] = {
             "hit_id": self.hit_id,
             "x": self.x,
             "y": self.y,
@@ -128,22 +137,31 @@ class Hit:
             "module_id": self.module_id,
             "track_id": self.track_id,
         }
+        if self.extra:
+            d["extra"] = self.extra.copy()
+        return d
     
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Hit":
         """
         Create a Hit from a dictionary.
         
+        Any keys not in the standard set are automatically captured
+        into ``extra``.
+        
         Parameters
         ----------
         data : dict
             Dictionary with hit_id, x, y, z, module_id, track_id keys.
+            Additional keys are stored in extra.
         
         Returns
         -------
         Hit
             The reconstructed hit.
         """
+        extra = dict(data.get("extra", {}))
+        extra.update({k: v for k, v in data.items() if k not in cls._KNOWN_KEYS})
         return cls(
             hit_id=data["hit_id"],
             x=data["x"],
@@ -151,4 +169,5 @@ class Hit:
             z=data["z"],
             module_id=data["module_id"],
             track_id=data.get("track_id", -1),
+            extra=extra,
         )

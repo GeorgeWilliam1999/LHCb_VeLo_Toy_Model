@@ -170,8 +170,7 @@ classDiagram
     
     class SimpleHamiltonianFast {
         +_segment_vectors: ndarray
-        +_segment_to_hit_ids: dict
-        -_construct_coo(event)
+        +_segment_to_hit_ids: list~tuple~
     }
     
     Hamiltonian <|-- SimpleHamiltonian
@@ -184,6 +183,7 @@ classDiagram
         +z: float
         +module_id: int
         +track_id: int
+        +extra: dict
         +position tuple
         +is_ghost bool
         +to_dict() dict
@@ -205,6 +205,7 @@ classDiagram
         +track_id: int
         +pv_id: int
         +hit_ids: list[int]
+        +extra: dict
         +to_dict() dict
         +from_dict(data) Track
     }
@@ -215,6 +216,7 @@ classDiagram
         +y: float
         +z: float
         +track_ids: list[int]
+        +extra: dict
         +to_dict() dict
     }
     
@@ -224,6 +226,7 @@ classDiagram
         +lx: float
         +ly: float
         +hit_ids: list[int]
+        +extra: dict
         +to_dict() dict
     }
     
@@ -233,10 +236,12 @@ classDiagram
         +tracks: list[Track]
         +hits: list[Hit]
         +modules: list[Module]
+        +metadata: dict
         +to_dict() dict
-        +to_json(filepath)
-        +from_dict(data, geometry) Event
-        +from_json(filepath, geometry) Event
+        +to_json(filepath, indent)
+        +from_dict(data, detector_geometry) Event
+        +from_json(filepath, detector_geometry) Event
+        +from_tracks(detector_geometry, tracks, hits) Event$
     }
     
     Segment --> Hit : connects 2

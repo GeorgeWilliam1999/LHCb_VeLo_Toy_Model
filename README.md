@@ -21,7 +21,7 @@ the LHCb experiment at CERN's Large Hadron Collider. This toy model simulates:
 - **Particle collision events** with configurable detector geometry
 - **Multiple scattering effects** as particles traverse detector material
 - **Track reconstruction** using Hamiltonian-based optimization
-- **Quantum algorithms** (HHL and OneBQF) for solving the track-finding linear system
+- **Quantum algorithms** (HHL and OneBitHHL) for solving the track-finding linear system
 - **Validation metrics** following LHCb conventions
 
 ## Installation
@@ -148,7 +148,7 @@ LHCb_VeLo_Toy_Model/
 │       ├── solvers/            # Track reconstruction
 │       │   ├── hamiltonians/   #   Hamiltonian ABC, Simple, Fast
 │       │   ├── classical/      #   solve_direct, solve_conjugate_gradient
-│       │   ├── quantum/        #   HHL, OneBQF (1-Bit HHL)
+│       │   ├── quantum/        #   HHL, OneBitHHL (1-Bit HHL)
 │       │   └── reconstruction/ #   track_finder, get_tracks
 │       └── analysis/           # Validation & plots
 │           ├── validation/     #   EventValidator, Match
@@ -159,7 +159,7 @@ LHCb_VeLo_Toy_Model/
 │   ├── HHL.py                  #   Standalone HHL script
 │   └── OneBQF.py               #   Standalone 1-bit HHL script
 ├── docs/                       # Documentation & presentation
-└── tests/                      # Test suite
+└── test_pipeline.py            # Integration test
 ```
 
 ## Key Modules
@@ -181,7 +181,7 @@ LHCb_VeLo_Toy_Model/
 | `hamiltonians.fast` | Optimised vectorised implementation |
 | `classical.solvers` | Direct (LU) and conjugate-gradient solvers |
 | `quantum.hhl` | Full HHL algorithm for linear systems |
-| `quantum.one_bit_hhl` | OneBQF — 1-bit HHL with Suzuki-Trotter decomposition |
+| `quantum.one_bit_hhl` | OneBitHHL — 1-bit HHL with Suzuki-Trotter decomposition |
 | `reconstruction.track_finder` | Extract tracks from solution vectors |
 
 ### Analysis (`lhcb_velo_toy.analysis`)
@@ -269,7 +269,7 @@ global matching (not first-come-first-served).
 |----------|-------------|
 | `notebooks/classical_end_to_end.ipynb` | Full classical pipeline with scalability and noise scans |
 | `notebooks/quantum_hhl_end_to_end.ipynb` | HHL quantum solver with time-qubit sweep |
-| `notebooks/quantum_1bqf_end_to_end.ipynb` | OneBQF (1-Bit HHL) solver with shot study and circuit comparison |
+| `notebooks/quantum_1bqf_end_to_end.ipynb` | OneBitHHL (1-Bit HHL) solver with shot study and circuit comparison |
 | `demo_workflow.ipynb` | Quick-start demo: generate → solve → validate → visualise |
 | `test_pipeline.py` | Automated integration test of the full pipeline |
 

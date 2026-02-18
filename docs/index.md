@@ -60,7 +60,7 @@ lhcb_velo_toy/
 ├── solvers/             # Solving algorithms
 │   ├── hamiltonians/    # Hamiltonian (ABC), SimpleHamiltonian, Fast
 │   ├── classical/       # Conjugate gradient, direct solvers
-│   ├── quantum/         # HHL, OneBQF (1-Bit Quantum Filter)
+│   ├── quantum/         # HHL, OneBitHHL (1-Bit Quantum Filter)
 │   └── reconstruction/  # Segment (on-demand), get_tracks
 │
 └── analysis/            # Analysis and validation
@@ -152,7 +152,7 @@ graph LR
         E --> H[Hamiltonian]
         H --> S{Solver}
         S --> |Classical| CG[Conjugate Gradient]
-        S --> |Quantum| HHL[HHL/OneBQF]
+        S --> |Quantum| HHL[HHL/OneBitHHL]
         CG --> X[Solution vector]
         HHL --> X
     end
@@ -177,12 +177,6 @@ graph LR
 - **LHCb Collaboration**: [LHCb VELO Technical Design Report](https://cds.cern.ch/record/1621894)
 - **HHL Algorithm**: [Harrow, Hassidim, Lloyd (2009)](https://arxiv.org/abs/0811.3171)
 - **Quantum Track Finding**: [arXiv papers on quantum approaches to particle tracking]
-
----
-
-## 🤝 Contributing
-
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines on contributing to this project.
 
 ---
 

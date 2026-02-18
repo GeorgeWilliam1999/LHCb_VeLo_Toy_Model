@@ -89,6 +89,7 @@ class Hit:
     z: float          # Z coordinate (mm), along beam axis
     module_id: int    # Detector module ID
     track_id: int     # True particle track ID (-1 for ghosts)
+    extra: dict       # Arbitrary additional data (auto-captured from unknown keys)
 ```
 
 **Properties:**
@@ -104,7 +105,7 @@ class Hit:
 |--------|---------|-------------|
 | `__getitem__(index)` | `float` | Access coordinates: 0=x, 1=y, 2=z |
 | `to_dict()` | `dict` | JSON-serializable dictionary |
-| `from_dict(data)` | `Hit` | Create Hit from dictionary |
+| `from_dict(data)` | `Hit` | Create Hit from dictionary (unknown keys → `extra`) |
 
 **Example:**
 ```python
@@ -172,6 +173,7 @@ class Track:
     track_id: int              # Unique identifier
     pv_id: int                 # Primary vertex ID this track originates from
     hit_ids: list[int]         # IDs of hits on this track (ordered by z)
+    extra: dict                # Arbitrary additional data (auto-captured from unknown keys)
 ```
 
 **Properties:**
@@ -186,7 +188,7 @@ class Track:
 |--------|---------|-------------|
 | `add_hit_id(hit_id)` | `None` | Append a hit ID to this track |
 | `to_dict()` | `dict` | JSON-serializable dictionary |
-| `from_dict(data)` | `Track` | Create Track from dictionary |
+| `from_dict(data)` | `Track` | Create Track from dictionary (unknown keys → `extra`) |
 
 **Example:**
 ```python
@@ -212,6 +214,7 @@ class Module:
     lx: float            # Half-width in x (mm)
     ly: float            # Half-width in y (mm)
     hit_ids: list[int]   # IDs of hits on this module
+    extra: dict          # Arbitrary additional data (auto-captured from unknown keys)
 ```
 
 **Properties:**
@@ -228,7 +231,7 @@ class Module:
 | `clear_hits()` | `None` | Remove all hits from module |
 | `contains_point(x, y)` | `bool` | Check if (x,y) is within module bounds |
 | `to_dict()` | `dict` | JSON-serializable dictionary |
-| `from_dict(data)` | `Module` | Create Module from dictionary |
+| `from_dict(data)` | `Module` | Create Module from dictionary (unknown keys → `extra`) |
 
 ---
 
@@ -244,6 +247,7 @@ class Event:
     tracks: list[Track]                 # Particle tracks
     hits: list[Hit]                     # All hits
     modules: list[Module]               # Detector modules
+    metadata: dict                      # Generation hyper-parameters (auto-populated)
 ```
 
 > **Note:** Segments are NOT stored in Events. Use `get_segments_from_event(event)`
@@ -278,13 +282,14 @@ Event
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `to_dict()` | `dict` | Convert to JSON-serializable dictionary |
-| `to_json(filepath)` | `None` | Save event to JSON file |
-| `from_dict(data, geometry)` | `Event` | Create Event from dictionary |
-| `from_json(filepath, geometry)` | `Event` | Load event from JSON file |
+| `to_json(filepath, indent=2)` | `None` | Save event to JSON file |
+| `from_dict(data, detector_geometry)` | `Event` | Create Event from dictionary |
+| `from_json(filepath, detector_geometry)` | `Event` | Load event from JSON file |
 | `from_tracks(geometry, tracks, hits)` | `Event` | Build reconstructed event (modules auto-derived, PVs empty) |
-| `get_hit_by_id(hit_id)` | `Hit` | Lookup hit by ID |
+| `from_tracks(geometry, tracks, hits, *, metadata=...)` | `Event` | Build reconstructed event with explicit metadata |
+| `get_hit_by_id(hit_id)` | `Hit or None` | Lookup hit by ID |
 | `get_hits_by_ids(hit_ids)` | `list[Hit]` | Lookup multiple hits |
-| `get_track_by_id(track_id)` | `Track` | Lookup track by ID |
+| `get_track_by_id(track_id)` | `Track or None` | Lookup track by ID |
 | `get_hits_by_module(module_id)` | `list[Hit]` | Get all hits on a module |
 | `get_hits_by_track(track_id)` | `list[Hit]` | Get all hits belonging to a track |
 | `get_tracks_by_pv(pv_id)` | `list[Track]` | Get tracks from a primary vertex |
@@ -304,6 +309,7 @@ class PrimaryVertex:
     y: float                # Y position (mm)
     z: float                # Z position (mm)
     track_ids: list[int]    # IDs of tracks from this vertex
+    extra: dict             # Arbitrary additional data (auto-captured from unknown keys)
 ```
 
 **Properties:**
@@ -319,7 +325,7 @@ class PrimaryVertex:
 |--------|---------|-------------|
 | `add_track(track_id)` | `None` | Associate a track with this vertex |
 | `to_dict()` | `dict` | JSON-serializable dictionary |
-| `from_dict(data)` | `PrimaryVertex` | Create from dictionary |
+| `from_dict(data)` | `PrimaryVertex` | Create from dictionary (unknown keys → `extra`) |
 
 ---
 
@@ -540,16 +546,23 @@ Abstract base class for track-finding Hamiltonians.
 
 ```python
 class Hamiltonian(ABC):
-    A: scipy.sparse.csc_matrix    # Hamiltonian matrix
-    b: np.ndarray                 # Bias vector
-    segments: list[Segment]       # Constructed segments
-    n_segments: int               # Total segments
+    A: Optional[csc_matrix] = None    # Hamiltonian matrix (None before construction)
+    b: Optional[np.ndarray] = None    # Bias vector (None before construction)
+    segments: list[Segment]           # Constructed segments
+    n_segments: int                   # Total segments
 
     @abstractmethod
-    def construct_hamiltonian(self, event: StateEventGenerator) -> tuple: ...
+    def construct_hamiltonian(
+        self,
+        event: Event | StateEventGenerator,
+        convolution: bool = False,
+    ) -> tuple[csc_matrix, np.ndarray]: ...
 
     @abstractmethod
-    def evaluate(self, solution) -> float: ...
+    def evaluate(self, solution: np.ndarray) -> float: ...
+
+    def solve_classicaly(self) -> np.ndarray: ...
+    def get_matrix_dense(self) -> np.ndarray: ...
 ```
 
 **Mathematical Formulation:**
@@ -562,6 +575,14 @@ where $\mathbf{x}$ is the segment activation vector and the matrix $A$ encodes:
 
 - **Diagonal**: $A_{ii} = -(\gamma + \delta)$ (self-interaction penalty)
 - **Off-diagonal**: $A_{ij} = 1$ if segments $i, j$ share a hit and are angularly compatible
+- **Bias**: $b_i = \delta$
+
+**Concrete Methods (inherited by all subclasses):**
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `solve_classicaly()` | `np.ndarray` | Solve $Ax = b$ via conjugate gradient |
+| `get_matrix_dense()` | `np.ndarray` | Return $A$ as a dense array |
 
 ---
 
@@ -593,10 +614,11 @@ class SimpleHamiltonian(Hamiltonian):
 
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
-| `construct_segments(event)` | `StateEventGenerator` | `None` | Build all segment candidates |
-| `construct_hamiltonian(event, convolution=False)` | `StateEventGenerator, bool` | `(A, b)` | Build matrix and bias |
+| `construct_segments(event)` | `Event \| StateEventGenerator` | `None` | Build all segment candidates |
+| `construct_hamiltonian(event, convolution=False)` | `Event \| StateEventGenerator, bool` | `(A, b)` | Build matrix and bias |
 | `solve_classicaly()` | | `np.ndarray` | Solve via conjugate gradient |
 | `evaluate(solution)` | `np.ndarray` | `float` | Compute Hamiltonian energy |
+| `get_matrix_dense()` | | `np.ndarray` | Return A as dense array |
 
 **Compatibility Function:**
 
@@ -637,13 +659,80 @@ class SimpleHamiltonianFast(Hamiltonian):
 | 1,000 | 0.8s | 0.15s | 5x |
 | 10,000 | 45s | 3s | 15x |
 
+**Methods:**
+
+| Method | Parameters | Returns | Description |
+|--------|------------|---------|-------------|
+| `construct_segments(event)` | `Event \| StateEventGenerator` | `None` | Build segments with pre-computed direction vectors |
+| `construct_hamiltonian(event, convolution=False)` | `Event \| StateEventGenerator, bool` | `(A, b)` | Build matrix using COO construction |
+| `solve_classicaly()` | | `np.ndarray` | Solve with automatic solver selection |
+| `evaluate(solution)` | `np.ndarray` | `float` | Compute Hamiltonian energy |
+| `get_matrix_dense()` | | `np.ndarray` | Return A as dense array |
+
 ---
 
 ### Classical Solvers
 
+#### `solve_conjugate_gradient(A, b, x0, tol, maxiter)`
+
+Solve $Ax = b$ using conjugate gradient.
+
+```python
+def solve_conjugate_gradient(
+    A: csc_matrix,
+    b: np.ndarray,
+    x0: Optional[np.ndarray] = None,
+    tol: float = 1e-10,
+    maxiter: Optional[int] = None,
+) -> tuple[np.ndarray, int]:
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `A` | `csc_matrix` | Required | Sparse system matrix |
+| `b` | `ndarray` | Required | Right-hand side vector |
+| `x0` | `ndarray` | `None` | Initial guess (zeros if None) |
+| `tol` | `float` | `1e-10` | Convergence tolerance |
+| `maxiter` | `int` | `None` | Max iterations (default 10n) |
+
+Returns `(solution, info)` where `info = 0` means convergence.
+
+---
+
+#### `solve_direct(A, b)`
+
+Solve $Ax = b$ using direct LU factorisation.
+
+```python
+def solve_direct(A: csc_matrix, b: np.ndarray) -> np.ndarray
+```
+
+Faster for small/medium systems but memory-intensive.
+
+---
+
+#### `select_solver(A, b, threshold)`
+
+Automatically choose between direct and iterative solvers.
+
+```python
+def select_solver(
+    A: csc_matrix,
+    b: np.ndarray,
+    threshold: int = 5000,
+) -> np.ndarray
+```
+
+Uses `solve_direct` when $n \le$ `threshold`, otherwise `solve_conjugate_gradient`.
+
+---
+
 #### `solve_classicaly()`
 
 Solve the linear system $A\mathbf{x} = \mathbf{b}$ using conjugate gradient.
+
+> **Note:** This is a convenience method on the `Hamiltonian` ABC, not a
+> standalone function. See the standalone solvers above for direct use.
 
 ```python
 def solve_classicaly(self) -> np.ndarray:
@@ -704,12 +793,12 @@ class HHLAlgorithm:
 
 ---
 
-#### `class OneBQF`
+#### `class OneBitHHL`
 
 1-Bit Quantum Filter using Suzuki-Trotter decomposition.
 
 ```python
-class OneBQF:
+class OneBitHHL:
     def __init__(
         self,
         matrix_A: np.ndarray,
@@ -737,7 +826,7 @@ class OneBQF:
 
 **Noise Model Execution:**
 ```python
-hhl = OneBQF(A, b, num_time_qubits=1, shots=10000)
+hhl = OneBitHHL(A, b, num_time_qubits=1, shots=10000)
 hhl.build_circuit()
 
 # Noiseless simulation
@@ -753,26 +842,26 @@ solution, success_count = hhl.get_solution(counts_noisy)
 
 ### Track Reconstruction
 
-#### `find_segments(s0, active)`
+#### `find_segments(segment, active_segments)`
 
 Find segments connected to a given segment.
 
 ```python
-def find_segments(s0: Segment, active: list[Segment]) -> list[Segment]:
+def find_segments(segment: Segment, active_segments: list[Segment]) -> list[Segment]:
     """
     Two segments are connected if they share an endpoint hit.
     
     Parameters
     ----------
-    s0 : Segment
+    segment : Segment
         Reference segment
-    active : list[Segment]
+    active_segments : list[Segment]
         Pool of segments to search
     
     Returns
     -------
     list[Segment]
-        Segments connected to s0
+        Segments connected to the reference segment
     """
 ```
 
@@ -802,6 +891,14 @@ def get_tracks(
     Returns list of reconstructed Track objects.
     """
 ```
+
+---
+
+#### `get_tracks_fast(hamiltonian, solution, event, threshold)`
+
+Optimised track extraction using vectorized operations. Same interface
+as `get_tracks`; delegates internally but may use pre-computed data
+structures from `SimpleHamiltonianFast` in the future.
 
 ---
 
@@ -839,7 +936,7 @@ from lhcb_velo_toy.solvers.reconstruction import (
 | Function | Parameters | Returns | Description |
 |----------|------------|---------|-------------|
 | `get_segments_from_track(track, event)` | Track, Event | `list[Segment]` | Segments for one track (with track_id, pv_id) |
-| `get_segments_from_event(event)` | Event | `list[Segment]` | All segments from all tracks |
+| `get_segments_from_event(event, include_ghosts=False)` | Event, bool | `list[Segment]` | All segments from all tracks |
 | `get_candidate_segments(event, max_delta_z=None)` | Event, float (opt.) | `list[Segment]` | All possible candidate segments |
 | `get_all_possible_segments(event, max_z_gap=1)` | Event, int | `list[Segment]` | All hit-to-hit segment candidates |
 
@@ -867,6 +964,19 @@ class Match:
     truth_id: Optional[int] = None   # Accepted truth ID
     is_clone: bool = False           # Marked as clone
 ```
+
+**Properties:**
+
+| Property | Returns | Description |
+|----------|---------|-------------|
+| `is_ghost` | `bool` | True if candidate but not accepted |
+| `is_primary` | `bool` | True if accepted and not a clone |
+
+**Methods:**
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `to_dict()` | `dict` | Convert to dictionary (for DataFrame construction) |
 
 ---
 
@@ -935,11 +1045,11 @@ This ensures globally optimal matching rather than first-come-first-served.
 | `plot_efficiency_vs_parameter(params, values, ...)` | arrays | `Figure` | Efficiency vs parameter curve |
 | `plot_ghost_rate_vs_parameter(params, values, ...)` | arrays | `Figure` | Ghost rate vs parameter curve |
 | `plot_purity_distribution(purities, ...)` | array | `Figure` | Purity histogram |
-| `plot_comparison(classical, quantum, params, ...)` | arrays | `Figure` | Side-by-side solver comparison |
-| `generate_performance_report(df, output_dir, prefix)` | DataFrame, str, str | `dict[str, str]` | Generate all standard plots and save to disk |
-| `plot_hit_distribution(event)` | Event | `Figure` | Hit spatial distribution |
-| `plot_reco_vs_truth(event, reco_tracks)` | Event, list | `Figure` | Overlay reco vs truth tracks |
-| `save_event_animation(event, filepath, ...)` | Event, str | `None` | Save rotating 3D animation |
+| `plot_comparison(parameter_values, classical_metric, quantum_metric, ...)` | Sequence, Sequence, Sequence | `Figure` | Side-by-side solver comparison |
+| `generate_performance_report(results_df, output_dir, prefix)` | DataFrame, str, str | `dict[str, str]` | Generate all standard plots and save to disk |
+| `plot_hit_distribution(event, projection="xy", figsize=...)` | Event, str, tuple | `Figure` | Hit spatial distribution |
+| `plot_reco_vs_truth(truth_event, reco_tracks, ...)` | Event, list[Track] | `Figure` | Side-by-side truth vs reco 3D comparison |
+| `save_event_animation(event, filename, fps=30, duration=5.0)` | Event, str, int, float | `None` | Save rotating 3D animation |
 | `set_lhcb_style()` | — | `None` | Apply LHCb publication style to matplotlib |
 
 ---
@@ -949,7 +1059,7 @@ This ensures globally optimal matching rather than first-come-first-served.
 ### Core Types
 
 ```python
-from typing import TypeVar, Protocol
+from typing import TypeAlias, Protocol, runtime_checkable
 
 # Type aliases
 HitID = int
@@ -960,24 +1070,23 @@ PVID = int
 StateVector = dict[str, float]  # {'x', 'y', 'z', 'tx', 'ty', 'p/q'}
 
 Position = tuple[float, float, float]  # (x, y, z)
-
-# Geometry iteration
-GeometryItem = tuple[ModuleID, float, float, float]  # (module_id, lx, ly, z)
 ```
 
 ### Protocols
 
 ```python
-class SupportsHitPosition(Protocol):
+@runtime_checkable
+class SupportsPosition(Protocol):
     """Objects with position coordinates."""
     x: float
     y: float
     z: float
 
+@runtime_checkable
 class SupportsIteration(Protocol):
     """Objects supporting len() and iteration."""
     def __len__(self) -> int: ...
-    def __getitem__(self, index: int) -> Any: ...
+    def __getitem__(self, index: int) -> tuple: ...
 ```
 
 ---
@@ -991,26 +1100,6 @@ class SupportsIteration(Protocol):
 | `ValueError("Not initialised")` | Calling `solve_classicaly()` before `construct_hamiltonian()` | Call `construct_hamiltonian()` first |
 | `ImportError` | Missing optional dependency (e.g. Qiskit for quantum) | Install with `pip install -e ".[quantum]"` |
 | `AssertionError` | Invalid primary vertex count | Ensure `len(vertices) == events` |
-
----
-
-## Constants
-
-### Physics Constants
-
-```python
-# Default detector parameters (VELO-like)
-DEFAULT_DZ_MM = 33.0           # Layer spacing
-DEFAULT_LAYERS = 5             # Number of layers
-DEFAULT_LX_MM = 80.0           # Half-width in x
-DEFAULT_LY_MM = 80.0           # Half-width in y
-
-# Default algorithm parameters
-DEFAULT_EPSILON = 1e-7         # Angular tolerance
-DEFAULT_GAMMA = 2.0            # Self-interaction
-DEFAULT_DELTA = 1.0            # Bias term
-DEFAULT_THETA_D = 1e-4         # ERF smoothing
-```
 
 ---
 
