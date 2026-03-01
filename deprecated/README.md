@@ -21,6 +21,7 @@ modular, installable `lhcb_velo_toy` package under `src/`.
 | `lhcb_tracking_plots.py` | `src/lhcb_velo_toy/analysis/plotting/` (split into `event_display.py`, `performance.py`) |
 | `HHL.py` | `src/lhcb_velo_toy/solvers/quantum/hhl.py` |
 | `OneBQF.py` | `src/lhcb_velo_toy/solvers/quantum/one_bit_hhl.py` |
+| *(no equivalent)* | `src/lhcb_velo_toy/persistence/` — **new** save/load module for pipeline state & parametric studies |
 
 ## Migration guide
 

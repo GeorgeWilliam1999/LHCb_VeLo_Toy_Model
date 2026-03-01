@@ -14,7 +14,8 @@ This document contains Mermaid diagrams showing the data flow, architecture, and
 6. [Hamiltonian Construction Flow](#hamiltonian-construction-flow)
 7. [Quantum Algorithm Flow](#quantum-algorithm-flow)
 8. [Validation Flow](#validation-flow)
-9. [Sequence Diagrams](#sequence-diagrams)
+9. [Persistence Flow](#persistence-flow)
+10. [Sequence Diagrams](#sequence-diagrams)
 
 ---
 
@@ -39,6 +40,11 @@ graph TB
         PLT[Plotting]
     end
     
+    subgraph persistence["Persistence Module"]
+        PIP[Pipeline Save/Load]
+        STU[Study Save/Load]
+    end
+    
     GEO --> EVG
     DAT --> EVG
     EVG --> HAM
@@ -47,6 +53,11 @@ graph TB
     CLS --> VAL
     QUA --> VAL
     VAL --> PLT
+    
+    EVG --> PIP
+    HAM --> PIP
+    VAL --> PIP
+    PLT --> STU
 ```
 
 ---
@@ -334,6 +345,18 @@ graph TD
     ENT --> TV
     SH --> TV
     TV --> LTP
+    
+    %% Persistence module
+    PER_PIP[persistence/pipeline.py]
+    PER_STU[persistence/study.py]
+    
+    NP --> PER_PIP
+    SP --> PER_PIP
+    NP --> PER_STU
+    
+    ENT --> PER_PIP
+    GEO2 --> PER_PIP
+    TV --> PER_PIP
     
     style generation fill:#e3f2fd
     style solvers fill:#e8f5e9
@@ -823,6 +846,89 @@ erDiagram
 
 > **Note:** Segments are NOT stored in Events. They are computed on-demand
 > using `get_segments_from_event()` from `solvers.reconstruction`.
+
+---
+
+## Persistence Flow
+
+### Pipeline Save/Load
+
+```mermaid
+flowchart TD
+    subgraph SavePipeline["save_pipeline()"]
+        direction TB
+        EVT[Event] --> EJ["event.json\n(embedded geometry)"]
+        HAM["Hamiltonian\n(A, b, ε, γ, δ)"] --> AZ["A.npz\n(scipy sparse)"]
+        HAM --> BN["b.npy"]
+        SOL[Solution vector] --> SN["solution.npy"]
+        CFG["Config dict"] --> CJ["config.json"]
+        RECO["Reco tracks\n(optional)"] --> RJ["reco_event.json"]
+        MATCH["Matches\n(optional)"] --> MJ["matches.json"]
+        MET["Metrics\n(optional)"] --> MTJ["metrics.json"]
+    end
+    
+    subgraph LoadPipeline["load_pipeline()"]
+        direction TB
+        CJ2["config.json"] --> PR["PipelineResult"]
+        EJ2["event.json"] --> PR
+        AZ2["A.npz"] --> PR
+        BN2["b.npy"] --> PR
+        SN2["solution.npy"] --> PR
+        RJ2["reco_event.json"] --> PR
+        MJ2["matches.json"] --> PR
+        MTJ2["metrics.json"] --> PR
+    end
+    
+    style SavePipeline fill:#e8f5e9
+    style LoadPipeline fill:#e3f2fd
+```
+
+### Study Save/Load
+
+```mermaid
+flowchart TD
+    subgraph SaveStudy["save_study()"]
+        direction TB
+        SCFG["config dict"] --> SCJ["study_config.json"]
+        SCAN["scan_results\n{(angle, mult): [metrics...]}"] --> SNP["scan_results.npz\n(columnar arrays)"]
+        HIST["hist_data\n(angle distributions)"] --> HNP["hist_data.npz"]
+        EXTRA["extra_arrays"] --> ENP["extra_arrays.npz"]
+    end
+    
+    subgraph LoadStudy["load_study()"]
+        direction TB
+        SCJ2["study_config.json"] --> SR["StudyResult"]
+        SNP2["scan_results.npz"] --> SR
+        HNP2["hist_data.npz"] --> SR
+        ENP2["extra_arrays.npz"] --> SR
+    end
+    
+    style SaveStudy fill:#e8f5e9
+    style LoadStudy fill:#e3f2fd
+```
+
+### Batch Events
+
+```mermaid
+flowchart LR
+    BATCH["save_events_batch()"] --> E0["event_000/"]
+    BATCH --> E1["event_001/"]
+    BATCH --> E2["event_002/"]
+    BATCH --> EN["..."]
+    
+    E0 --> LP0["load_pipeline()"]
+    E1 --> LP1["load_pipeline()"]
+    E2 --> LP2["load_pipeline()"]
+    
+    LP0 --> RES["list[PipelineResult]"]
+    LP1 --> RES
+    LP2 --> RES
+```
+
+> **Format notes:**
+> - Event/geometry: JSON (human-readable, embedded `geometry_class` discriminator)
+> - Arrays: NumPy `.npy` (dense) / `.npz` (sparse via `scipy.sparse.save_npz`)
+> - No extra dependencies beyond core numpy/scipy
 
 ---
 

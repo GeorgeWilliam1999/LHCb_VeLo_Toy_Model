@@ -27,6 +27,9 @@ from lhcb_velo_toy.solvers.reconstruction.segment import (
 from lhcb_velo_toy.solvers.reconstruction.track_finder import (
     get_tracks,
     get_tracks_fast,
+    get_tracks_layered,
+    get_tracks_optimal,
+    get_tracks_optimal_iterative,
     find_segments,
     construct_event,
     get_all_possible_segments,
@@ -42,6 +45,9 @@ __all__ = [
     # Track finding
     "get_tracks",
     "get_tracks_fast",
+    "get_tracks_layered",
+    "get_tracks_optimal",
+    "get_tracks_optimal_iterative",
     "find_segments",
     "construct_event",
 ]

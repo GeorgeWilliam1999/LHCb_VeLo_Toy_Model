@@ -25,6 +25,7 @@ The **LHCb VELO Toy Model** is a simulation and reconstruction framework for par
 | **Hamiltonian Solvers** | Formulate track reconstruction as an optimization problem |
 | **Quantum Algorithms** | Explore HHL algorithm for linear system solving |
 | **Validation Tools** | Measure reconstruction performance using LHCb metrics |
+| **Persistence** | Save/load pipeline state and parametric sweep results |
 
 ---
 
@@ -44,7 +45,14 @@ The **LHCb VELO Toy Model** is a simulation and reconstruction framework for par
 │  │                 │     │ • Reconstruction│    │                 │         │
 │  └─────────────────┘     └─────────────────┘    └─────────────────┘         │
 │           │                     │                     │                     │
-│           ▼                     ▼                     ▼                     │
+│           └─────────────────────┬─────────────────────┘                     │
+│                               ▼                                             │
+│  ┌──────────────────────────────────────────────────────────────-───┐       │
+│  │                       🟣 PERSISTENCE                            │       │
+│  │    save_pipeline / load_pipeline / save_study / load_study       │       │
+│  └────────────────────────────────────────────────────────────────-─┘       │
+│                               │                                             │
+│                               ▼                                             │
 │  ┌──────────────────────────────────────────────────────────────-───┐       │
 │  │                       📦 core/types.py                          │       │
 │  │    HitID, ModuleID, SegmentID, TrackID, Position, StateVector    │       │
@@ -53,7 +61,9 @@ The **LHCb VELO Toy Model** is a simulation and reconstruction framework for par
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Three-Submodule Design
+### Package Design
+
+The core pipeline flows through three submodules, with a fourth (**persistence**) providing cross-cutting save/load support:
 
 ```mermaid
 graph TB
@@ -93,14 +103,27 @@ graph TB
             A1 --- A1a
             A2 --- A2a
         end
+        
+        subgraph PER["persistence"]
+            P1["pipeline.py"]
+            P1a["save/load single-event pipeline"]
+            P2["study.py"]
+            P2a["save/load parametric sweeps"]
+            P1 --- P1a
+            P2 --- P2a
+        end
     end
     
     GEN --> SOL
     SOL --> ANA
+    GEN --> PER
+    SOL --> PER
+    ANA --> PER
     
     style GEN fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
     style SOL fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
     style ANA fill:#fff8e1,stroke:#fbc02d,stroke-width:2px
+    style PER fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
 ```
 
 ---
@@ -820,6 +843,53 @@ flowchart LR
 
 ---
 
+### 🟣 Persistence Module
+
+The **persistence** module saves and reloads every stage of the pipeline so that expensive computations (event generation, Hamiltonian construction, solving, validation) need not be repeated between notebook sessions. It also supports parametric sweep studies.
+
+| Component | File | Description |
+|-----------|------|-------------|
+| **PipelineResult** | `pipeline.py` | Dataclass holding event, A, b, solution, matches, metrics |
+| **save_pipeline** | `pipeline.py` | Save a complete single-event pipeline run |
+| **load_pipeline** | `pipeline.py` | Reload into `PipelineResult` |
+| **save_events_batch** | `pipeline.py` | Save multiple events (numbered subdirectories) |
+| **load_events_batch** | `pipeline.py` | Reload a batch |
+| **StudyResult** | `study.py` | Dataclass holding config, scan results, histograms |
+| **save_study** | `study.py` | Save a parametric sweep study |
+| **load_study** | `study.py` | Reload into `StudyResult` |
+
+**Storage format:**
+- Events and geometry: JSON (human-readable, with embedded `geometry_class` discriminator)
+- Dense arrays: NumPy `.npy`
+- Sparse matrices: `scipy.sparse.save_npz` (`.npz`)
+- Configuration: JSON
+
+**No extra dependencies** — uses only numpy, scipy, and the stdlib `json` module.
+
+#### Example: Save & Reload
+
+```python
+from lhcb_velo_toy.persistence import save_pipeline, load_pipeline
+
+# After running the full pipeline:
+save_pipeline(
+    "runs/my_run",
+    event=truth_event,
+    ham=hamiltonian,
+    solution=solution,
+    reco_tracks=reco_tracks,
+    matches=matches,
+    metrics=metrics,
+)
+
+# Later session — instant reload:
+result = load_pipeline("runs/my_run")
+# result.event, result.A, result.b, result.solution,
+# result.reco_event, result.matches, result.metrics
+```
+
+---
+
 ## Data Model Relationships
 
 The data model uses **ID-based references** for JSON serialization:
@@ -1011,17 +1081,34 @@ print(f"Ghost Rate: {metrics['ghost_rate']:.2%}")
 # STEP 10: Visualize
 # ═══════════════════════════════════════════════════════════════════════════
 truth_event.plot_event(title="Truth Event")
+
+# ═══════════════════════════════════════════════════════════════════════════
+# STEP 11: Save pipeline state (optional — avoids recomputation next time)
+# ═══════════════════════════════════════════════════════════════════════════
+from lhcb_velo_toy.persistence import save_pipeline
+
+save_pipeline(
+    "runs/my_run",
+    event=truth_event,
+    ham=hamiltonian,
+    solution=solution,
+    reco_tracks=reco_tracks,
+    matches=matches,
+    metrics=metrics,
+)
+# Next session: result = load_pipeline("runs/my_run")
 ```
 
 ---
 
 ## Key Design Principles
 
-1. **Modularity**: Three independent submodules that can be used separately
+1. **Modularity**: Four independent submodules that can be used separately
 2. **Type Safety**: Comprehensive type hints and dataclasses throughout
 3. **Extensibility**: Abstract base classes for custom geometries, Hamiltonians
 4. **LHCb Compatibility**: Metrics and conventions match official LHCb tracking
 5. **Quantum-Ready**: Structured to support quantum algorithm exploration
+6. **Persistence**: Save/load every pipeline stage; avoid recomputation between sessions
 
 ---
 

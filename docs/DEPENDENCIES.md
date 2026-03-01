@@ -123,6 +123,8 @@ pip install -e ".[all]"
 | `solvers.reconstruction` | ✓ | | | | | | |
 | `analysis.validation` | ✓ | | | ✓ | | | |
 | `analysis.plotting` | ✓ | | ✓ | ✓ | | | |
+| `persistence.pipeline` | ✓ | ✓ | | | | | |
+| `persistence.study` | ✓ | | | | | | |
 
 ### Import Graph
 
@@ -188,6 +190,18 @@ analysis.plotting
     ├── numpy
     ├── pandas
     └── matplotlib.pyplot
+
+persistence.pipeline
+    ├── json
+    ├── numpy
+    ├── scipy.sparse (load_npz, save_npz, csc_matrix)
+    ├── generation.entities.event (Event)
+    ├── generation.geometry (geometry_from_dict)
+    └── analysis.validation.match (Match)
+
+persistence.study
+    ├── json
+    └── numpy
 ```
 
 ---

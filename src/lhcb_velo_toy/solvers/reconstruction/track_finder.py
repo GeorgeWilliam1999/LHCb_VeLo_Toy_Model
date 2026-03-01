@@ -160,6 +160,442 @@ def get_tracks_fast(
     return get_tracks(hamiltonian, solution, event, threshold)
 
 
+# ---------------------------------------------------------------------------
+#  Advanced reconstruction methods (ported from legacy simple_hamiltonian_fast)
+# ---------------------------------------------------------------------------
+
+
+def get_tracks_layered(
+    hamiltonian: "Hamiltonian",
+    solution: np.ndarray,
+    event: Union["Event", "StateEventGenerator"],
+    threshold: float = 0.45,
+    min_hits: int = 3,
+) -> list["Track"]:
+    """
+    Extract tracks using layered greedy chain-following with angle consistency.
+
+    The algorithm:
+    1. Identifies active segments (solution > *threshold*) sorted by score.
+    2. Builds connectivity maps between consecutive layer-groups.
+    3. Starting from the highest-scoring unused segment, extends
+       forward and backward following the best angle-consistent
+       continuation.
+    4. A second pass attempts to recover tracks from remaining segments.
+
+    Parameters
+    ----------
+    hamiltonian : Hamiltonian
+        Hamiltonian with constructed segments and cached direction vectors.
+    solution : numpy.ndarray
+        Segment activation vector.
+    event : Event or StateEventGenerator
+        Event used for hit information.
+    threshold : float, default 0.45
+        Minimum solution value for an active segment.
+    min_hits : int, default 3
+        Minimum number of hits in a valid track.
+
+    Returns
+    -------
+    list[Track]
+        Reconstructed tracks.
+    """
+    from lhcb_velo_toy.generation.entities.track import Track as _Track
+    from lhcb_velo_toy.solvers.reconstruction.segment import Segment as _Seg
+
+    ham = hamiltonian
+
+    # Step 1 – active segments sorted by score (descending)
+    seg_scores = [
+        (i, seg, solution[i])
+        for i, seg in enumerate(ham.segments)
+        if solution[i] > threshold
+    ]
+    seg_scores.sort(key=lambda x: -x[2])
+
+    if not seg_scores:
+        return []
+
+    # Connectivity maps keyed on id(hit_object)
+    seg_by_from_hit: dict[int, list[tuple[int, "Segment", float]]] = {}
+    seg_by_to_hit: dict[int, list[tuple[int, "Segment", float]]] = {}
+
+    for seg_idx, seg, score in seg_scores:
+        from_hit = seg.hits[0]
+        to_hit = seg.hits[1]
+        seg_by_from_hit.setdefault(id(from_hit), []).append((seg_idx, seg, score))
+        seg_by_to_hit.setdefault(id(to_hit), []).append((seg_idx, seg, score))
+
+    segment_successors: dict[int, list] = {}
+    segment_predecessors: dict[int, list] = {}
+
+    for seg_idx, seg, score in seg_scores:
+        to_hit = seg.hits[1]
+        successors = seg_by_from_hit.get(id(to_hit), [])
+        segment_successors[seg_idx] = [(i, s, sc) for i, s, sc in successors if i != seg_idx]
+
+        from_hit = seg.hits[0]
+        predecessors = seg_by_to_hit.get(id(from_hit), [])
+        segment_predecessors[seg_idx] = [(i, s, sc) for i, s, sc in predecessors if i != seg_idx]
+
+    # Helpers ---------------------------------------------------------------
+    used_segments: set[int] = set()
+    tracks: list["Track"] = []
+
+    def _compute_angle(seg_info_1, seg_info_2):
+        v1 = ham._segment_vectors[seg_info_1[0]]
+        v2 = ham._segment_vectors[seg_info_2[0]]
+        cos_a = np.clip(np.dot(v1, v2), -1.0, 1.0)
+        return np.arccos(cos_a)
+
+    def _build_track(start_seg_info):
+        seg_idx, seg, score = start_seg_info
+        if seg_idx in used_segments:
+            return None
+
+        track_hits: list = []
+        track_segments = [start_seg_info]
+        used_modules: set[int] = set()
+
+        for hit in seg.hits:
+            mid = int(hit.module_id)
+            if mid not in used_modules:
+                track_hits.append(hit)
+                used_modules.add(mid)
+
+        # Forward extension
+        current = start_seg_info
+        while True:
+            candidates = [
+                (i, s, sc) for i, s, sc in segment_successors.get(current[0], [])
+                if i not in used_segments
+            ]
+            if not candidates:
+                break
+            best_next, best_sc = None, -1.0
+            for cand in candidates:
+                if int(cand[1].hits[1].module_id) in used_modules:
+                    continue
+                if _compute_angle(current, cand) >= ham.epsilon:
+                    continue
+                if cand[2] > best_sc:
+                    best_sc = cand[2]
+                    best_next = cand
+            if best_next is None:
+                break
+            track_segments.append(best_next)
+            to_hit = best_next[1].hits[1]
+            track_hits.append(to_hit)
+            used_modules.add(int(to_hit.module_id))
+            current = best_next
+
+        # Backward extension
+        current = start_seg_info
+        while True:
+            candidates = [
+                (i, s, sc) for i, s, sc in segment_predecessors.get(current[0], [])
+                if i not in used_segments
+            ]
+            if not candidates:
+                break
+            best_prev, best_sc = None, -1.0
+            for cand in candidates:
+                if int(cand[1].hits[0].module_id) in used_modules:
+                    continue
+                if _compute_angle(cand, current) >= ham.epsilon:
+                    continue
+                if cand[2] > best_sc:
+                    best_sc = cand[2]
+                    best_prev = cand
+            if best_prev is None:
+                break
+            track_segments.insert(0, best_prev)
+            from_hit = best_prev[1].hits[0]
+            track_hits.insert(0, from_hit)
+            used_modules.add(int(from_hit.module_id))
+            current = best_prev
+
+        return track_hits, track_segments
+
+    def _accept_track(track_hits, track_segments):
+        if len(track_hits) < min_hits:
+            return
+        for ts_idx, _, _ in track_segments:
+            used_segments.add(ts_idx)
+        hits_sorted = sorted(track_hits, key=lambda h: h.z)
+        tracks.append(_Track(
+            track_id=len(tracks),
+            hit_ids=[h.hit_id for h in hits_sorted],
+        ))
+
+    # Main passes -----------------------------------------------------------
+    for info in seg_scores:
+        if info[0] in used_segments:
+            continue
+        result = _build_track(info)
+        if result is not None:
+            _accept_track(*result)
+
+    remaining = [(i, s, sc) for i, s, sc in seg_scores if i not in used_segments]
+    for info in remaining:
+        if info[0] in used_segments:
+            continue
+        result = _build_track(info)
+        if result is not None:
+            _accept_track(*result)
+
+    return tracks
+
+
+def get_tracks_optimal(
+    hamiltonian: "Hamiltonian",
+    solution: np.ndarray,
+    event: Union["Event", "StateEventGenerator"],
+    threshold: float = 0.45,
+    min_hits: int = 3,
+    angle_weight: float = 1.0,
+    score_weight: float = 1.0,
+    verbose: bool = False,
+) -> list["Track"]:
+    """
+    Extract tracks using global optimisation (weighted set packing).
+
+    Instead of greedily assigning segments, this method:
+    1. Builds ALL possible track candidates via DFS.
+    2. Scores each candidate (solution values − angle penalties + length bonus).
+    3. Selects the best non-overlapping set (greedy approximation to
+       the NP-hard weighted set-packing problem).
+
+    Parameters
+    ----------
+    hamiltonian : Hamiltonian
+        Hamiltonian with constructed segments.
+    solution : numpy.ndarray
+        Segment activation vector.
+    event : Event or StateEventGenerator
+        Event with hit information.
+    threshold : float, default 0.45
+        Minimum segment activation.
+    min_hits : int, default 3
+        Minimum hits for a valid track.
+    angle_weight : float, default 1.0
+        Penalty weight for kink angles.
+    score_weight : float, default 1.0
+        Weight for solution scores.
+    verbose : bool, default False
+        Print debug info.
+
+    Returns
+    -------
+    list[Track]
+        Globally-optimised reconstructed tracks.
+    """
+    from collections import defaultdict
+    from lhcb_velo_toy.generation.entities.track import Track as _Track
+
+    ham = hamiltonian
+
+    seg_data = [
+        (i, seg, solution[i])
+        for i, seg in enumerate(ham.segments)
+        if solution[i] > threshold
+    ]
+    if not seg_data:
+        return []
+    if verbose:
+        print(f"[get_tracks_optimal] Found {len(seg_data)} active segments")
+
+    # Connectivity -----------------------------------------------------------
+    seg_by_from_hit: dict[int, list] = defaultdict(list)
+    seg_by_to_hit: dict[int, list] = defaultdict(list)
+    for seg_idx, seg, score in seg_data:
+        seg_by_from_hit[id(seg.hits[0])].append((seg_idx, seg, score))
+        seg_by_to_hit[id(seg.hits[1])].append((seg_idx, seg, score))
+
+    seg_successors: dict[int, list] = {}
+    seg_predecessors: dict[int, list] = {}
+    for seg_idx, seg, score in seg_data:
+        successors = seg_by_from_hit.get(id(seg.hits[1]), [])
+        seg_successors[seg_idx] = [(i, s, sc) for i, s, sc in successors if i != seg_idx]
+        predecessors = seg_by_to_hit.get(id(seg.hits[0]), [])
+        seg_predecessors[seg_idx] = [(i, s, sc) for i, s, sc in predecessors if i != seg_idx]
+
+    def _angle(idx1, idx2):
+        v1 = ham._segment_vectors[idx1]
+        v2 = ham._segment_vectors[idx2]
+        return np.arccos(np.clip(np.dot(v1, v2), -1.0, 1.0))
+
+    # DFS candidate generation -----------------------------------------------
+    all_candidates: list[dict] = []
+
+    def _extend_fwd(chain, used_mods, depth=50):
+        if len(chain) > depth:
+            return [chain]
+        last_idx = chain[-1][0]
+        exts = []
+        for ci, cs, csc in seg_successors.get(last_idx, []):
+            mod = int(cs.hits[1].module_id)
+            if mod in used_mods:
+                continue
+            if _angle(last_idx, ci) >= ham.epsilon:
+                continue
+            exts.extend(_extend_fwd(chain + [(ci, cs, csc)], used_mods | {mod}, depth))
+        return exts if exts else [chain]
+
+    def _extend_bwd(chain, used_mods, depth=50):
+        if len(chain) > depth:
+            return [chain]
+        first_idx = chain[0][0]
+        exts = []
+        for ci, cs, csc in seg_predecessors.get(first_idx, []):
+            mod = int(cs.hits[0].module_id)
+            if mod in used_mods:
+                continue
+            if _angle(ci, first_idx) >= ham.epsilon:
+                continue
+            exts.extend(_extend_bwd([(ci, cs, csc)] + chain, used_mods | {mod}, depth))
+        return exts if exts else [chain]
+
+    seen: set[frozenset[int]] = set()
+    for seg_idx, seg, score in seg_data:
+        init = [(seg_idx, seg, score)]
+        init_mods = {int(seg.hits[0].module_id), int(seg.hits[1].module_id)}
+        for fwd_chain in _extend_fwd(init, init_mods):
+            fwd_mods: set[int] = set()
+            for i, s, sc in fwd_chain:
+                fwd_mods.add(int(s.hits[0].module_id))
+                fwd_mods.add(int(s.hits[1].module_id))
+            for full in _extend_bwd(fwd_chain, fwd_mods):
+                sig = frozenset(i for i, s, sc in full)
+                if sig in seen:
+                    continue
+                seen.add(sig)
+                hits_in = []
+                for i, s, sc in full:
+                    if s.hits[0] not in hits_in:
+                        hits_in.append(s.hits[0])
+                    if s.hits[1] not in hits_in:
+                        hits_in.append(s.hits[1])
+                if len(hits_in) >= min_hits:
+                    all_candidates.append({
+                        'chain': full,
+                        'hits': hits_in,
+                        'segment_indices': sig,
+                    })
+
+    if verbose:
+        print(f"[get_tracks_optimal] Generated {len(all_candidates)} track candidates")
+    if not all_candidates:
+        return []
+
+    # Score candidates -------------------------------------------------------
+    def _score(cand):
+        chain = cand['chain']
+        total = sum(sc for _, _, sc in chain) * score_weight
+        penalty = sum(
+            _angle(chain[k][0], chain[k + 1][0]) * angle_weight
+            for k in range(len(chain) - 1)
+        )
+        return total - penalty + len(cand['hits']) * 0.1
+
+    for c in all_candidates:
+        c['score'] = _score(c)
+    all_candidates.sort(key=lambda c: -c['score'])
+
+    # Greedy set packing -----------------------------------------------------
+    selected = []
+    used: set[int] = set()
+    for c in all_candidates:
+        if c['segment_indices'] & used:
+            continue
+        selected.append(c)
+        used |= c['segment_indices']
+
+    if verbose:
+        print(f"[get_tracks_optimal] Selected {len(selected)} non-overlapping tracks")
+
+    # Build Track objects ----------------------------------------------------
+    tracks: list["Track"] = []
+    for tidx, cand in enumerate(selected):
+        hits_sorted = sorted(cand['hits'], key=lambda h: h.z)
+        tracks.append(_Track(
+            track_id=tidx,
+            hit_ids=[h.hit_id for h in hits_sorted],
+        ))
+    return tracks
+
+
+def get_tracks_optimal_iterative(
+    hamiltonian: "Hamiltonian",
+    solution: np.ndarray,
+    event: Union["Event", "StateEventGenerator"],
+    threshold: float = 0.45,
+    min_hits: int = 3,
+    max_iterations: int = 3,
+    verbose: bool = False,
+) -> list["Track"]:
+    """
+    Iterative track finding that re-evaluates after each selection round.
+
+    Wraps :func:`get_tracks_optimal`, zeroing used-segment activations
+    between iterations so that later rounds can discover tracks that were
+    previously occluded.
+
+    Parameters
+    ----------
+    hamiltonian : Hamiltonian
+        Hamiltonian with constructed segments.
+    solution : numpy.ndarray
+        Segment activation vector.
+    event : Event or StateEventGenerator
+        Event with hit information.
+    threshold : float, default 0.45
+        Minimum activation.
+    min_hits : int, default 3
+        Minimum hits per track.
+    max_iterations : int, default 3
+        Number of re-evaluation rounds.
+    verbose : bool, default False
+        Print debug info.
+
+    Returns
+    -------
+    list[Track]
+        Reconstructed tracks from all iterations.
+    """
+    all_tracks: list["Track"] = []
+    remaining = solution.copy()
+
+    for iteration in range(max_iterations):
+        new = get_tracks_optimal(
+            hamiltonian, remaining, event,
+            threshold=threshold, min_hits=min_hits, verbose=verbose,
+        )
+        if not new:
+            break
+        all_tracks.extend(new)
+
+        # Zero out segments touching used hits
+        used_hit_ids: set[int] = set()
+        for t in new:
+            used_hit_ids.update(t.hit_ids)
+        for seg_idx, (fid, tid) in enumerate(hamiltonian._segment_to_hit_ids):
+            if fid in used_hit_ids or tid in used_hit_ids:
+                remaining[seg_idx] = 0.0
+
+        if verbose:
+            print(
+                f"[Iteration {iteration + 1}] Found {len(new)} tracks, "
+                f"total: {len(all_tracks)}"
+            )
+
+    # Re-number track IDs
+    for i, t in enumerate(all_tracks):
+        t.track_id = i
+    return all_tracks
+
+
 def construct_event(
     detector_geometry: "Geometry",
     tracks: list["Track"],

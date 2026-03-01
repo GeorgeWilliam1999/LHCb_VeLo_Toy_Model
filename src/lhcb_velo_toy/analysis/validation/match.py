@@ -16,11 +16,11 @@ from lhcb_velo_toy.core.types import TrackID
 class Match:
     """
     Association summary for a reconstructed track.
-    
+
     Stores all information about the match between a reconstructed
     track and its best-matching truth track, including quality metrics
     and classification flags.
-    
+
     Attributes
     ----------
     best_truth_id : int or None
@@ -43,7 +43,7 @@ class Match:
         Assigned truth ID after matching (same as best_truth_id if accepted).
     is_clone : bool
         True if another track was already matched to the same truth.
-    
+
     Examples
     --------
     >>> match = Match(
@@ -60,7 +60,7 @@ class Match:
     ... )
     >>> match.is_ghost
     False
-    
+
     Notes
     -----
     Track classification:
@@ -70,7 +70,7 @@ class Match:
     - **Clone**: Accepted track matching same truth as another
     - **Primary**: Best accepted track per truth track
     """
-    
+
     best_truth_id: Optional[TrackID]
     rec_hits: int
     truth_hits: int
@@ -81,35 +81,35 @@ class Match:
     accepted: bool = False
     truth_id: Optional[TrackID] = None
     is_clone: bool = False
-    
+
     @property
     def is_ghost(self) -> bool:
         """
         Check if this is a ghost (fake) track.
-        
+
         Returns
         -------
         bool
             True if the track is a candidate but not accepted.
         """
         return self.candidate and not self.accepted
-    
+
     @property
     def is_primary(self) -> bool:
         """
         Check if this is the primary match for a truth track.
-        
+
         Returns
         -------
         bool
             True if accepted and not a clone.
         """
         return self.accepted and not self.is_clone
-    
+
     def to_dict(self) -> dict:
         """
         Convert match to dictionary for DataFrame construction.
-        
+
         Returns
         -------
         dict
@@ -129,3 +129,34 @@ class Match:
             "is_ghost": self.is_ghost,
             "is_primary": self.is_primary,
         }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Match":
+        """
+        Reconstruct a Match from a dictionary.
+
+        Computed properties (``is_ghost``, ``is_primary``) are ignored
+        because they are derived from ``candidate``, ``accepted``, and
+        ``is_clone``.
+
+        Parameters
+        ----------
+        data : dict
+            Dictionary previously produced by :meth:`to_dict`.
+
+        Returns
+        -------
+        Match
+        """
+        return cls(
+            best_truth_id=data.get("best_truth_id"),
+            rec_hits=int(data["rec_hits"]),
+            truth_hits=int(data["truth_hits"]),
+            correct_hits=int(data["correct_hits"]),
+            purity=float(data["purity"]),
+            hit_efficiency=float(data["hit_efficiency"]),
+            candidate=bool(data.get("candidate", True)),
+            accepted=bool(data.get("accepted", False)),
+            truth_id=data.get("truth_id"),
+            is_clone=bool(data.get("is_clone", False)),
+        )

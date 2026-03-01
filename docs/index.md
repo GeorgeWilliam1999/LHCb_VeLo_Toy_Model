@@ -35,6 +35,8 @@ Welcome to the documentation for the **LHCb VELO Toy Model** package—a compreh
 | Use quantum HHL | [Quantum Algorithms](API_REFERENCE.md#quantum-algorithms) |
 | Validate reconstruction | [EventValidator](API_REFERENCE.md#class-eventvalidator) |
 | Create plots | [Plotting](API_REFERENCE.md#plotting) |
+| Save/load pipeline state | [Persistence](API_REFERENCE.md#module-persistence) |
+| Save/load parametric studies | [Study Persistence](API_REFERENCE.md#study-persistence) |
 | See the full pipeline | [Full Pipeline Flow](FLOW_DIAGRAMS.md#data-flow-event-generation-to-validation) |
 | Check dependencies | [Dependencies Matrix](DEPENDENCIES.md#dependency-matrix) |
 
@@ -45,6 +47,7 @@ Welcome to the documentation for the **LHCb VELO Toy Model** package—a compreh
 | `generation` | [Entities & Generators](API_REFERENCE.md#module-generation) | [Event Generation Flow](FLOW_DIAGRAMS.md#event-generation-flow) |
 | `solvers` | [Hamiltonians & Algorithms](API_REFERENCE.md#module-solvers) | [Hamiltonian Flow](FLOW_DIAGRAMS.md#hamiltonian-construction-flow) |
 | `analysis` | [Validation & Plotting](API_REFERENCE.md#module-analysis) | [Validation Flow](FLOW_DIAGRAMS.md#validation-flow) |
+| `persistence` | [Save / Load Utilities](API_REFERENCE.md#module-persistence) | [Persistence Flow](FLOW_DIAGRAMS.md#persistence-flow) |
 
 ---
 
@@ -63,9 +66,13 @@ lhcb_velo_toy/
 │   ├── quantum/         # HHL, OneBitHHL (1-Bit Quantum Filter)
 │   └── reconstruction/  # Segment (on-demand), get_tracks
 │
-└── analysis/            # Analysis and validation
-    ├── validation/      # EventValidator, Match
-    └── plotting/        # LHCb-style performance plots
+├── analysis/            # Analysis and validation
+│   ├── validation/      # EventValidator, Match
+│   └── plotting/        # LHCb-style performance plots
+│
+└── persistence/         # Save / load utilities
+    ├── pipeline.py      # Single-event pipeline state
+    └── study.py         # Parametric sweep results
 ```
 
 **Data Hierarchy:**
@@ -165,9 +172,16 @@ graph LR
         M --> P[Plots]
     end
     
+    subgraph Persistence
+        E --> |save| SAVE[save_pipeline / save_study]
+        M --> |save| SAVE
+        SAVE --> |load| LOAD[load_pipeline / load_study]
+    end
+    
     style Generation fill:#e3f2fd
     style Solving fill:#e8f5e9
     style Analysis fill:#fff8e1
+    style Persistence fill:#f3e5f5
 ```
 
 ---

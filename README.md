@@ -131,6 +131,30 @@ from lhcb_velo_toy.analysis.plotting import plot_event_3d
 fig = plot_event_3d(true_event, title="Truth Event", show_modules=True)
 ```
 
+### 5. Save & Reload Pipeline State
+
+```python
+from lhcb_velo_toy.persistence import save_pipeline, load_pipeline
+
+# Save everything after reconstruction + validation
+save_pipeline(
+    "runs/my_run",
+    event=true_event,
+    ham=ham,
+    solution=solution,
+    reco_tracks=reco_tracks,
+    matches=matches,
+    metrics=metrics,
+)
+
+# In a later session — reload instantly
+result = load_pipeline("runs/my_run")
+print(result.config)          # Hamiltonian parameters
+print(result.event)           # Truth event
+print(result.A.shape)         # Hamiltonian matrix
+print(result.metrics)         # Validation metrics
+```
+
 ## Package Structure
 
 ```
@@ -150,9 +174,12 @@ LHCb_VeLo_Toy_Model/
 │       │   ├── classical/      #   solve_direct, solve_conjugate_gradient
 │       │   ├── quantum/        #   HHL, OneBitHHL (1-Bit HHL)
 │       │   └── reconstruction/ #   track_finder, get_tracks
-│       └── analysis/           # Validation & plots
-│           ├── validation/     #   EventValidator, Match
-│           └── plotting/       #   event_display, performance
+│       ├── analysis/           # Validation & plots
+│       │   ├── validation/     #   EventValidator, Match
+│       │   └── plotting/       #   event_display, performance
+│       └── persistence/        # Save / load utilities
+│           ├── pipeline.py     #   save_pipeline, load_pipeline, save/load batch
+│           └── study.py        #   save_study, load_study (parametric sweeps)
 ├── deprecated/                 # Old monolithic code (reference only)
 │   ├── README.md               #   Migration guide
 │   ├── LHCB_Velo_Toy_Models/   #   Original flat package
@@ -191,6 +218,26 @@ LHCb_VeLo_Toy_Model/
 | `validation.validator` | LHCb-style track matching and metrics |
 | `plotting.event_display` | 3D event visualisation with detector planes |
 | `plotting.performance` | Efficiency, ghost-rate, and purity plots |
+
+### Persistence (`lhcb_velo_toy.persistence`)
+
+| Module | Description |
+|--------|-------------|
+| `pipeline` | Save/load a single-event reconstruction pipeline (event, Hamiltonian, solution, matches) |
+| `study` | Save/load parametric sweep results (scan arrays, histogram distributions) |
+
+**Key functions:**
+
+| Function | Description |
+|----------|-------------|
+| `save_pipeline(directory, *, event, ham, solution, ...)` | Persist a complete pipeline run |
+| `load_pipeline(directory)` → `PipelineResult` | Reload into a typed dataclass |
+| `save_events_batch(directory, events)` | Save multiple events at once |
+| `load_events_batch(directory)` → `list[PipelineResult]` | Reload a batch |
+| `save_study(directory, *, config, scan_results, ...)` | Persist a parametric study |
+| `load_study(directory)` → `StudyResult` | Reload a study |
+
+Format: NumPy `.npy` / `.npz` for arrays, `scipy.sparse.save_npz` for sparse matrices, JSON for metadata — **zero extra dependencies**.
 
 ## Hamiltonian Track Finding
 

@@ -318,6 +318,240 @@ class EventValidator:
             "n_matched": n_matched,
         }
     
+    # ------------------------------------------------------------------
+    # Optimal (Hungarian) matching
+    # ------------------------------------------------------------------
+
+    def match_tracks_optimal(
+        self,
+        purity_min: float = 0.7,
+        hit_efficiency_min: float = 0.0,
+        min_rec_hits: int = 3,
+        verbose: bool = False,
+    ) -> tuple[list["Match"], dict[str, float]]:
+        """
+        Match reco tracks to truth using the Hungarian algorithm.
+
+        Instead of greedy quality-sorted assignment this method builds a
+        full cost matrix (purity × hit_efficiency × bonus for shared hits)
+        and uses ``scipy.optimize.linear_sum_assignment`` to obtain the
+        globally optimal 1-to-1 truth ↔ reco assignment.
+
+        Parameters
+        ----------
+        purity_min : float, default 0.7
+            Minimum purity for an assignment to be accepted.
+        hit_efficiency_min : float, default 0.0
+            Minimum hit-efficiency for acceptance.
+        min_rec_hits : int, default 3
+            Minimum hits for a reco track to be a candidate.
+        verbose : bool, default False
+            Print debug information.
+
+        Returns
+        -------
+        tuple[list[Match], dict[str, float]]
+            Match objects (one per reco track) and aggregate metrics dict.
+        """
+        from scipy.optimize import linear_sum_assignment
+
+        # --- Identify candidate reco tracks --------------------------------
+        candidate_rec_indices: list[int] = []
+        non_candidate_matches: list[tuple[int, Match]] = []
+
+        for rec_idx, rec_track in enumerate(self.rec_tracks):
+            rec_hits = len(rec_track.hit_ids)
+            if rec_hits < min_rec_hits:
+                non_candidate_matches.append((rec_idx, Match(
+                    best_truth_id=None, rec_hits=rec_hits,
+                    truth_hits=0, correct_hits=0,
+                    purity=0.0, hit_efficiency=0.0,
+                    candidate=False, accepted=False,
+                    truth_id=None, is_clone=False,
+                )))
+            else:
+                candidate_rec_indices.append(rec_idx)
+
+        if verbose:
+            print(
+                f"[match_tracks_optimal] {len(candidate_rec_indices)} candidates, "
+                f"{len(self.truth_event.tracks)} truth tracks"
+            )
+
+        # --- Build reco hit-sets -------------------------------------------
+        rec_hit_sets: dict[int, set[int]] = {}
+        for ri in candidate_rec_indices:
+            rec_hit_sets[ri] = set(self.rec_tracks[ri].hit_ids)
+
+        truth_ids = list(self._truth_hit_sets.keys())
+        n_reco = len(candidate_rec_indices)
+        n_truth = len(truth_ids)
+
+        if n_reco == 0 or n_truth == 0:
+            # Nothing to match – prepare empty result
+            self.matches = [m for _, m in sorted(non_candidate_matches, key=lambda x: x[0])]
+            self.metrics = self._compute_metrics()
+            return self.matches, self.metrics
+
+        # --- Purity / hit_efficiency / correct matrices --------------------
+        purity_mat = np.zeros((n_reco, n_truth))
+        comp_mat = np.zeros((n_reco, n_truth))
+        correct_mat = np.zeros((n_reco, n_truth))
+
+        for i, ri in enumerate(candidate_rec_indices):
+            R = rec_hit_sets[ri]
+            r_sz = len(R)
+            for j, tid in enumerate(truth_ids):
+                T = self._truth_hit_sets[tid]
+                t_sz = len(T)
+                correct = len(R & T)
+                purity_mat[i, j] = correct / r_sz if r_sz else 0.0
+                comp_mat[i, j] = correct / t_sz if t_sz else 0.0
+                correct_mat[i, j] = correct
+
+        # --- Quality matrix → cost ----------------------------------------
+        quality = purity_mat * comp_mat * (1.0 + correct_mat / 10.0)
+        cost = -quality
+        row_ind, col_ind = linear_sum_assignment(cost)
+
+        # Accepted assignment (pass thresholds)
+        optimal_assign: dict[int, int] = {}  # rec_idx (original) → truth_id
+        for r, c in zip(row_ind, col_ind):
+            ri = candidate_rec_indices[r]
+            tid = truth_ids[c]
+            if purity_mat[r, c] >= purity_min and comp_mat[r, c] >= hit_efficiency_min:
+                optimal_assign[ri] = tid
+
+        if verbose:
+            print(
+                f"[match_tracks_optimal] {len(optimal_assign)} assignments "
+                f"pass quality thresholds"
+            )
+
+        # --- Build Match objects -------------------------------------------
+        truth_to_reco: dict[int, list[int]] = {}  # truth_id → [rec_idx, ...]
+        match_by_idx: dict[int, Match] = {}
+
+        for rec_idx, m in non_candidate_matches:
+            match_by_idx[rec_idx] = m
+
+        for i, ri in enumerate(candidate_rec_indices):
+            R = rec_hit_sets[ri]
+            r_sz = len(R)
+
+            # Best truth by purity (for reporting)
+            best_j = int(np.argmax(purity_mat[i]))
+            best_tid = truth_ids[best_j]
+            best_purity = float(purity_mat[i, best_j])
+            best_comp = float(comp_mat[i, best_j])
+            best_correct = int(correct_mat[i, best_j])
+            best_t_sz = len(self._truth_hit_sets[best_tid])
+
+            assigned_tid = optimal_assign.get(ri)
+            is_accepted = assigned_tid is not None
+
+            m = Match(
+                best_truth_id=best_tid,
+                rec_hits=r_sz,
+                truth_hits=best_t_sz,
+                correct_hits=best_correct,
+                purity=best_purity,
+                hit_efficiency=best_comp,
+                candidate=True,
+                accepted=is_accepted,
+                truth_id=assigned_tid,
+                is_clone=False,
+            )
+            match_by_idx[ri] = m
+            if assigned_tid is not None:
+                truth_to_reco.setdefault(assigned_tid, []).append(ri)
+
+        # Detect clones among unassigned candidates
+        assigned_truths = set(optimal_assign.values())
+        for i, ri in enumerate(candidate_rec_indices):
+            if ri in optimal_assign:
+                continue
+            for j, tid in enumerate(truth_ids):
+                if purity_mat[i, j] >= purity_min and tid in assigned_truths:
+                    match_by_idx[ri].is_clone = True
+                    match_by_idx[ri].accepted = True
+                    match_by_idx[ri].truth_id = tid
+                    truth_to_reco.setdefault(tid, []).append(ri)
+                    break
+
+        # Build ordered list
+        self.matches = [match_by_idx[idx] for idx in range(len(self.rec_tracks))]
+        self.metrics = self._compute_metrics()
+        return self.matches, self.metrics
+
+    # ------------------------------------------------------------------
+    # Legacy-compatible compute_metrics wrappers
+    # ------------------------------------------------------------------
+
+    def compute_metrics(
+        self,
+        purity_min: float = 0.7,
+        method: str = "standard",
+        **kwargs,
+    ) -> dict[str, float]:
+        """
+        Compute metrics with optional matching method selection.
+
+        This is a convenience wrapper that calls :meth:`match_tracks` or
+        :meth:`match_tracks_optimal` depending on *method*, and returns
+        the metrics dictionary directly.  The returned dict also includes
+        legacy ``m_*`` keys for backward compatibility with plotting code.
+
+        Parameters
+        ----------
+        purity_min : float, default 0.7
+            Passed through to the matching method.
+        method : str, default "standard"
+            ``"standard"`` → :meth:`match_tracks`;
+            ``"optimal"`` → :meth:`match_tracks_optimal`.
+        **kwargs
+            Forwarded to the matching method.
+
+        Returns
+        -------
+        dict[str, float]
+            Metrics with both new-style and ``m_*`` legacy keys.
+        """
+        if method == "optimal":
+            _, metrics = self.match_tracks_optimal(purity_min=purity_min, **kwargs)
+        else:
+            _, metrics = self.match_tracks(purity_min=purity_min, **kwargs)
+
+        # Append legacy m_* aliases for backward-compatible plotting
+        metrics.setdefault("m_reconstruction_efficiency", metrics.get("efficiency", 0.0))
+        metrics.setdefault("m_ghost_rate", metrics.get("ghost_rate", 0.0))
+        metrics.setdefault("hit_purity_mean_primary", metrics.get("mean_purity", 0.0))
+        metrics.setdefault("hit_efficiency_mean_primary", metrics.get("hit_efficiency", 0.0))
+        metrics.setdefault("m_total_truth_tracks", metrics.get("n_reconstructible", 0))
+        metrics.setdefault("m_total_rec_candidates", metrics.get("n_candidates", 0))
+        metrics.setdefault("m_n_ghosts", metrics.get("n_ghosts", 0))
+        metrics.setdefault("m_n_clones", metrics.get("n_clones", 0))
+
+        # Additional legacy aliases used by old notebook / velo_workflow code
+        metrics.setdefault("track_efficiency_good_over_true", metrics.get("efficiency", 0.0))
+        metrics.setdefault("track_ghost_rate_over_rec", metrics.get("ghost_rate", 0.0))
+        n_cand = metrics.get("n_candidates", 0)
+        n_clon = metrics.get("n_clones", 0)
+        metrics.setdefault(
+            "m_clone_fraction_total",
+            (n_clon / n_cand) if n_cand > 0 else 0.0,
+        )
+
+        # Old validator count aliases
+        metrics.setdefault("n_true_tracks", metrics.get("n_reconstructible", 0))
+        metrics.setdefault("n_rec_tracks", metrics.get("n_candidates", 0))
+        metrics.setdefault("n_rec_good", metrics.get("n_primary", 0))
+        metrics.setdefault("n_rec_ghost", metrics.get("n_ghosts", 0))
+        metrics.setdefault("n_rec_clone", metrics.get("n_clones", 0))
+        metrics.setdefault("m_purity_primary_only", metrics.get("mean_purity", 0.0))
+        metrics.setdefault("m_hit_efficiency_mean", metrics.get("hit_efficiency", 0.0))
+        return metrics
+
     def summary_table(self) -> "pd.DataFrame":
         """
         Generate a per-track summary table.

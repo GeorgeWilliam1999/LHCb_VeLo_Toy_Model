@@ -33,6 +33,7 @@ from lhcb_velo_toy.generation.geometry import (
     Geometry,
     PlaneGeometry,
     RectangularVoidGeometry,
+    geometry_from_dict,
 )
 
 # Generators
@@ -52,6 +53,7 @@ __all__ = [
     "Geometry",
     "PlaneGeometry",
     "RectangularVoidGeometry",
+    "geometry_from_dict",
     # Generators
     "EventGenerator",
     "StateEventGenerator",

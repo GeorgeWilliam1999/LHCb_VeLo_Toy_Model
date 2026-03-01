@@ -21,6 +21,9 @@
 4. [Module: analysis](#module-analysis)
    - [Validation](#validation)
    - [Plotting](#plotting)
+5. [Module: persistence](#module-persistence)
+   - [Pipeline Persistence](#pipeline-persistence)
+   - [Study Persistence](#study-persistence)
 
 ---
 
@@ -281,10 +284,10 @@ Event
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `to_dict()` | `dict` | Convert to JSON-serializable dictionary |
+| `to_dict()` | `dict` | Convert to JSON-serializable dictionary (embeds geometry via `to_dict()`) |
 | `to_json(filepath, indent=2)` | `None` | Save event to JSON file |
-| `from_dict(data, detector_geometry)` | `Event` | Create Event from dictionary |
-| `from_json(filepath, detector_geometry)` | `Event` | Load event from JSON file |
+| `from_dict(data, detector_geometry=None)` | `Event` | Create Event from dictionary; geometry auto-reconstructed from embedded dict if not provided |
+| `from_json(filepath, detector_geometry=None)` | `Event` | Load event from JSON file; geometry auto-reconstructed if not provided |
 | `from_tracks(geometry, tracks, hits)` | `Event` | Build reconstructed event (modules auto-derived, PVs empty) |
 | `from_tracks(geometry, tracks, hits, *, metadata=...)` | `Event` | Build reconstructed event with explicit metadata |
 | `get_hit_by_id(hit_id)` | `Hit or None` | Lookup hit by ID |
@@ -377,6 +380,8 @@ class PlaneGeometry(Geometry):
 |--------|---------|-------------|
 | `__getitem__(index)` | `(module_id, lx, ly, z)` | Get module geometry |
 | `point_on_bulk(state)` | `bool` | True if point within any module's active area |
+| `to_dict()` | `dict` | Serialise to dictionary (includes `geometry_class` discriminator) |
+| `from_dict(data)` | `PlaneGeometry` | Reconstruct from dictionary |
 
 **Example:**
 ```python
@@ -414,6 +419,33 @@ class RectangularVoidGeometry(Geometry):
 A point $(x, y)$ is on the bulk (active region) if:
 - It is **inside** the outer boundaries: $|x| < l_x$ and $|y| < l_y$
 - It is **outside** the void: $|x| > v_x$ or $|y| > v_y$
+
+**Methods:**
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `__getitem__(index)` | `tuple` | Get module geometry |
+| `point_on_bulk(state)` | `bool` | True if point is in active region (outside void, inside outer) |
+| `to_dict()` | `dict` | Serialise to dictionary (includes `geometry_class` discriminator) |
+| `from_dict(data)` | `RectangularVoidGeometry` | Reconstruct from dictionary |
+
+---
+
+#### `geometry_from_dict(data)`
+
+```python
+from lhcb_velo_toy.generation import geometry_from_dict
+```
+
+Dispatch function that reconstructs the correct `Geometry` subclass from a dictionary containing a `geometry_class` key.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `data` | `dict` | Must contain `"geometry_class"` (`"PlaneGeometry"` or `"RectangularVoidGeometry"`) plus the geometry fields |
+
+| Returns | Type | Description |
+|---------|------|-------------|
+| geometry | `Geometry` | The reconstructed geometry subclass instance |
 
 ---
 
@@ -977,6 +1009,7 @@ class Match:
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `to_dict()` | `dict` | Convert to dictionary (for DataFrame construction) |
+| `from_dict(data)` | `Match` | Reconstruct a Match from a dictionary |
 
 ---
 
@@ -1088,6 +1121,173 @@ class SupportsIteration(Protocol):
     def __len__(self) -> int: ...
     def __getitem__(self, index: int) -> tuple: ...
 ```
+
+---
+
+## Module: persistence
+
+The **persistence** module provides save/load utilities for every stage of the reconstruction pipeline and for parametric sweep studies, so that expensive computations need not be repeated between notebook sessions.
+
+**Format:** NumPy `.npy`/`.npz` for arrays, `scipy.sparse.save_npz` for sparse matrices, JSON for metadata. **No extra dependencies** beyond core numpy/scipy.
+
+```python
+from lhcb_velo_toy.persistence import (
+    save_pipeline, load_pipeline,
+    save_events_batch, load_events_batch,
+    save_study, load_study,
+    PipelineResult, StudyResult,
+)
+```
+
+---
+
+### Pipeline Persistence
+
+#### `class PipelineResult`
+
+Container dataclass returned by `load_pipeline()` and `load_events_batch()`.
+
+```python
+@dataclass
+class PipelineResult:
+    config: dict[str, Any]                 # Run-level configuration
+    event: Event                           # Truth event
+    A: csc_matrix                          # Hamiltonian interaction matrix
+    b: numpy.ndarray                       # Hamiltonian bias vector
+    solution: numpy.ndarray                # Classical solution vector
+    reco_event: Optional[Event] = None     # Reconstructed event
+    matches: Optional[list[Match]] = None  # Per-track match objects
+    metrics: Optional[dict[str, Any]] = None  # Aggregate metrics
+```
+
+---
+
+#### `save_pipeline()`
+
+```python
+def save_pipeline(
+    directory: str | Path,
+    *,
+    event: Event,
+    ham: Hamiltonian,
+    solution: numpy.ndarray,
+    threshold: float | None = None,
+    reco_tracks: Sequence[Track] | None = None,
+    matches: Sequence[Match] | None = None,
+    metrics: dict[str, Any] | None = None,
+    extra_config: dict[str, Any] | None = None,
+) -> Path
+```
+
+Persist a complete single-event reconstruction pipeline.
+
+**Files written:**
+
+| File | Contents |
+|------|----------|
+| `config.json` | Hamiltonian parameters (ε, γ, δ), threshold, extra config |
+| `event.json` | Truth event with embedded geometry |
+| `A.npz` | Sparse Hamiltonian matrix |
+| `b.npy` | Bias vector |
+| `solution.npy` | Solution vector |
+| `reco_event.json` | *(optional)* Reconstructed event |
+| `matches.json` | *(optional)* Per-track match dictionaries |
+| `metrics.json` | *(optional)* Aggregate validation metrics |
+
+---
+
+#### `load_pipeline()`
+
+```python
+def load_pipeline(directory: str | Path) -> PipelineResult
+```
+
+Reload a saved pipeline directory into a `PipelineResult` dataclass.
+
+---
+
+#### `save_events_batch()`
+
+```python
+def save_events_batch(
+    directory: str | Path,
+    events: Sequence[dict],
+) -> Path
+```
+
+Save multiple event pipeline states into numbered subdirectories (`event_000/`, `event_001/`, …).
+
+Each element of `events` is a keyword-dict passed to `save_pipeline()`.
+
+---
+
+#### `load_events_batch()`
+
+```python
+def load_events_batch(directory: str | Path) -> list[PipelineResult]
+```
+
+Reload all numbered subdirectories into a list of `PipelineResult` objects.
+
+---
+
+### Study Persistence
+
+#### `class StudyResult`
+
+Container dataclass returned by `load_study()`.
+
+```python
+@dataclass
+class StudyResult:
+    config: dict[str, Any]
+    scan_results: dict[tuple[str, str], dict[str, numpy.ndarray]]
+    hist_data: Optional[dict[tuple[str, str], dict[str, numpy.ndarray]]] = None
+    extra_arrays: Optional[dict[str, numpy.ndarray]] = None
+```
+
+| Field | Description |
+|-------|-------------|
+| `config` | Sweep-level parameters (track sizes, repeats, scattering multipliers, angle settings, epsilons) |
+| `scan_results` | Keyed by `(angle_str, mult_str)` → dict of metric name → 1-D numpy array over track-sizes |
+| `hist_data` | Keyed by `(angle_str, mult_str)` → `{"true": array, "false": array}` of segment-pair angles |
+| `extra_arrays` | Arbitrary named arrays |
+
+---
+
+#### `save_study()`
+
+```python
+def save_study(
+    directory: str | Path,
+    *,
+    config: dict[str, Any],
+    scan_results: dict | None = None,
+    hist_data: dict | None = None,
+    extra_arrays: dict[str, numpy.ndarray] | None = None,
+) -> Path
+```
+
+Persist a parametric sweep study.
+
+**Files written:**
+
+| File | Contents |
+|------|----------|
+| `study_config.json` | Sweep configuration |
+| `scan_results.npz` | Columnar metric arrays with encoded keys `a{angle}_m{mult}_{metric}` |
+| `hist_data.npz` | *(optional)* Segment-pair angle distributions |
+| `extra_arrays.npz` | *(optional)* Ad-hoc arrays |
+
+---
+
+#### `load_study()`
+
+```python
+def load_study(directory: str | Path) -> StudyResult
+```
+
+Reload a saved study directory into a `StudyResult` dataclass.
 
 ---
 

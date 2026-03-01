@@ -171,6 +171,7 @@ class SimpleHamiltonianFast(Hamiltonian):
         self,
         event: "Event | StateEventGenerator",
         convolution: bool = False,
+        erf_sigma: Optional[float] = None,
     ) -> tuple[csc_matrix, np.ndarray]:
         """
         Construct the Hamiltonian using vectorized operations.
@@ -181,6 +182,10 @@ class SimpleHamiltonianFast(Hamiltonian):
             The event containing hits and geometry.
         convolution : bool, default False
             If True, use ERF-smoothed compatibility.
+        erf_sigma : float or None, default None
+            Override ERF smoothing width for this call.  When *None*,
+            ``self.theta_d`` is used.  Passing a value here does **not**
+            mutate ``self.theta_d``.
         
         Returns
         -------
@@ -211,7 +216,8 @@ class SimpleHamiltonianFast(Hamiltonian):
         cols.extend(range(n))
         data.extend([diag_val] * n)
 
-        sqrt2_td = self.theta_d * np.sqrt(2)
+        _td = erf_sigma if erf_sigma is not None else self.theta_d
+        sqrt2_td = _td * np.sqrt(2)
 
         for group_idx in range(len(self.segments_grouped) - 1):
             offset_i = self._group_boundaries[group_idx]

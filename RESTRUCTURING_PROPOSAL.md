@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document proposes restructuring the `LHCb_VeLo_Toy_Model` repository into three clear submodules to improve modularity, maintainability, and usability.
+This document proposes restructuring the `LHCb_VeLo_Toy_Model` repository into four clear submodules to improve modularity, maintainability, and usability.
 
 ---
 
@@ -78,26 +78,39 @@ lhcb_velo_toy/                          # Main package
 │       ├── segment.py                  # Segment class & generation functions
 │       └── track_finder.py             # get_tracks(), find_segments()
 │
-└── analysis/                           # SUBMODULE 3: Analysis & Validation
-    ├── __init__.py
-    ├── validation/                     # Reconstruction metrics
-    │   ├── __init__.py
-    │   ├── match.py                    # Match dataclass
-    │   └── validator.py                # EventValidator
-    └── plotting/                       # Visualization
-        ├── __init__.py
-        ├── event_display.py            # 3D event visualization
-        └── performance.py              # Efficiency/ghost rate plots
+├── analysis/                           # SUBMODULE 3: Analysis & Validation
+│   ├── __init__.py
+│   ├── validation/                     # Reconstruction metrics
+│   │   ├── __init__.py
+│   │   ├── match.py                    # Match dataclass
+│   │   └── validator.py                # EventValidator
+│   └── plotting/                       # Visualization
+│       ├── __init__.py
+│       ├── event_display.py            # 3D event visualization
+│       └── performance.py              # Efficiency/ghost rate plots
+│
+└── persistence/                        # SUBMODULE 4: Save / Load
+    ├── __init__.py                     # Re-exports all public API
+    ├── pipeline.py                     # PipelineResult, save/load pipeline, batch
+    └── study.py                        # StudyResult, save/load parametric studies
 ```
 
 ---
 
 ## JSON Serialization
 
-All models support JSON serialization via `to_dict()` / `from_dict()` methods:
+All models support JSON serialization via `to_dict()` / `from_dict()` methods.
+Geometry classes (`PlaneGeometry`, `RectangularVoidGeometry`) now also support
+`to_dict()` / `from_dict()`, with a `"geometry_class"` discriminator for
+polymorphic deserialization via `geometry_from_dict()`.
+
+**Event geometry embedding:** `Event.to_dict()` embeds the detector geometry
+dictionary.  `Event.from_dict()` / `Event.from_json()` accept an optional
+`detector_geometry` (default `None`) and auto-reconstruct geometry from the
+embedded dict when not provided.
 
 ```python
-# Save event to JSON
+# Save event to JSON (geometry is embedded automatically)
 event.to_json("my_event.json")
 
 # Load event from JSON (geometry provided separately)
@@ -159,3 +172,12 @@ candidates = get_candidate_segments(event, max_delta_z=100)
 - [x] Integration tests (3 end-to-end notebooks)
 - [x] Example notebooks (classical, HHL, 1-BQF)
 - [x] Release v2.0.0
+
+### Phase 6: Persistence Module
+- [x] Geometry `to_dict()` / `from_dict()` with `geometry_class` discriminator
+- [x] `geometry_from_dict()` dispatch function
+- [x] Event embed geometry in `to_dict()`, auto-reconstruct in `from_dict()`
+- [x] `Match.from_dict()` classmethod
+- [x] `persistence/pipeline.py` — `PipelineResult`, `save_pipeline`, `load_pipeline`, batch
+- [x] `persistence/study.py` — `StudyResult`, `save_study`, `load_study`
+- [x] Wire into package-level exports
