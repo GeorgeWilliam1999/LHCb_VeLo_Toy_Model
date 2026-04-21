@@ -27,21 +27,21 @@ def find_segments(
 ) -> list["Segment"]:
     """
     Find all segments connected to a given segment.
-    
+
     Two segments are connected if they share an endpoint hit.
-    
+
     Parameters
     ----------
     segment : Segment
         The reference segment to find connections for.
     active_segments : list[Segment]
         Pool of candidate segments to search.
-    
+
     Returns
     -------
     list[Segment]
         Segments that share a hit with the reference segment.
-    
+
     Examples
     --------
     >>> # seg1: hit_A -> hit_B
@@ -50,7 +50,7 @@ def find_segments(
     >>> connected = find_segments(seg1, [seg2, seg3])
     >>> len(connected)
     1
-    
+
     Notes
     -----
     This function is used in the track-building algorithm to group
@@ -67,10 +67,10 @@ def get_tracks(
 ) -> list["Track"]:
     """
     Extract tracks from a Hamiltonian solution.
-    
+
     Converts the continuous segment activation vector into discrete
     tracks by thresholding and grouping connected segments.
-    
+
     Parameters
     ----------
     hamiltonian : Hamiltonian
@@ -82,19 +82,19 @@ def get_tracks(
     threshold : float, default 0.0
         Minimum activation value for a segment to be considered active.
         Segments with solution[i] > threshold are included.
-    
+
     Returns
     -------
     list[Track]
         Reconstructed tracks.
-    
+
     Examples
     --------
     >>> ham = SimpleHamiltonian(epsilon=0.01, gamma=1.5, delta=1.0)
     >>> ham.construct_hamiltonian(event)
     >>> solution = ham.solve_classicaly()
     >>> tracks = get_tracks(ham, solution, event)
-    
+
     Notes
     -----
     Algorithm:
@@ -105,23 +105,23 @@ def get_tracks(
     5. Order hits within each track by z coordinate
     """
     from lhcb_velo_toy.generation.entities.track import Track
-    
+
     # Get active segments
     active_indices = np.where(solution > threshold)[0]
     active_segments = [hamiltonian.segments[i] for i in active_indices]
-    
+
     if not active_segments:
         return []
-    
+
     # Group segments into tracks
     segment_groups = _group_segments_into_tracks(active_segments)
-    
+
     # Convert groups to Track objects
     tracks = []
     for track_id, group in enumerate(segment_groups):
         track = _segments_to_track(group, track_id)
         tracks.append(track)
-    
+
     return tracks
 
 
@@ -133,7 +133,7 @@ def get_tracks_fast(
 ) -> list["Track"]:
     """
     Optimized track extraction using vectorized operations.
-    
+
     Parameters
     ----------
     hamiltonian : Hamiltonian
@@ -144,12 +144,12 @@ def get_tracks_fast(
         The event containing hit and geometry information.
     threshold : float, default 0.0
         Minimum activation threshold.
-    
+
     Returns
     -------
     list[Track]
         Reconstructed tracks.
-    
+
     Notes
     -----
     Uses pre-computed data structures from SimpleHamiltonianFast
@@ -603,11 +603,11 @@ def construct_event(
 ) -> "Event":
     """
     Construct a reconstructed Event from tracks and a hit pool.
-    
+
     Convenience wrapper around ``Event.from_tracks``.  Modules are
     derived automatically from the hits and geometry; primary vertices
     are left empty (unknown after reconstruction).
-    
+
     Parameters
     ----------
     detector_geometry : Geometry
@@ -616,23 +616,23 @@ def construct_event(
         Reconstructed tracks (each carrying ``hit_ids``).
     hits : list[Hit]
         Pool of available hits (e.g. from the original event).
-    
+
     Returns
     -------
     Event
         Reconstructed event with auto-derived modules.
-    
+
     Examples
     --------
     >>> reco_tracks = get_tracks(ham, solution, event)
     >>> reco_event = construct_event(geometry, reco_tracks, event.hits)
-    
+
     See Also
     --------
     Event.from_tracks : The underlying classmethod.
     """
     from lhcb_velo_toy.generation.entities.event import Event
-    
+
     return Event.from_tracks(
         detector_geometry=detector_geometry,
         tracks=tracks,
@@ -645,12 +645,12 @@ def _group_segments_into_tracks(
 ) -> list[list["Segment"]]:
     """
     Group connected segments into track candidates.
-    
+
     Parameters
     ----------
     active_segments : list[Segment]
         Segments that passed the activation threshold.
-    
+
     Returns
     -------
     list[list[Segment]]
@@ -658,23 +658,28 @@ def _group_segments_into_tracks(
     """
     if not active_segments:
         return []
-    
+
     # Track visited segments
     visited: set[int] = set()
     groups: list[list["Segment"]] = []
-    
-    def dfs(segment: "Segment", group: list["Segment"]) -> None:
-        """Depth-first search to find all connected segments."""
-        if segment.segment_id in visited:
-            return
-        visited.add(segment.segment_id)
-        group.append(segment)
-        
-        # Find connected segments
-        for other in active_segments:
-            if other.segment_id not in visited and segment.shares_hit_with(other):
-                dfs(other, group)
-    
+
+    def dfs(start_segment: "Segment", group: list["Segment"]) -> None:
+        """Iterative depth-first search to find all connected segments.
+
+        Uses an explicit stack instead of recursion to avoid
+        ``RecursionError`` on dense segment-overlap graphs.
+        """
+        stack = [start_segment]
+        while stack:
+            segment = stack.pop()
+            if segment.segment_id in visited:
+                continue
+            visited.add(segment.segment_id)
+            group.append(segment)
+            for other in active_segments:
+                if other.segment_id not in visited and segment.shares_hit_with(other):
+                    stack.append(other)
+
     # Find all connected components
     for segment in active_segments:
         if segment.segment_id not in visited:
@@ -682,7 +687,7 @@ def _group_segments_into_tracks(
             dfs(segment, group)
             if group:
                 groups.append(group)
-    
+
     return groups
 
 
@@ -692,37 +697,37 @@ def _segments_to_track(
 ) -> "Track":
     """
     Convert a group of segments into a Track object.
-    
+
     Parameters
     ----------
     segment_group : list[Segment]
         Connected segments forming a track.
     track_id : int
         Unique identifier for the track.
-    
+
     Returns
     -------
     Track
         The constructed track with ordered hits.
     """
     from lhcb_velo_toy.generation.entities.track import Track
-    
+
     # Collect all unique hits from segments
     hit_set: set[int] = set()
     hits_list: list = []
-    
+
     for segment in segment_group:
         for hit in [segment.hit_start, segment.hit_end]:
             if hit.hit_id not in hit_set:
                 hit_set.add(hit.hit_id)
                 hits_list.append(hit)
-    
+
     # Sort hits by z coordinate
     hits_list.sort(key=lambda h: h.z)
-    
+
     # Extract hit IDs
     hit_ids = [h.hit_id for h in hits_list]
-    
+
     return Track(track_id=track_id, hit_ids=hit_ids)
 
 
@@ -732,32 +737,32 @@ def get_segments_from_track(
 ) -> list["Segment"]:
     """
     Compute segments for a single track.
-    
+
     Creates segments between consecutive hits (ordered by z) on the track.
-    
+
     Parameters
     ----------
     track : Track
         The track to compute segments for.
     event : Event
         The event containing hit data.
-    
+
     Returns
     -------
     list[Segment]
         List of segments connecting consecutive hits.
-    
+
     Examples
     --------
     >>> segments = get_segments_from_track(track, event)
     >>> print(f"Track has {len(segments)} segments")
     """
     from lhcb_velo_toy.solvers.reconstruction.segment import Segment
-    
+
     # Get hits and sort by z
     hits = event.get_hits_by_ids(track.hit_ids)
     hits_sorted = sorted(hits, key=lambda h: h.z)
-    
+
     segments = []
     for i in range(len(hits_sorted) - 1):
         segment = Segment(
@@ -768,7 +773,7 @@ def get_segments_from_track(
             pv_id=track.pv_id,
         )
         segments.append(segment)
-    
+
     return segments
 
 
@@ -778,45 +783,45 @@ def get_segments_from_event(
 ) -> list["Segment"]:
     """
     Compute all segments from an event's tracks.
-    
+
     This function generates segments on-demand from the event's tracks.
     Segments are NOT stored in the Event; use this function when needed.
-    
+
     Parameters
     ----------
     event : Event
         The event containing tracks and hits.
     include_ghost_tracks : bool, default False
         If True, includes segments from ghost hits (track_id == -1).
-    
+
     Returns
     -------
     list[Segment]
         List of all segments with globally unique segment_ids.
-    
+
     Examples
     --------
     >>> segments = get_segments_from_event(event)
     >>> print(f"Event has {len(segments)} segments")
-    
+
     Notes
     -----
     Segment IDs are assigned globally across the entire event to ensure
     uniqueness for Hamiltonian construction.
     """
     from lhcb_velo_toy.solvers.reconstruction.segment import Segment
-    
+
     all_segments: list["Segment"] = []
     segment_id_counter = 0
-    
+
     for track in event.tracks:
         if not include_ghost_tracks and track.track_id == -1:
             continue
-        
+
         # Get hits and sort by z
         hits = event.get_hits_by_ids(track.hit_ids)
         hits_sorted = sorted(hits, key=lambda h: h.z)
-        
+
         # Create segments between consecutive hits
         for i in range(len(hits_sorted) - 1):
             segment = Segment(
@@ -828,7 +833,7 @@ def get_segments_from_event(
             )
             all_segments.append(segment)
             segment_id_counter += 1
-    
+
     return all_segments
 
 
@@ -838,49 +843,49 @@ def get_all_possible_segments(
 ) -> list["Segment"]:
     """
     Generate all possible segment candidates between hits on adjacent modules.
-    
+
     This is used for Hamiltonian construction where we need to consider
     ALL possible hit-to-hit connections, not just those from known tracks.
-    
+
     Parameters
     ----------
     event : Event
         The event containing hits and modules.
     max_z_gap : int, default 1
         Maximum module gap between hits. 1 = adjacent modules only.
-    
+
     Returns
     -------
     list[Segment]
         List of all possible segment candidates.
-    
+
     Examples
     --------
     >>> candidates = get_all_possible_segments(event)
     >>> print(f"Generated {len(candidates)} segment candidates")
     """
     from lhcb_velo_toy.solvers.reconstruction.segment import Segment
-    
+
     # Group hits by module
     hits_by_module: dict[int, list] = {}
     for hit in event.hits:
         if hit.module_id not in hits_by_module:
             hits_by_module[hit.module_id] = []
         hits_by_module[hit.module_id].append(hit)
-    
+
     # Get sorted module IDs
     module_ids = sorted(hits_by_module.keys())
-    
+
     segments: list["Segment"] = []
     segment_id = 0
-    
+
     # Generate segments between adjacent modules
     for i, mod_id in enumerate(module_ids):
         for j in range(1, max_z_gap + 1):
             if i + j >= len(module_ids):
                 break
             next_mod_id = module_ids[i + j]
-            
+
             # Create all hit pairs between these modules
             for hit1 in hits_by_module[mod_id]:
                 for hit2 in hits_by_module[next_mod_id]:
@@ -893,5 +898,5 @@ def get_all_possible_segments(
                     )
                     segments.append(segment)
                     segment_id += 1
-    
+
     return segments

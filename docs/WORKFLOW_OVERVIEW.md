@@ -79,7 +79,7 @@ graph TB
             G2 --- G2a
             G3 --- G3a
         end
-        
+
         subgraph SOL["solvers"]
             S1["hamiltonians/"]
             S1a["SimpleHamiltonian, SimpleHamiltonianFast"]
@@ -94,7 +94,7 @@ graph TB
             S3 --- S3a
             S4 --- S4a
         end
-        
+
         subgraph ANA["analysis"]
             A1["validation/"]
             A1a["Match, EventValidator"]
@@ -103,7 +103,7 @@ graph TB
             A1 --- A1a
             A2 --- A2a
         end
-        
+
         subgraph PER["persistence"]
             P1["pipeline.py"]
             P1a["save/load single-event pipeline"]
@@ -113,13 +113,13 @@ graph TB
             P2 --- P2a
         end
     end
-    
+
     GEN --> SOL
     SOL --> ANA
     GEN --> PER
     SOL --> PER
     ANA --> PER
-    
+
     style GEN fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
     style SOL fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
     style ANA fill:#fff8e1,stroke:#fbc02d,stroke-width:2px
@@ -137,14 +137,14 @@ flowchart LR
     subgraph INPUT["1. INPUT"]
         CONFIG["Configuration"]
     end
-    
+
     subgraph GENERATION["2. GENERATION"]
         GEN2["StateEventGenerator"]
         EVT["Event"]
         NOISE["Add Noise"]
         GEN2 --> EVT --> NOISE
     end
-    
+
     subgraph SOLVING["3. SOLVING"]
         HAM["Hamiltonian"]
         SOLVE{"Solver?"}
@@ -157,27 +157,27 @@ flowchart LR
         CLASS --> SOLN
         QUANT --> SOLN
     end
-    
+
     subgraph RECONSTRUCTION["4. RECONSTRUCTION"]
         THRESH["Threshold"]
         GROUP["Group Segments"]
         RECO["Reco Tracks"]
         THRESH --> GROUP --> RECO
     end
-    
+
     subgraph VALIDATION["5. VALIDATION"]
         MATCH["Match Tracks"]
         METRICS["Metrics"]
         PLOTS["Plots"]
         MATCH --> METRICS --> PLOTS
     end
-    
+
     CONFIG --> GEN2
     NOISE --> HAM
     SOLN --> THRESH
     RECO --> MATCH
     EVT -.->|truth| MATCH
-    
+
     style INPUT fill:#f5f5f5,stroke:#9e9e9e
     style GENERATION fill:#e3f2fd,stroke:#1976d2
     style SOLVING fill:#e8f5e9,stroke:#388e3c
@@ -390,26 +390,26 @@ flowchart LR
         PG["PlaneGeometry"]
         RVG["RectangularVoidGeometry"]
     end
-    
+
     subgraph GEO_IO["PlaneGeometry I/O"]
         direction TB
         PG_IN["INPUT:<br/>module_id: list[int]<br/>lx: list[float]<br/>ly: list[float]<br/>z: list[float]"]
         PG_OUT["OUTPUT:<br/>Geometry object<br/>with n_modules"]
     end
-    
+
     PG_IN --> PG --> PG_OUT
-    
+
     subgraph GENERATOR["StateEventGenerator"]
         direction TB
         SEG["StateEventGenerator"]
     end
-    
+
     subgraph SEG_IO["StateEventGenerator I/O"]
         direction TB
         SEG_IN["INPUT:<br/>detector_geometry: Geometry<br/>events: int<br/>n_particles: list[int]<br/>measurement_error: float<br/>collision_noise: float"]
         SEG_OUT["OUTPUT:<br/>Event object with:<br/>- primary_vertices<br/>- tracks<br/>- hits<br/>- modules"]
     end
-    
+
     SEG_IN --> SEG --> SEG_OUT
     PG_OUT -.-> SEG_IN
 ```
@@ -432,7 +432,7 @@ classDiagram
         +get_hits_by_ids(hit_ids) list~Hit~
         +get_track_by_id(track_id) Track
     }
-    
+
     class PrimaryVertex {
         +int pv_id
         +float x
@@ -442,7 +442,7 @@ classDiagram
         +to_dict() dict
         +from_dict(data) PrimaryVertex
     }
-    
+
     class Track {
         +int track_id
         +int pv_id
@@ -450,7 +450,7 @@ classDiagram
         +to_dict() dict
         +from_dict(data) Track
     }
-    
+
     class Hit {
         +int hit_id
         +float x
@@ -463,7 +463,7 @@ classDiagram
         +to_dict() dict
         +from_dict(data) Hit
     }
-    
+
     class Module {
         +int module_id
         +float z
@@ -474,7 +474,7 @@ classDiagram
         +to_dict() dict
         +from_dict(data) Module
     }
-    
+
     Event "1" *-- "*" PrimaryVertex
     Event "1" *-- "*" Track
     Event "1" *-- "*" Hit
@@ -509,22 +509,22 @@ flowchart TD
     B --> C[Generate Primary Vertices]
     C --> D[Create Particles with Momentum]
     D --> E["1. Propagate TRUE state\nto next module z"]
-    
+
     E --> F{"2. On detector bulk?"}
     F -->|No| H[Skip Module]
     F -->|Yes| G["3. Record Hit\nx_meas = x_true + N 0 σ_meas\ny_meas = y_true + N 0 σ_meas\n⚡ Does NOT modify true state"]
-    
+
     G --> J["4. Apply Multiple Scattering\ntx += tan N 0 σ_scat\nty += tan N 0 σ_scat\n⚡ Modifies TRUE state"]
     J --> K{More Modules?}
-    
+
     H --> K
     K -->|Yes| E
     K -->|No| L{More Particles?}
-    
+
     L -->|Yes| D
     L -->|No| M[Build Event Object]
     M --> N[Return Truth Event]
-    
+
     style G fill:#e3f2fd,stroke:#1565c0
     style J fill:#ffebee,stroke:#c62828
     style E fill:#e8f5e9,stroke:#2e7d32
@@ -581,7 +581,7 @@ flowchart TB
         SG_OUT["OUTPUT:<br/>list[Segment]<br/>each with track_id, pv_id"]
         SG_IN --> SG_FN --> SG_OUT
     end
-    
+
     subgraph HAM_CONSTRUCT["Hamiltonian Construction"]
         direction LR
         HC_IN["INPUT:<br/>event: Event<br/>epsilon: float<br/>gamma: float<br/>delta: float"]
@@ -589,7 +589,7 @@ flowchart TB
         HC_OUT["OUTPUT:<br/>A: sparse matrix<br/>b: vector"]
         HC_IN --> HC_FN --> HC_OUT
     end
-    
+
     subgraph SOLVE["Solving"]
         direction LR
         SOL_IN["INPUT:<br/>A: matrix<br/>b: vector"]
@@ -597,7 +597,7 @@ flowchart TB
         SOL_OUT["OUTPUT:<br/>x: solution vector<br/>(segment activations)"]
         SOL_IN --> SOL_FN --> SOL_OUT
     end
-    
+
     subgraph TRACK_FIND["Track Finding"]
         direction LR
         TF_IN["INPUT:<br/>hamiltonian<br/>solution: ndarray<br/>event: Event<br/>threshold: float"]
@@ -605,7 +605,7 @@ flowchart TB
         TF_OUT["OUTPUT:<br/>list[Track]<br/>(reconstructed)"]
         TF_IN --> TF_FN --> TF_OUT
     end
-    
+
     SG_OUT --> HC_IN
     HC_OUT --> SOL_IN
     SOL_OUT --> TF_IN
@@ -626,19 +626,19 @@ classDiagram
         +construct_hamiltonian(event)*
         +solve_classicaly()*
     }
-    
+
     class SimpleHamiltonian {
         +construct_hamiltonian(event, convolution)
         +solve_classicaly()
         +get_segment_by_index(idx) Segment
     }
-    
+
     class SimpleHamiltonianFast {
         +construct_hamiltonian(event, convolution)
         +solve_classicaly()
         -_build_sparse_matrix()
     }
-    
+
     class HHL {
         +int n_qubits
         +QuantumCircuit circuit
@@ -647,17 +647,17 @@ classDiagram
         +get_solution() ndarray
         +simulate_statevector() Statevector
     }
-    
+
     class OneBitHHL {
         +build_circuit() QuantumCircuit
         +run(use_noise_model, backend_name) dict
         +get_solution(counts) tuple
         +get_success_probability() float
     }
-    
+
     Hamiltonian <|-- SimpleHamiltonian
     Hamiltonian <|-- SimpleHamiltonianFast
-    
+
     class Segment {
         +Hit hit_start
         +Hit hit_end
@@ -668,7 +668,7 @@ classDiagram
         +length() float
         +shares_hit_with(other) bool
     }
-    
+
     SimpleHamiltonian "1" *-- "*" Segment
 ```
 
@@ -684,7 +684,7 @@ flowchart TD
         E --> F["Measurement"]
         F --> G["Output: |x⟩"]
     end
-    
+
     subgraph ONEBIT["OneBitHHL (Simplified)"]
         H["Input: A, b"] --> I["Single-qubit<br/>phase estimation"]
         I --> J["Approximate<br/>eigenvalue"]
@@ -726,7 +726,7 @@ flowchart TB
         V_INIT["EventValidator()"]
         V_IN --> V_INIT
     end
-    
+
     subgraph MATCHING["match_tracks()"]
         direction TB
         M_IN["INPUT:<br/>purity_min: float = 0.7<br/>hit_efficiency_min: float = 0.0<br/>min_rec_hits: int = 3"]
@@ -734,12 +734,12 @@ flowchart TB
         M_OUT["OUTPUT:<br/>matches: list[Match]<br/>metrics: dict"]
         M_IN --> M_FN --> M_OUT
     end
-    
+
     subgraph METRICS["Computed Metrics"]
         direction TB
         MET["efficiency: float<br/>ghost_rate: float<br/>clone_fraction: float<br/>mean_purity: float<br/>hit_efficiency: float<br/>n_candidates: int<br/>n_accepted: int<br/>n_ghosts: int<br/>n_clones: int"]
     end
-    
+
     V_INIT --> M_FN
     M_OUT --> MET
 ```
@@ -758,7 +758,7 @@ classDiagram
         +truth_table() DataFrame
         +print_summary()
     }
-    
+
     class Match {
         +int best_truth_id
         +int rec_hits
@@ -773,7 +773,7 @@ classDiagram
         +is_ghost bool
         +is_primary bool
     }
-    
+
     EventValidator "1" *-- "*" Match
 ```
 
@@ -784,31 +784,31 @@ flowchart TD
     A["Reco Tracks"] --> B{Min hits?}
     B -->|No| C["Reject"]
     B -->|Yes| D["Mark as Candidate"]
-    
+
     D --> E["Find best truth match<br/>(most shared hits)"]
     E --> F["Compute purity<br/>shared/reco"]
     F --> G["Compute hit_efficiency<br/>shared/truth"]
-    
+
     G --> H{purity >= min?}
     H -->|No| I["Mark as GHOST"]
     H -->|Yes| J{hit_eff >= min?}
     J -->|No| I
     J -->|Yes| K["ACCEPTED candidate"]
-    
+
     K --> L{Same truth already<br/>matched?}
     L -->|No| M["Assign as PRIMARY"]
     L -->|Yes| N{New match better<br/>than existing?}
-    
+
     N -->|Yes| O["Replace existing match"]
     O --> P["Return displaced track<br/>to candidate pool"]
     P --> E
-    
+
     N -->|No| Q["Mark as CLONE"]
-    
+
     I --> R["Aggregate Metrics"]
     M --> R
     Q --> R
-    
+
     R --> S["efficiency = matched/reconstructible"]
     R --> T["ghost_rate = ghosts/candidates"]
     R --> U["clone_fraction = clones/accepted"]
@@ -832,7 +832,7 @@ flowchart LR
         ED_OUT["OUTPUT:<br/>matplotlib Figure<br/>3D visualization"]
         ED_IN --> ED_FN --> ED_OUT
     end
-    
+
     subgraph PERFORMANCE["performance.py"]
         P_IN["INPUT:<br/>metrics: list[dict]<br/>labels: list[str]"]
         P_FN["plot_efficiency_vs_parameter()<br/>plot_ghost_rate_vs_parameter()<br/>generate_performance_report()"]
@@ -924,17 +924,17 @@ erDiagram
     EVENT ||--o{ HIT : contains
     EVENT ||--o{ MODULE : contains
     EVENT ||--|| GEOMETRY : uses
-    
+
     PRIMARY_VERTEX ||--o{ TRACK : "track_ids"
     TRACK ||--o{ HIT : "hit_ids"
     TRACK }o--|| PRIMARY_VERTEX : "pv_id"
     HIT }o--|| TRACK : "track_id"
-    
+
     MODULE ||--o{ HIT : "hit_ids"
-    
+
     MATCH ||--|| TRACK : "reco"
     MATCH }o--|| TRACK : "truth"
-    
+
     EVENT {
         Geometry detector_geometry
         list primary_vertices
@@ -942,7 +942,7 @@ erDiagram
         list hits
         list modules
     }
-    
+
     PRIMARY_VERTEX {
         int pv_id
         float x
@@ -950,13 +950,13 @@ erDiagram
         float z
         list track_ids
     }
-    
+
     TRACK {
         int track_id
         int pv_id
         list hit_ids
     }
-    
+
     HIT {
         int hit_id
         float x
@@ -965,7 +965,7 @@ erDiagram
         int module_id
         int track_id
     }
-    
+
     MODULE {
         int module_id
         float z
@@ -973,7 +973,7 @@ erDiagram
         float ly
         list hit_ids
     }
-    
+
     MATCH {
         int best_truth_id
         int rec_hits

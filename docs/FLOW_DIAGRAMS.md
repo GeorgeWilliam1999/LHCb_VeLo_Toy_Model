@@ -28,23 +28,23 @@ graph TB
         EVG[Event Generators]
         DAT[Entities]
     end
-    
+
     subgraph solvers["Solvers Module"]
         HAM[Hamiltonians]
         CLS[Classical Solvers]
         QUA[Quantum Algorithms]
     end
-    
+
     subgraph analysis["Analysis Module"]
         VAL[Validators]
         PLT[Plotting]
     end
-    
+
     subgraph persistence["Persistence Module"]
         PIP[Pipeline Save/Load]
         STU[Study Save/Load]
     end
-    
+
     GEO --> EVG
     DAT --> EVG
     EVG --> HAM
@@ -53,7 +53,7 @@ graph TB
     CLS --> VAL
     QUA --> VAL
     VAL --> PLT
-    
+
     EVG --> PIP
     HAM --> PIP
     VAL --> PIP
@@ -70,13 +70,13 @@ flowchart LR
         G[Geometry]
         P[Particle Config]
     end
-    
+
     subgraph Generation
         GEN[StateEventGenerator]
         EVT["Event: PVs, tracks, hits"]
         NOISE[make_noisy_event]
     end
-    
+
     subgraph Solving
         HAM[SimpleHamiltonian]
         MAT["A matrix + b vector"]
@@ -86,26 +86,26 @@ flowchart LR
         ONEBQF[1-Bit Filter]
         VEC[solution vector]
     end
-    
+
     subgraph Reconstruction
         FILT[Threshold Filter]
         GRP[Segment Grouping]
         TRK[Reconstructed Tracks]
     end
-    
+
     subgraph Validation
         VAL[EventValidator]
         MET["Metrics: Efficiency, Ghost Rate, Purity"]
         PLT[Plots]
     end
-    
+
     G --> GEN
     P --> GEN
     GEN --> EVT
     EVT --> NOISE
     NOISE --> HAM
     EVT -->|true tracks| VAL
-    
+
     HAM --> MAT
     MAT --> SOL
     SOL --> CG
@@ -114,11 +114,11 @@ flowchart LR
     CG --> VEC
     HHL --> VEC
     ONEBQF --> VEC
-    
+
     VEC --> FILT
     FILT --> GRP
     GRP --> TRK
-    
+
     TRK --> VAL
     VAL --> MET
     MET --> PLT
@@ -137,7 +137,7 @@ classDiagram
         +point_on_bulk(state) bool
         +__len__() int
     }
-    
+
     class PlaneGeometry {
         +lx: list[float]
         +ly: list[float]
@@ -145,7 +145,7 @@ classDiagram
         +__getitem__(index) tuple
         +point_on_bulk(state) bool
     }
-    
+
     class RectangularVoidGeometry {
         +void_x_boundary: list[float]
         +void_y_boundary: list[float]
@@ -155,10 +155,10 @@ classDiagram
         +__getitem__(index) tuple
         +point_on_bulk(state) bool
     }
-    
+
     Geometry <|-- PlaneGeometry
     Geometry <|-- RectangularVoidGeometry
-    
+
     class Hamiltonian {
         <<abstract>>
         +A: sparse.csc_matrix
@@ -167,7 +167,7 @@ classDiagram
         +construct_hamiltonian(event)* tuple
         +evaluate(solution)* float
     }
-    
+
     class SimpleHamiltonian {
         +epsilon: float
         +gamma: float
@@ -178,15 +178,15 @@ classDiagram
         +solve_classicaly() ndarray
         +evaluate(solution) float
     }
-    
+
     class SimpleHamiltonianFast {
         +_segment_vectors: ndarray
         +_segment_to_hit_ids: list~tuple~
     }
-    
+
     Hamiltonian <|-- SimpleHamiltonian
     Hamiltonian <|-- SimpleHamiltonianFast
-    
+
     class Hit {
         +hit_id: int
         +x: float
@@ -200,7 +200,7 @@ classDiagram
         +to_dict() dict
         +from_dict(data) Hit
     }
-    
+
     class Segment {
         +hit_start: Hit
         +hit_end: Hit
@@ -211,7 +211,7 @@ classDiagram
         +__mul__(other) float
         +shares_hit_with(other) bool
     }
-    
+
     class Track {
         +track_id: int
         +pv_id: int
@@ -220,7 +220,7 @@ classDiagram
         +to_dict() dict
         +from_dict(data) Track
     }
-    
+
     class PrimaryVertex {
         +pv_id: int
         +x: float
@@ -230,7 +230,7 @@ classDiagram
         +extra: dict
         +to_dict() dict
     }
-    
+
     class Module {
         +module_id: int
         +z: float
@@ -240,7 +240,7 @@ classDiagram
         +extra: dict
         +to_dict() dict
     }
-    
+
     class Event {
         +detector_geometry: Geometry
         +primary_vertices: list[PrimaryVertex]
@@ -254,7 +254,7 @@ classDiagram
         +from_json(filepath, detector_geometry) Event
         +from_tracks(detector_geometry, tracks, hits) Event$
     }
-    
+
     Segment --> Hit : connects 2
     Track o-- Hit : hit_ids
     Track o-- PrimaryVertex : pv_id
@@ -282,13 +282,13 @@ graph TD
         AER[qiskit-aer]
         IBM[qiskit-ibm-runtime]
     end
-    
+
     subgraph generation
         ENT[entities/]
         GEO2[geometry/]
         GEN2[generators/state_event.py]
     end
-    
+
     subgraph solvers
         HAM[hamiltonians/base.py]
         SH[hamiltonians/simple.py]
@@ -298,12 +298,12 @@ graph TD
         CLS2[classical/solvers.py]
         REC[reconstruction/]
     end
-    
+
     subgraph analysis
         TV[validation/validator.py]
         LTP[plotting/]
     end
-    
+
     %% External dependencies
     NP --> ENT
     NP --> GEO2
@@ -317,23 +317,23 @@ graph TD
     NP --> HHL
     NP --> OBQ
     NP --> REC
-    
+
     SP --> SH
     SP --> SHF
     SP --> HAM
     SP --> CLS2
-    
+
     MPL --> LTP
-    
+
     PD --> TV
     PD --> LTP
-    
+
     QK --> HHL
     QK --> OBQ
     AER --> HHL
     AER --> OBQ
     IBM --> OBQ
-    
+
     %% Internal dependencies
     ENT --> GEN2
     GEO2 --> GEN2
@@ -341,23 +341,23 @@ graph TD
     GEN2 --> SHF
     HAM --> SH
     HAM --> SHF
-    
+
     ENT --> TV
     SH --> TV
     TV --> LTP
-    
+
     %% Persistence module
     PER_PIP[persistence/pipeline.py]
     PER_STU[persistence/study.py]
-    
+
     NP --> PER_PIP
     SP --> PER_PIP
     NP --> PER_STU
-    
+
     ENT --> PER_PIP
     GEO2 --> PER_PIP
     TV --> PER_PIP
-    
+
     style generation fill:#e3f2fd
     style solvers fill:#e8f5e9
     style analysis fill:#fff8e1
@@ -375,48 +375,48 @@ graph TD
 ```mermaid
 flowchart TD
     START([Start]) --> INIT["Initialize StateEventGenerator with Geometry"]
-    
+
     INIT --> VTX{Primary Vertices?}
     VTX -->|Generate| GVX["generate_random_primary_vertices: Gaussian distribution"]
     VTX -->|Provided| SVX[set_primary_vertices]
     GVX --> PAR
     SVX --> PAR
-    
+
     PAR[Define particles per event] --> GPRT[generate_particles]
-    
+
     GPRT --> LOOP[For each event]
     LOOP --> PV[Get primary vertex]
     PV --> PLOOP[For each particle]
-    
+
     PLOOP --> STATE["Create state vector: x, y, z, tx, ty"]
     STATE --> MLOOP[For each module]
 
     MLOOP --> PROP["1. Propagate TRUE state to module z"]
     PROP --> BULK{"2. On bulk?"}
-    
+
     BULK -->|No ─ skip completely| NEXT
-    
+
     BULK -->|Yes| HIT["3. Record Hit at smeared coords\n x_meas = x_true + N 0 sigma_meas\n y_meas = y_true + N 0 sigma_meas"]
     HIT --> SCATTER["4. Apply multiple scattering to TRUE tx, ty\n tx += tan N 0 sigma_scatter\n ty += tan N 0 sigma_scatter"]
     SCATTER --> NEXT{More modules?}
-    
+
     NEXT -->|Yes| MLOOP
     NEXT -->|No| BUILD_TRACK[Build Track from hit_ids]
 
     BUILD_TRACK --> NEXTP{More particles?}
     NEXTP -->|Yes| PLOOP
     NEXTP -->|No| NEXTE{More events?}
-    
+
     NEXTE -->|Yes| LOOP
     NEXTE -->|No| BUILD[Build Event: PVs + Tracks + Hits + Modules]
-    
+
     BUILD --> EVT["Event with: primary_vertices, tracks, hits, modules"]
     EVT --> NOISE{Add noise?}
-    
+
     NOISE -->|Yes| DROP[Apply drop_rate: Remove random hits]
     DROP --> GHOST[Apply ghost_rate: Add random ghost hits]
     GHOST --> REBUILD[Rebuild modules]
-    
+
     NOISE -->|No| DONE([Return Event])
     REBUILD --> DONE
 
@@ -449,7 +449,7 @@ flowchart TD
 ```mermaid
 flowchart TD
     START([Event]) --> SEGS[construct_segments]
-    
+
     SEGS --> PAIR["For each pair of adjacent modules"]
     PAIR --> H1["For each hit h1 in module i"]
     H1 --> H2["For each hit h2 in module i+1"]
@@ -457,32 +457,32 @@ flowchart TD
     CREATE --> NEXT{More pairs?}
     NEXT -->|Yes| PAIR
     NEXT -->|No| NSEG[n_segments = total segments]
-    
+
     NSEG --> INIT["Initialize: A = sparse matrix, b = zeros"]
-    
+
     INIT --> DIAG["Set diagonal: A_ii = -(gamma + delta)"]
-    
+
     DIAG --> OFF[For each segment pair]
     OFF --> SHARE{Share endpoint?}
-    
+
     SHARE -->|No| NEXTOFF
     SHARE -->|Yes| ANGLE["Compute cos angle"]
-    
+
     ANGLE --> CONV{convolution?}
-    
+
     CONV -->|No| HARD{angle less than epsilon?}
     HARD -->|Yes| SET1["A_ij = 1"]
     HARD -->|No| SET0["A_ij = 0"]
-    
+
     CONV -->|Yes| ERF["ERF smoothed A_ij"]
-    
+
     SET1 --> NEXTOFF{More pairs?}
     SET0 --> NEXTOFF
     ERF --> NEXTOFF
-    
+
     NEXTOFF -->|Yes| OFF
     NEXTOFF -->|No| BIAS["Set bias vector: b_i = gamma + delta"]
-    
+
     BIAS --> RET(["Return A, b"])
 ```
 
@@ -498,39 +498,39 @@ flowchart TD
         A[Matrix A]
         B[Vector b]
     end
-    
+
     subgraph CircuitConstruction["Circuit Construction"]
         PAD[Pad to power of 2]
         NORM["Normalize b"]
-        
+
         subgraph StatePrep["State Prep"]
             SPREP["Amplitude encoding"]
         end
-        
+
         subgraph PhaseEstimation["Phase Estimation"]
             HGATE[Hadamard on time register]
             CEVO[Controlled evolution]
             IQFT[Inverse QFT]
         end
-        
+
         subgraph Rotation
             ANCILLA[Ancilla qubit]
             CROT[Controlled rotation]
         end
-        
+
         subgraph Uncompute
             QFT2[QFT]
             CEVO2[Controlled inverse evolution]
             HGATE2[Hadamard gates]
         end
     end
-    
+
     subgraph Measurement
         MEAS[Measure ancilla + system]
         POST[Post-select ancilla = 1]
         EXTRACT[Extract solution from counts]
     end
-    
+
     A --> PAD
     B --> NORM
     PAD --> CEVO
@@ -557,25 +557,25 @@ flowchart TD
         A[Matrix A]
         B[Vector b]
     end
-    
+
     subgraph SuzukiTrotter["Suzuki-Trotter"]
         DEC[Decompose A into Pauli terms]
         TROT[Build time evolution operator]
     end
-    
+
     subgraph OneBitPhaseEst["1-Bit Phase Estimation"]
         SPREP[State prep]
         H1[Hadamard on time qubit]
         CTRL[Controlled U_A]
         H2[Hadamard on time qubit]
     end
-    
+
     subgraph RotationMeasure["Rotation and Measure"]
         CROT[Rotation on ancilla]
         MEAS[Measure all]
         POST[Post-select ancilla = 1]
     end
-    
+
     A --> DEC
     DEC --> TROT
     B --> SPREP
@@ -598,24 +598,24 @@ flowchart TD
     TRUE[Truth Event] --> FILT{Reconstructible filter?}
     FILT -->|Yes| RECON[Filter truth tracks]
     FILT -->|No| PASS[Use all truth tracks]
-    
+
     RECO[Reco Tracks] --> CAND[For each reco track]
     CAND --> NHIT{n_hits >= min?}
     NHIT -->|No| REJECT[Reject]
     NHIT -->|Yes| CANDOK[Mark CANDIDATE]
-    
+
     RECON --> STARTMATCH
     PASS --> STARTMATCH
     CANDOK --> STARTMATCH[Start Matching]
-    
+
     STARTMATCH --> LOOP[For each candidate]
     LOOP --> ASSOC[Find truth with most shared hits]
     ASSOC --> CALC[Compute purity and hit_efficiency]
-    
+
     CALC --> PURE{purity >= thresh?}
     PURE -->|No| GHOST[Mark GHOST]
     PURE -->|Yes| ACCEPT[ACCEPTED]
-    
+
     ACCEPT --> ALREADY{Truth already matched?}
     ALREADY -->|No| PRIMARY[Mark PRIMARY]
     ALREADY -->|Yes| BETTER{New match better?}
@@ -623,14 +623,14 @@ flowchart TD
     BETTER -->|No| CLONE[Mark CLONE]
     REPLACE --> REEVAL[Re-evaluate displaced track]
     REEVAL --> LOOP
-    
+
     GHOST --> NEXTTRACK{More candidates?}
     PRIMARY --> NEXTTRACK
     CLONE --> NEXTTRACK
     NEXTTRACK -->|Yes| LOOP
     NEXTTRACK -->|No| METRICS[Compute Metrics]
     REJECT --> NEXTTRACK
-    
+
     METRICS --> EFF[Efficiency]
     METRICS --> GR[Ghost Rate]
     METRICS --> CR[Clone Rate]
@@ -655,29 +655,29 @@ sequenceDiagram
     participant Sol as Solver
     participant Val as EventValidator
     participant Plot as Plotter
-    
+
     User->>Gen: Create with Geometry
     User->>Gen: generate_random_primary_vertices()
     User->>Gen: generate_particles([...])
     Gen-->>User: particles configured
-    
+
     User->>Gen: generate_complete_events()
     Gen->>Gen: propagate through modules
     Gen->>Gen: record hits
     Gen-->>User: truth_event
-    
+
     User->>Gen: make_noisy_event(drop, ghost)
     Gen->>Gen: remove random hits
     Gen->>Gen: add ghost hits
     Gen-->>User: noisy_event
-    
+
     User->>Ham: Create with epsilon, gamma, delta
     User->>Ham: construct_hamiltonian(noisy_event)
     Ham->>Ham: construct_segments()
     Ham->>Ham: build A matrix
     Ham->>Ham: build b vector
     Ham-->>User: (A, b)
-    
+
     User->>Sol: solve(A, b)
     alt Classical
         Sol->>Sol: scipy.sparse.linalg.cg()
@@ -687,18 +687,18 @@ sequenceDiagram
         Sol->>Sol: post-select & extract
     end
     Sol-->>User: solution x
-    
+
     User->>Ham: get_tracks(solution, event)
     Ham->>Ham: threshold segments
     Ham->>Ham: group connected
     Ham-->>User: reco_tracks
-    
+
     User->>Val: Create(truth_event, reco_tracks)
     User->>Val: match_tracks(purity_min, hit_efficiency_min)
     Val->>Val: compute overlaps
     Val->>Val: classify tracks
     Val-->>User: (matches, metrics)
-    
+
     User->>Plot: generate_plots(metrics)
     Plot-->>User: figures
 ```
@@ -712,7 +712,7 @@ sequenceDiagram
     participant Circ as QuantumCircuit
     participant Sim as AerSimulator
     participant IBM as IBMRuntime
-    
+
     User->>HHL: Create(A, b, n_qubits)
     User->>HHL: build_circuit()
     HHL->>Circ: create registers
@@ -722,7 +722,7 @@ sequenceDiagram
     HHL->>Circ: uncompute
     HHL->>Circ: measurements
     Circ-->>HHL: circuit ready
-    
+
     alt Noiseless Simulation
         User->>HHL: run(use_noise=False)
         HHL->>Sim: execute(circuit, shots)
@@ -735,7 +735,7 @@ sequenceDiagram
         HHL->>Sim: execute with noise_model
         Sim-->>HHL: counts
     end
-    
+
     User->>HHL: get_solution(counts)
     HHL->>HHL: filter ancilla=1
     HHL->>HHL: aggregate system qubits
@@ -751,20 +751,20 @@ sequenceDiagram
 stateDiagram-v2
     [*] --> Candidate: n_hits >= min
     [*] --> Rejected: n_hits < min
-    
+
     Candidate --> Accepted: purity >= threshold
     Candidate --> Ghost: purity < threshold
-    
+
     Accepted --> CheckExisting: truth matched?
     CheckExisting --> Primary: no existing
     CheckExisting --> CompareQuality: existing found
-    
+
     CompareQuality --> Primary: new is better
     CompareQuality --> Clone: existing is better
-    
+
     Primary --> DisplaceOld: replaced existing
     DisplaceOld --> Candidate: re-evaluate
-    
+
     Ghost --> [*]
     Primary --> [*]
     Clone --> [*]
@@ -782,17 +782,17 @@ erDiagram
     Event ||--o{ Hit : contains
     Event ||--o{ Module : contains
     Event ||--|| Geometry : uses
-    
+
     PrimaryVertex ||--o{ Track : "track_ids"
     Track ||--o{ Hit : "hit_ids"
     Track }o--|| PrimaryVertex : "pv_id"
     Hit }o--|| Track : "track_id"
-    
+
     Module ||--o{ Hit : "hit_ids"
-    
+
     Match ||--|| Track : "reco track"
     Match }o--|| Track : "truth track"
-    
+
     Event {
         Geometry detector_geometry
         list primary_vertices
@@ -800,7 +800,7 @@ erDiagram
         list hits
         list modules
     }
-    
+
     PrimaryVertex {
         int pv_id
         float x
@@ -808,13 +808,13 @@ erDiagram
         float z
         list track_ids
     }
-    
+
     Track {
         int track_id
         int pv_id
         list hit_ids
     }
-    
+
     Hit {
         int hit_id
         float x
@@ -823,7 +823,7 @@ erDiagram
         int module_id
         int track_id
     }
-    
+
     Module {
         int module_id
         float z
@@ -831,7 +831,7 @@ erDiagram
         float ly
         list hit_ids
     }
-    
+
     Match {
         int best_truth_id
         int rec_hits
@@ -866,7 +866,7 @@ flowchart TD
         MATCH["Matches\n(optional)"] --> MJ["matches.json"]
         MET["Metrics\n(optional)"] --> MTJ["metrics.json"]
     end
-    
+
     subgraph LoadPipeline["load_pipeline()"]
         direction TB
         CJ2["config.json"] --> PR["PipelineResult"]
@@ -878,7 +878,7 @@ flowchart TD
         MJ2["matches.json"] --> PR
         MTJ2["metrics.json"] --> PR
     end
-    
+
     style SavePipeline fill:#e8f5e9
     style LoadPipeline fill:#e3f2fd
 ```
@@ -894,7 +894,7 @@ flowchart TD
         HIST["hist_data\n(angle distributions)"] --> HNP["hist_data.npz"]
         EXTRA["extra_arrays"] --> ENP["extra_arrays.npz"]
     end
-    
+
     subgraph LoadStudy["load_study()"]
         direction TB
         SCJ2["study_config.json"] --> SR["StudyResult"]
@@ -902,7 +902,7 @@ flowchart TD
         HNP2["hist_data.npz"] --> SR
         ENP2["extra_arrays.npz"] --> SR
     end
-    
+
     style SaveStudy fill:#e8f5e9
     style LoadStudy fill:#e3f2fd
 ```
@@ -915,11 +915,11 @@ flowchart LR
     BATCH --> E1["event_001/"]
     BATCH --> E2["event_002/"]
     BATCH --> EN["..."]
-    
+
     E0 --> LP0["load_pipeline()"]
     E1 --> LP1["load_pipeline()"]
     E2 --> LP2["load_pipeline()"]
-    
+
     LP0 --> RES["list[PipelineResult]"]
     LP1 --> RES
     LP2 --> RES

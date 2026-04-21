@@ -406,52 +406,52 @@ qiskit-ibm-runtime>=0.20.0
 def check_dependencies():
     """Check all dependencies and report status."""
     results = {}
-    
+
     # Core
     try:
         import numpy as np
         results['numpy'] = np.__version__
     except ImportError:
         results['numpy'] = 'MISSING'
-    
+
     try:
         import scipy
         results['scipy'] = scipy.__version__
     except ImportError:
         results['scipy'] = 'MISSING'
-    
+
     try:
         import matplotlib
         results['matplotlib'] = matplotlib.__version__
     except ImportError:
         results['matplotlib'] = 'MISSING'
-    
+
     # Analysis
     try:
         import pandas
         results['pandas'] = pandas.__version__
     except ImportError:
         results['pandas'] = 'Not installed (optional)'
-    
+
     # Quantum
     try:
         import qiskit
         results['qiskit'] = qiskit.__version__
     except ImportError:
         results['qiskit'] = 'Not installed (optional)'
-    
+
     try:
         import qiskit_aer
         results['qiskit-aer'] = qiskit_aer.__version__
     except ImportError:
         results['qiskit-aer'] = 'Not installed (optional)'
-    
+
     try:
         from qiskit_ibm_runtime import __version__ as ibm_version
         results['qiskit-ibm-runtime'] = ibm_version
     except ImportError:
         results['qiskit-ibm-runtime'] = 'Not installed (optional)'
-    
+
     return results
 
 

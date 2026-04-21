@@ -1,7 +1,7 @@
 # LHCb VELO Toy Model - API Reference
 
-> **Package Name**: `lhcb-velo-toy`  
-> **Version**: 2.0.0  
+> **Package Name**: `lhcb-velo-toy`
+> **Version**: 2.0.0
 > **License**: MIT
 
 ---
@@ -770,7 +770,7 @@ Solve the linear system $A\mathbf{x} = \mathbf{b}$ using conjugate gradient.
 def solve_classicaly(self) -> np.ndarray:
     """
     Returns segment activation vector.
-    
+
     Uses scipy.sparse.linalg.cg with automatic tolerance.
     For small systems (<5000), tries direct solve first.
     """
@@ -882,14 +882,14 @@ Find segments connected to a given segment.
 def find_segments(segment: Segment, active_segments: list[Segment]) -> list[Segment]:
     """
     Two segments are connected if they share an endpoint hit.
-    
+
     Parameters
     ----------
     segment : Segment
         Reference segment
     active_segments : list[Segment]
         Pool of segments to search
-    
+
     Returns
     -------
     list[Segment]
@@ -912,14 +912,14 @@ def get_tracks(
 ) -> list[Track]:
     """
     Groups connected active segments into track candidates.
-    
+
     Algorithm:
     1. Filter segments where activation > threshold
     2. Build adjacency graph of connected segments
     3. Find connected components via depth-first search
     4. Convert each component to a Track object
     5. Order hits within each track by z coordinate
-    
+
     Returns list of reconstructed Track objects.
     """
 ```

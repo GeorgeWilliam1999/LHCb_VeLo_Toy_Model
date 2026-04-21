@@ -154,7 +154,7 @@ graph LR
         G[Geometry] --> GEN[Generator]
         GEN --> E[Event]
     end
-    
+
     subgraph Solving
         E --> H[Hamiltonian]
         H --> S{Solver}
@@ -163,7 +163,7 @@ graph LR
         CG --> X[Solution vector]
         HHL --> X
     end
-    
+
     subgraph Analysis
         X --> R[Reco Tracks]
         R --> V[Validator]
@@ -171,13 +171,13 @@ graph LR
         V --> M[Metrics]
         M --> P[Plots]
     end
-    
+
     subgraph Persistence
         E --> |save| SAVE[save_pipeline / save_study]
         M --> |save| SAVE
         SAVE --> |load| LOAD[load_pipeline / load_study]
     end
-    
+
     style Generation fill:#e3f2fd
     style Solving fill:#e8f5e9
     style Analysis fill:#fff8e1
