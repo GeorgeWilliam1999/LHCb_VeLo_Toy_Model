@@ -1,13 +1,27 @@
 """
 Quantum algorithm implementations for track finding.
 
-Provides HHL and 1-Bit HHL (OneBQF) implementations.
+The canonical algorithms are byte-identical copies of the verified
+reference implementations from
+``OneBQF_repo/quantum_algorithms/{HHL.py, OneBQF.py}``. They are
+re-exported here under their reference names (``HHLAlgorithm``,
+``OneBQF``) and under the legacy alias ``OneBitHHL`` for backwards
+compatibility with existing notebooks and scripts.
 """
 
-from lhcb_velo_toy.solvers.quantum.hhl import HHLAlgorithm
-from lhcb_velo_toy.solvers.quantum.one_bit_hhl import OneBitHHL
+from lhcb_velo_toy.solvers.quantum.HHL import HHLAlgorithm
+from lhcb_velo_toy.solvers.quantum.OneBQF import OneBQF
+from lhcb_velo_toy.solvers.quantum.QSVT import QSVT, design_band_limited_inverse
+
+# Backwards-compatible alias: previous code imported the 1-Bit HHL
+# implementation as ``OneBitHHL``. The verified reference class is
+# called ``OneBQF`` and is functionally equivalent.
+OneBitHHL = OneBQF
 
 __all__ = [
     "HHLAlgorithm",
+    "OneBQF",
     "OneBitHHL",
+    "QSVT",
+    "design_band_limited_inverse",
 ]
