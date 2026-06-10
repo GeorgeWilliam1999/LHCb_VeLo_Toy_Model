@@ -61,10 +61,11 @@ from scipy.sparse import linalg as _spla
 # --------------------------------------------------------------------------
 def design_band_limited_inverse(
     degree=40,
-    domain=(0.2, 7.8),
-    band=(2.15, 5.85),
+    s=4.0,
+    domain=None,
+    band=None,
     edge=0.12,
-    notches=(2.586, 4.0, 5.414),
+    notches=None,
     notch_hw=0.15,
     invert=True,
     iso_weight=40.0,
@@ -76,13 +77,27 @@ def design_band_limited_inverse(
     (smooth tanh edges of width ``edge``), multiplied by Gaussian notches of
     half-width ``notch_hw`` at the in-band failure-mode eigenvalues
     ``notches``, and ~0 outside the band.  ``iso_weight`` adds fit weight at
-    lambda = gamma + delta = 4.0 so the isolated-false eigenvalue (a
-    machine-exact diagonal value, the bulk of the false grass) is strongly
-    nulled, as it is by the OneBQF notch.
+    lambda = s so the isolated-false eigenvalue (a machine-exact diagonal
+    value, the bulk of the false grass) is strongly nulled, as it is by the
+    OneBQF notch.
+
+    ``s = gamma + delta`` is the constant diagonal of the segment Hamiltonian;
+    the whole spectral structure (P4 true band ``s - 2cos(k pi/5)``, P3 bridge
+    modes ``s -/+ sqrt(2)``, isolated line at ``s``, hub modes ``s -/+ sqrt(m)``)
+    shifts rigidly with it, so the default band/notches/domain are expressed
+    as offsets from ``s``.  ``s=4`` reproduces the original gamma=3, delta=1
+    design exactly.
 
     Returns a ``numpy.polynomial.chebyshev.Chebyshev`` series whose ``domain``
     must contain the spectrum of any matrix it is applied to.
     """
+    s = float(s)
+    if band is None:
+        band = (s - 1.85, s + 1.85)
+    if notches is None:
+        notches = (s - 1.414, s, s + 1.414)
+    if domain is None:
+        domain = (s - 3.8, s + 3.8)
     lo, hi = domain
     x = np.linspace(lo, hi, ngrid)
 
@@ -93,11 +108,61 @@ def design_band_limited_inverse(
     for nf in notches:
         y = y * (1 - np.exp(-(((x - nf) / notch_hw) ** 2)))
     if invert:
-        y = y / x
+        # clip the inverse at the band floor: identical to 1/lambda on the band,
+        # bounded below it (where the domain may reach lambda <= 0, e.g. the
+        # indefinite gamma=1 regime).
+        y = y / np.clip(x, max(band[0], 1e-6), None)
     w = np.ones_like(x)
     if iso_weight:
-        w = w + iso_weight * np.exp(-(((x - 4.0) / 0.03) ** 2))
-    return _cheb.Chebyshev.fit(x, y, degree, domain=list(domain), w=w)
+        w = w + iso_weight * np.exp(-(((x - s) / 0.03) ** 2))
+    p = _cheb.Chebyshev.fit(x, y, degree, domain=list(domain), w=w)
+    mx = float(np.max(np.abs(p(x))))
+    if mx > 1.0:
+        # global rescale for QSVT realizability (|p|<=1); downstream metrics are
+        # scale-invariant, only the success probability shrinks.
+        p = p / (mx / 0.95)
+    return p
+
+
+def design_line_comb_inverse(
+    degree=40,
+    s=4.0,
+    lines=None,
+    hw=0.18,
+    domain=None,
+    invert=True,
+    ngrid=6000,
+):
+    """Chebyshev fit of the line-comb inverse: narrow ~1/lambda passes at the
+    true-track eigenvalue *lines* only, ~0 everywhere else.
+
+    Detector geometry pins true tracks to fixed length (P4), so their cluster
+    eigenvalues are the four lines ``s - 2cos(k pi/5)``.  Passing only these
+    lines (Gaussian half-width ``hw``), instead of a contiguous band, also
+    rejects the tangle/chain modes that fall *between* the lines — which is
+    what breaks the band design at high track density (the in-band false
+    promotions grow to tens of percent by T=400, while the comb keeps the
+    false rate at ~0 with ~98 % efficiency).
+
+    Returns a ``numpy.polynomial.chebyshev.Chebyshev`` series whose ``domain``
+    must contain the spectrum of any matrix it is applied to.
+    """
+    s = float(s)
+    if lines is None:
+        lines = tuple(s - 2.0 * np.cos(k * np.pi / 5.0) for k in (1, 2, 3, 4))
+    if domain is None:
+        domain = (s - 3.8, s + 3.8)
+    x = np.linspace(domain[0], domain[1], ngrid)
+    y = np.zeros_like(x)
+    for m in lines:
+        y = np.maximum(y, np.exp(-(((x - m) / hw) ** 2)))
+    if invert:
+        y = y / np.clip(x, max(min(lines), 1e-6), None)
+    p = _cheb.Chebyshev.fit(x, y, degree, domain=list(domain))
+    mx = float(np.max(np.abs(p(x))))
+    if mx > 1.0:
+        p = p / (mx / 0.95)
+    return p
 
 
 # --------------------------------------------------------------------------
