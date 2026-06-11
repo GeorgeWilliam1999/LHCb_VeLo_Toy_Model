@@ -11,7 +11,8 @@ compatibility with existing notebooks and scripts.
 
 from lhcb_velo_toy.solvers.quantum.HHL import HHLAlgorithm
 from lhcb_velo_toy.solvers.quantum.OneBQF import OneBQF
-from lhcb_velo_toy.solvers.quantum.QSVT import QSVT, design_band_limited_inverse, design_line_comb_inverse
+from lhcb_velo_toy.solvers.quantum.QSVT import (QSVT, design_band_limited_inverse,
+                                              design_line_comb_inverse, design_minimax_comb)
 
 # Backwards-compatible alias: previous code imported the 1-Bit HHL
 # implementation as ``OneBitHHL``. The verified reference class is
@@ -25,4 +26,5 @@ __all__ = [
     "QSVT",
     "design_band_limited_inverse",
     "design_line_comb_inverse",
+    "design_minimax_comb",
 ]
