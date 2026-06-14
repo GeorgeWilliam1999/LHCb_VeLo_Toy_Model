@@ -1,21 +1,3 @@
-"""
-HHL.py: Standalone HHL implementation with plotting and statevector helpers.
-
-This module provides an alternative ``HHLAlgorithm`` implementation kept
-alongside :mod:`lhcb_velo_toy.solvers.quantum.hhl`. It is functionally
-similar but ships with extra utilities (matplotlib histogram plotting,
-direct statevector extraction) that are convenient for interactive
-exploration and debugging of the Harrow-Hassidim-Lloyd algorithm on
-toy track-finding linear systems.
-
-Notes
------
-The canonical, package-exposed implementation is
-:class:`lhcb_velo_toy.solvers.quantum.hhl.HHLAlgorithm`. This module is
-retained as a reference / development variant and is not re-exported
-through :mod:`lhcb_velo_toy.solvers.quantum.__init__`.
-"""
-
 import numpy as np
 import math
 import matplotlib.pyplot as plt
@@ -27,60 +9,7 @@ from scipy.linalg import expm
 
 
 class HHLAlgorithm:
-    """
-    Reference HHL (Harrow-Hassidim-Lloyd) implementation with debug helpers.
-
-    Solves the linear system ``A x = b`` on a quantum simulator using
-    quantum phase estimation, controlled rotation, and uncomputation.
-    Compared with :class:`lhcb_velo_toy.solvers.quantum.hhl.HHLAlgorithm`,
-    this class additionally exposes :meth:`plot_results`,
-    :meth:`simulate_statevector` and :meth:`extract_postselected_solution`
-    for diagnostic work.
-
-    Parameters
-    ----------
-    matrix_A : numpy.ndarray
-        The system matrix. Padded to a power-of-2 dimension if needed and
-        symmetrised to ensure Hermiticity.
-    vector_b : numpy.ndarray
-        The right-hand side vector. Will be normalised internally.
-    num_time_qubits : int, default 5
-        Number of qubits used for phase estimation precision.
-    shots : int, default 10240
-        Number of measurement shots when running on the simulator.
-    debug : bool, default False
-        If True, print eigenvalue / rotation diagnostics during circuit
-        construction.
-
-    Attributes
-    ----------
-    A : ndarray
-        The normalised (and possibly padded) system matrix.
-    A_orig : ndarray
-        Copy of the padded matrix prior to spectral normalisation.
-    A_norm : float
-        Frobenius norm used to rescale ``A``.
-    vector_b : ndarray
-        The normalised right-hand side vector.
-    num_time_qubits, num_system_qubits : int
-        Sizes of the time and system registers.
-    t : float
-        QPE evolution time, ``π / max|λ(A)|``.
-    eigenvalues, eigenvalues_scaled : ndarray
-        Eigenvalues of ``A_orig`` and ``A`` respectively.
-    circuit : qiskit.QuantumCircuit | None
-        The built HHL circuit (after :meth:`build_circuit`).
-    counts : dict[str, int] | None
-        Measurement counts after :meth:`run`.
-
-    References
-    ----------
-    Harrow, Hassidim, Lloyd. "Quantum Algorithm for Linear Systems of
-    Equations." Physical Review Letters 103, 150502 (2009).
-    """
-
     def __init__(self, matrix_A, vector_b, num_time_qubits=5, shots=10240, debug=False):
-        """Initialise registers, normalise inputs, and pre-compute spectra."""
         A = matrix_A
         self.original_dim = A.shape[0]
         self.debug = debug
@@ -124,22 +53,7 @@ class HHLAlgorithm:
         self.eigenvalues_scaled = np.linalg.eigvals(self.A)
 
     def get_quantum_only_circuit(self):
-        """
-        Return a copy of :attr:`circuit` with measurements stripped.
-
-        Useful for statevector simulation where classical operations
-        must be removed.
-
-        Returns
-        -------
-        qiskit.QuantumCircuit
-            Circuit containing only the quantum instructions.
-
-        Raises
-        ------
-        ValueError
-            If :meth:`build_circuit` has not been called yet.
-        """
+        """Return a copy of the circuit with all classical elements and measurements removed."""
         if self.circuit is None:
             raise ValueError("Circuit has not been built yet.")
         
@@ -155,52 +69,20 @@ class HHLAlgorithm:
         return qc_clean
 
     def create_input_state(self):
-        """
-        Build the state-preparation circuit for ``|b⟩``.
-
-        Returns
-        -------
-        qiskit.QuantumCircuit
-            Sub-circuit that prepares the normalised RHS in the system
-            register.
-        """
         qc_b = QuantumCircuit(self.num_system_qubits)
         qc_b.initialize(self.vector_b, list(range(self.num_system_qubits)))
         return qc_b
 
     def apply_controlled_u(self, qc, matrix, control, target, power):
-        """
-        Append a controlled ``e^{i·matrix·t·power}`` to ``qc``.
-
-        Parameters
-        ----------
-        qc : qiskit.QuantumCircuit
-            The circuit to append to.
-        matrix : ndarray
-            Hamiltonian to exponentiate (typically ``±A``).
-        control : Qubit
-            Control qubit from the time register.
-        target : list[Qubit]
-            Target qubits (the system register).
-        power : int
-            Power of the unitary, ``2**i`` in standard QPE.
-        """
         U = expm(1j * matrix * self.t * power)
         controlled_U = UnitaryGate(U).control(1)
         qc.append(controlled_U, [control] + target)
         return qc
 
     def inverse_qft(self, n_qubits):
-        """Return an inverse QFT gate over ``n_qubits`` (with swaps)."""
         return QFT(n_qubits, do_swaps=True).inverse()
 
     def phase_estimation(self, qc):
-        """
-        Apply quantum phase estimation in-place on ``qc``.
-
-        Hadamards the time register, applies controlled-``U^{2**i}``
-        operators, then an inverse QFT.
-        """
         for qubit in self.time_qr:
             qc.h(qubit)
 
@@ -212,7 +94,6 @@ class HHLAlgorithm:
         qc.append(iqft, self.time_qr[:])
 
     def uncompute_phase_estimation(self, qc):
-        """Inverse of :meth:`phase_estimation` applied in-place to ``qc``."""
         qft = QFT(self.num_time_qubits, do_swaps=True).to_gate(label="QFT")
         qc.append(qft, self.time_qr[:])
 
@@ -229,29 +110,9 @@ class HHLAlgorithm:
         qc.z(target_qubit)
 
     def WRW_operator(self,qc,ancilla_qubit, target_qubit):
-        """Placeholder for the W·R·W amplitude-amplification operator."""
         pass
 
     def build_circuit(self):
-        """
-        Construct the full HHL circuit.
-
-        Returns
-        -------
-        qiskit.QuantumCircuit
-            The complete circuit, also stored on :attr:`circuit`.
-
-        Notes
-        -----
-        Steps:
-
-        1. Prepare ``|b⟩`` in the system register.
-        2. Apply phase estimation.
-        3. Apply controlled R_y rotations conditioned on each eigenvalue
-           bitstring (``gain = 0.3``, dropping near-zero eigenvalues).
-        4. Uncompute phase estimation.
-        5. Measure ancilla and system registers.
-        """
         qc = QuantumCircuit(self.time_qr, self.b_qr, self.ancilla_qr, self.classical_reg)
 
         qc.compose(self.create_input_state(), qubits=list(self.b_qr), inplace=True)
@@ -301,14 +162,6 @@ class HHLAlgorithm:
         return qc
 
     def run(self):
-        """
-        Execute :attr:`circuit` on :class:`AerSimulator`.
-
-        Returns
-        -------
-        dict[str, int]
-            Measurement counts, also stored on :attr:`counts`.
-        """
         simulator = AerSimulator()
         transpiled_circuit = transpile(self.circuit, simulator)
         job = simulator.run(transpiled_circuit, shots=self.shots)
@@ -317,24 +170,6 @@ class HHLAlgorithm:
         return self.counts
 
     def get_solution(self):
-        """
-        Decode the solution vector ``x`` from :attr:`counts`.
-
-        Post-selects on the ancilla being ``|1⟩`` and converts the
-        resulting probability distribution into amplitudes, truncated
-        back to the original (un-padded) dimension.
-
-        Returns
-        -------
-        ndarray | None
-            Unit-normalised solution vector, or ``None`` if no successful
-            ancilla measurement was observed.
-
-        Raises
-        ------
-        ValueError
-            If :meth:`run` has not been called.
-        """
         if self.counts is None:
             raise ValueError("No measurement results available. Run run() first.")
 
@@ -366,19 +201,6 @@ class HHLAlgorithm:
         return solution_vector
 
     def plot_results(self, filename="hhl_results.png"):
-        """
-        Save a histogram of :attr:`counts` to ``filename``.
-
-        Parameters
-        ----------
-        filename : str, default "hhl_results.png"
-            Output PNG path.
-
-        Raises
-        ------
-        ValueError
-            If :meth:`run` has not been called.
-        """
         if self.counts is None:
             raise ValueError("No measurement results available. Run run() first.")
         plot_histogram(self.counts)
@@ -387,14 +209,6 @@ class HHLAlgorithm:
         print(f"Results histogram saved as '{filename}'.")
 
     def simulate_statevector(self):
-        """
-        Run :attr:`circuit` on the statevector simulator.
-
-        Returns
-        -------
-        qiskit.quantum_info.Statevector
-            Final statevector of the circuit.
-        """
         from qiskit_aer import Aer
         backend = Aer.get_backend("statevector_simulator")
         job = backend.run(transpile(self.circuit, backend))
@@ -402,20 +216,6 @@ class HHLAlgorithm:
         return statevector
 
     def extract_postselected_solution(self, statevector):
-        """
-        Extract ``x`` directly from a final statevector.
-
-        Parameters
-        ----------
-        statevector : qiskit.quantum_info.Statevector
-            Output of :meth:`simulate_statevector`.
-
-        Returns
-        -------
-        ndarray
-            Unit-normalised solution vector in the system register basis,
-            obtained by post-selecting on ancilla = ``|1⟩``.
-        """
         dim = 2 ** (self.num_time_qubits + self.num_system_qubits + 1)
         total_qubits = self.num_time_qubits + self.num_system_qubits + 1
         system_qubits = self.num_system_qubits

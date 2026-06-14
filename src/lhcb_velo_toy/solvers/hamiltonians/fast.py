@@ -103,69 +103,165 @@ class SimpleHamiltonianFast(Hamiltonian):
     def construct_segments(
         self,
         event: "Event | StateEventGenerator",
+        materialize_segments: bool = True,
     ) -> None:
         """
-        Construct segments with pre-computed direction vectors.
+        Construct segments with pre-computed direction vectors (vectorised).
         
         Parameters
         ----------
         event : Event or StateEventGenerator
             The event containing hits and modules.
+        materialize_segments : bool, default True
+            If True, build the full Python list of :class:`Segment` objects in
+            ``self.segments`` and ``self.segments_grouped`` (preserves the
+            historical API at O(N) Python object allocation cost).  If False,
+            those lists are left empty and downstream code must consume the
+            numpy arrays below directly.  All arrays are populated either way.
         
         Notes
         -----
-        Also computes and caches:
-        - Normalized direction vectors for all segments
-        - Hit ID to segment index mapping
+        Also computes and caches as numpy arrays:
+        - ``_segment_vectors`` (n_seg, 3) normalised direction vectors
+        - ``_segment_to_hit_ids`` (n_seg, 2) [start_hit_id, end_hit_id]
+        - ``_segment_track_ids`` (n_seg, 2) [start_track_id, end_track_id]
+        - ``_segment_endpoints_xyz`` (n_seg, 2, 3) start/end coordinates
+        - ``_group_boundaries`` list of cumulative segment offsets per module
         """
-        from itertools import product
         from lhcb_velo_toy.solvers.reconstruction.segment import Segment
 
         evt = getattr(event, "true_event", event)
 
-        segments_grouped: list[list[Segment]] = []
-        segments: list[Segment] = []
-        segment_vectors: list[tuple[float, float, float]] = []
-        segment_hit_ids: list[tuple[int, int]] = []
+        vec_chunks: list[np.ndarray] = []
+        hit_id_chunks: list[np.ndarray] = []
+        track_id_chunks: list[np.ndarray] = []
+        endpoint_chunks: list[np.ndarray] = []
+        per_module_from_hits: list[list] = []
+        per_module_to_hits: list[list] = []
         group_boundaries: list[int] = [0]
         segment_id = 0
 
         for idx in range(len(evt.modules) - 1):
             from_hits = evt.get_hits_by_ids(evt.modules[idx].hit_ids)
             to_hits = evt.get_hits_by_ids(evt.modules[idx + 1].hit_ids)
+            n_from = len(from_hits)
+            n_to = len(to_hits)
+            per_module_from_hits.append(from_hits)
+            per_module_to_hits.append(to_hits)
 
-            group: list[Segment] = []
-            for from_hit, to_hit in product(from_hits, to_hits):
-                seg = Segment(
-                    hit_start=from_hit,
-                    hit_end=to_hit,
-                    segment_id=segment_id,
-                )
-                group.append(seg)
-                segments.append(seg)
+            if n_from == 0 or n_to == 0:
+                group_boundaries.append(segment_id)
+                continue
 
-                # Pre-compute normalised direction vector
-                dx = to_hit.x - from_hit.x
-                dy = to_hit.y - from_hit.y
-                dz = to_hit.z - from_hit.z
-                norm = np.sqrt(dx * dx + dy * dy + dz * dz)
-                if norm > 0:
-                    segment_vectors.append((dx / norm, dy / norm, dz / norm))
-                else:
-                    segment_vectors.append((0.0, 0.0, 1.0))
+            # Pull endpoint coordinates / ids into small numpy arrays once.
+            from_xyz = np.array(
+                [(h.x, h.y, h.z) for h in from_hits], dtype=np.float64
+            )  # (n_from, 3)
+            to_xyz = np.array(
+                [(h.x, h.y, h.z) for h in to_hits], dtype=np.float64
+            )  # (n_to, 3)
+            from_hid = np.fromiter(
+                (h.hit_id for h in from_hits), dtype=np.int64, count=n_from
+            )
+            to_hid = np.fromiter(
+                (h.hit_id for h in to_hits), dtype=np.int64, count=n_to
+            )
+            from_tid = np.fromiter(
+                (h.track_id for h in from_hits), dtype=np.int64, count=n_from
+            )
+            to_tid = np.fromiter(
+                (h.track_id for h in to_hits), dtype=np.int64, count=n_to
+            )
 
-                segment_hit_ids.append((from_hit.hit_id, to_hit.hit_id))
-                segment_id += 1
+            # Vectorised pairwise delta -> normalised direction vector.
+            # Resulting shape (n_from, n_to, 3) -> flatten in row-major
+            # (from-major) order to match itertools.product(from, to).
+            d = to_xyz[None, :, :] - from_xyz[:, None, :]
+            norms = np.sqrt((d * d).sum(axis=2))  # (n_from, n_to)
+            safe = norms > 0.0
+            inv = np.where(safe, 1.0 / np.where(safe, norms, 1.0), 0.0)
+            vecs = d * inv[:, :, None]
+            # Replace zero-norm rows by (0, 0, 1) to match the old behaviour.
+            zero_mask = ~safe
+            if zero_mask.any():
+                vecs[zero_mask] = (0.0, 0.0, 1.0)
+            vecs = vecs.reshape(-1, 3)
 
-            segments_grouped.append(group)
+            # Endpoint coords broadcast (start = from, end = to).
+            start_xyz = np.broadcast_to(
+                from_xyz[:, None, :], (n_from, n_to, 3)
+            ).reshape(-1, 3)
+            end_xyz = np.broadcast_to(
+                to_xyz[None, :, :], (n_from, n_to, 3)
+            ).reshape(-1, 3)
+            endpoints = np.stack([start_xyz, end_xyz], axis=1)  # (n, 2, 3)
+
+            start_hid = np.broadcast_to(
+                from_hid[:, None], (n_from, n_to)
+            ).reshape(-1)
+            end_hid = np.broadcast_to(
+                to_hid[None, :], (n_from, n_to)
+            ).reshape(-1)
+            hid_pairs = np.stack([start_hid, end_hid], axis=1)  # (n, 2)
+
+            start_tid = np.broadcast_to(
+                from_tid[:, None], (n_from, n_to)
+            ).reshape(-1)
+            end_tid = np.broadcast_to(
+                to_tid[None, :], (n_from, n_to)
+            ).reshape(-1)
+            tid_pairs = np.stack([start_tid, end_tid], axis=1)  # (n, 2)
+
+            vec_chunks.append(vecs)
+            hit_id_chunks.append(hid_pairs)
+            track_id_chunks.append(tid_pairs)
+            endpoint_chunks.append(endpoints)
+
+            segment_id += n_from * n_to
             group_boundaries.append(segment_id)
 
-        self.segments_grouped = segments_grouped
-        self.segments = segments
+        if vec_chunks:
+            self._segment_vectors = np.concatenate(vec_chunks, axis=0)
+            self._segment_to_hit_ids = np.concatenate(hit_id_chunks, axis=0)
+            self._segment_track_ids = np.concatenate(track_id_chunks, axis=0)
+            self._segment_endpoints_xyz = np.concatenate(endpoint_chunks, axis=0)
+        else:
+            self._segment_vectors = np.zeros((0, 3), dtype=np.float64)
+            self._segment_to_hit_ids = np.zeros((0, 2), dtype=np.int64)
+            self._segment_track_ids = np.zeros((0, 2), dtype=np.int64)
+            self._segment_endpoints_xyz = np.zeros((0, 2, 3), dtype=np.float64)
+
         self.n_segments = segment_id
-        self._segment_vectors = np.array(segment_vectors)
-        self._segment_to_hit_ids = segment_hit_ids
         self._group_boundaries = group_boundaries
+
+        if materialize_segments:
+            # Backward-compatible eager materialisation of Segment objects.
+            # This is the slow part for very large events; opt out with
+            # materialize_segments=False if you only need the numpy arrays.
+            from itertools import product
+
+            segments: list[Segment] = []
+            segments_grouped: list[list[Segment]] = []
+            sid = 0
+            for from_hits, to_hits in zip(
+                per_module_from_hits, per_module_to_hits
+            ):
+                group: list[Segment] = []
+                for from_hit, to_hit in product(from_hits, to_hits):
+                    seg = Segment(
+                        hit_start=from_hit,
+                        hit_end=to_hit,
+                        segment_id=sid,
+                    )
+                    group.append(seg)
+                    segments.append(seg)
+                    sid += 1
+                segments_grouped.append(group)
+            self.segments = segments
+            self.segments_grouped = segments_grouped
+        else:
+            self.segments = []
+            self.segments_grouped = []
     
     def construct_hamiltonian(
         self,
@@ -199,62 +295,157 @@ class SimpleHamiltonianFast(Hamiltonian):
         """
         from scipy.sparse import coo_matrix as _coo
         from scipy.special import erf
+        from scipy.spatial import cKDTree
 
-        if not self.segments_grouped:
-            self.construct_segments(event)
+        if not self._group_boundaries:
+            # Preserve historical API: when callers invoke construct_hamiltonian
+            # without first calling construct_segments themselves, also build
+            # the eager Segment object list so ham.segments stays populated for
+            # downstream truth/visualisation code.  Callers that don't need
+            # Segment objects should call
+            # construct_segments(event, materialize_segments=False) explicitly.
+            self.construct_segments(event, materialize_segments=True)
 
         n = self.n_segments
-
-        # COO lists
-        rows: list[int] = []
-        cols: list[int] = []
-        data: list[float] = []
-
-        # Diagonal entries: -(delta + gamma)
         diag_val = -(self.delta + self.gamma)
-        rows.extend(range(n))
-        cols.extend(range(n))
-        data.extend([diag_val] * n)
 
         _td = erf_sigma if erf_sigma is not None else self.theta_d
         sqrt2_td = _td * np.sqrt(2)
 
-        for group_idx in range(len(self.segments_grouped) - 1):
-            offset_i = self._group_boundaries[group_idx]
-            offset_j = self._group_boundaries[group_idx + 1]
+        seg_hit_arr = np.asarray(self._segment_to_hit_ids, dtype=np.int64)
+        start_ids = seg_hit_arr[:, 0]
+        end_ids = seg_hit_arr[:, 1]
+        seg_vecs = self._segment_vectors  # (n, 3)
 
-            for local_i, seg_i in enumerate(self.segments_grouped[group_idx]):
-                sid_i = offset_i + local_i
-                end_hit_i = self._segment_to_hit_ids[sid_i][1]
-                vec_i = self._segment_vectors[sid_i]
+        # We process each adjacent group pair (g, g+1), and within it, each
+        # middle hit h.  Segments in group g ending at h pair with segments
+        # in group g+1 starting at h.  Per middle hit we do an
+        # (n_in_h x n_out_h) outer dot, threshold by epsilon, and append the
+        # surviving (i, j, value) triplets.  Memory stays bounded by the
+        # per-middle-hit block instead of the full Cartesian product.
+        ii_chunks: list[np.ndarray] = []
+        jj_chunks: list[np.ndarray] = []
+        vv_chunks: list[np.ndarray] = []
 
-                for local_j, seg_j in enumerate(self.segments_grouped[group_idx + 1]):
-                    sid_j = offset_j + local_j
-                    start_hit_j = self._segment_to_hit_ids[sid_j][0]
+        eps = float(self.epsilon)
+        cos_thresh = float(np.cos(eps))  # angle < eps  <=>  cos > cos(eps)
+        # Step path acceleration: pairs survive iff |v_i - v_j| < step_radius
+        # (unit dirs => |v_i - v_j|^2 = 2(1 - cos angle); angle < eps <=> dist < r).
+        # A cKDTree fixed-radius query finds the candidates without the full
+        # (m x p) dot, then the SAME cos > cos_thresh test selects them, so A is
+        # bit-identical to the dense scan (validated max|dA|=0, ~8.5x at T=1000).
+        step_radius = float(np.sqrt(max(2.0 * (1.0 - cos_thresh), 0.0)))
+        # Below this block size the dense (m x p) dot is cheaper than building a tree.
+        DENSE_BLOCK = 4096
+        # ERF (soft) coupling prune threshold. 1 + erf((eps-angle)/sqrt2_td)
+        # decays to 0 as angle grows past eps; erf saturates by z ~ -4.5, so
+        # dropping couplings below this removes only <1e-9 contributions while
+        # keeping A sparse. Without it the ERF branch stores the full
+        # (m x p) middle-hit block -> O(T^3) explicit near-zero entries -> OOM.
+        ERF_VAL_EPS = 1e-9
+        bnd = self._group_boundaries
+        # bnd has len = n_modules; adjacent group pairs need bnd[g+2], so iterate to len(bnd)-2.
+        for g in range(len(bnd) - 2):
+            b1, b2, b3 = bnd[g], bnd[g + 1], bnd[g + 2]
+            if b2 == b1 or b3 == b2:
+                continue
 
-                    # Must share the middle hit
-                    if end_hit_i != start_hit_j:
+            # Sort incoming (group g) by end_hit, outgoing (group g+1) by start_hit.
+            in_idx_g = np.arange(b1, b2, dtype=np.int64)
+            out_idx_g = np.arange(b2, b3, dtype=np.int64)
+            in_key = end_ids[b1:b2]
+            out_key = start_ids[b2:b3]
+
+            in_order = np.argsort(in_key, kind="stable")
+            in_idx_s = in_idx_g[in_order]
+            in_key_s = in_key[in_order]
+            out_order = np.argsort(out_key, kind="stable")
+            out_idx_s = out_idx_g[out_order]
+            out_key_s = out_key[out_order]
+
+            in_unique, in_first = np.unique(in_key_s, return_index=True)
+            out_unique, out_first = np.unique(out_key_s, return_index=True)
+            in_first_ext = np.append(in_first, in_key_s.size)
+            out_first_ext = np.append(out_first, out_key_s.size)
+
+            # Match middle hits common to both
+            common, ci, co = np.intersect1d(
+                in_unique, out_unique, assume_unique=True, return_indices=True
+            )
+
+            for k in range(common.size):
+                ia, ib = in_first_ext[ci[k]], in_first_ext[ci[k] + 1]
+                oa, ob = out_first_ext[co[k]], out_first_ext[co[k] + 1]
+                ii_chunk = in_idx_s[ia:ib]
+                jj_chunk = out_idx_s[oa:ob]
+                vi = seg_vecs[ii_chunk]   # (m, 3)
+                vj = seg_vecs[jj_chunk]   # (p, 3)
+                if convolution:
+                    # ERF (soft) path: needs the value at every surviving pair, so
+                    # keep the dense (m x p) block (already pruned to val>1e-9 below).
+                    cos_mat = vi @ vj.T       # (m, p)
+                    np.clip(cos_mat, -1.0, 1.0, out=cos_mat)
+                    angle = np.arccos(cos_mat)
+                    val = 1.0 + erf((eps - angle) / sqrt2_td)
+                    # Keep only couplings above ERF_VAL_EPS so A stays sparse.
+                    # Writing the full (m x p) block stores O(T^3) explicit
+                    # near-zero entries and OOMs at high T; the soft transition
+                    # near eps is preserved exactly (dropped values are <1e-9).
+                    mask = val > ERF_VAL_EPS
+                    if not mask.any():
                         continue
+                    sel_i, sel_j = np.nonzero(mask)
+                    ii_chunks.append(ii_chunk[sel_i])
+                    jj_chunks.append(jj_chunk[sel_j])
+                    vv_chunks.append(val[sel_i, sel_j])
+                elif vi.shape[0] * vj.shape[0] <= DENSE_BLOCK:
+                    # Step path, small block: dense dot is cheaper than a tree.
+                    cos_mat = vi @ vj.T
+                    mask = cos_mat > cos_thresh
+                    if not mask.any():
+                        continue
+                    sel_i, sel_j = np.nonzero(mask)
+                    ii_chunks.append(ii_chunk[sel_i])
+                    jj_chunks.append(jj_chunk[sel_j])
+                    vv_chunks.append(np.ones(sel_i.size, dtype=np.float64))
+                else:
+                    # Step path, large block: O((m+p) log) fixed-radius query
+                    # instead of the O(m*p) dot. Re-check with the IDENTICAL
+                    # cos > cos_thresh test so the surviving set is exact.
+                    nbrs = cKDTree(vi).query_ball_point(vj, step_radius)
+                    si_l: list[np.ndarray] = []
+                    sj_l: list[np.ndarray] = []
+                    for jo, lst in enumerate(nbrs):
+                        if not lst:
+                            continue
+                        li = np.asarray(lst, dtype=np.int64)
+                        keep = (vi[li] @ vj[jo]) > cos_thresh
+                        if keep.any():
+                            si_l.append(li[keep])
+                            sj_l.append(np.full(int(keep.sum()), jo, dtype=np.int64))
+                    if not si_l:
+                        continue
+                    sel_i = np.concatenate(si_l)
+                    sel_j = np.concatenate(sj_l)
+                    ii_chunks.append(ii_chunk[sel_i])
+                    jj_chunks.append(jj_chunk[sel_j])
+                    vv_chunks.append(np.ones(sel_i.size, dtype=np.float64))
 
-                    vec_j = self._segment_vectors[sid_j]
-                    cosine = float(
-                        vec_i[0] * vec_j[0]
-                        + vec_i[1] * vec_j[1]
-                        + vec_i[2] * vec_j[2]
-                    )
-                    cosine = np.clip(cosine, -1.0, 1.0)
-                    angle = np.arccos(cosine)
+        if ii_chunks:
+            ii = np.concatenate(ii_chunks)
+            jj = np.concatenate(jj_chunks)
+            vv = np.concatenate(vv_chunks)
+        else:
+            ii = np.empty(0, dtype=np.int64)
+            jj = np.empty(0, dtype=np.int64)
+            vv = np.empty(0, dtype=np.float64)
 
-                    if convolution:
-                        value = float(1 + erf((self.epsilon - angle) / sqrt2_td))
-                        rows.extend([sid_i, sid_j])
-                        cols.extend([sid_j, sid_i])
-                        data.extend([value, value])
-                    else:
-                        if angle < self.epsilon:
-                            rows.extend([sid_i, sid_j])
-                            cols.extend([sid_j, sid_i])
-                            data.extend([1.0, 1.0])
+        diag_rows = np.arange(n, dtype=np.int64)
+        rows = np.concatenate([diag_rows, ii, jj])
+        cols = np.concatenate([diag_rows, jj, ii])
+        data = np.concatenate(
+            [np.full(n, diag_val, dtype=np.float64), vv, vv]
+        )
 
         A = _coo((data, (rows, cols)), shape=(n, n)).tocsc()
         b = np.ones(n) * self.delta
