@@ -158,6 +158,7 @@ class StateEventGenerator(EventGenerator):
         particles: Optional[list[list[dict]]] = None,
         measurement_error: float = 0.0,
         collision_noise: float = 1e-4,
+        seed: Optional[int] = None,
     ) -> None:
         """Initialize the event generator."""
         super().__init__(detector_geometry)
@@ -178,7 +179,7 @@ class StateEventGenerator(EventGenerator):
         self.measurement_error = measurement_error
         self.collision_noise = collision_noise
 
-        self.rng = np.random.default_rng()
+        self.rng = np.random.default_rng(seed)
 
         # Populated after generate_complete_events()
         self.hits: list[Hit] = []
