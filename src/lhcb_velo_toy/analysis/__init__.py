@@ -30,6 +30,19 @@ from lhcb_velo_toy.analysis.segment_metrics import (
     solver_segment_metrics,
 )
 
+# Threshold / working-point policy (metrics as a view; wp99 headline point)
+from lhcb_velo_toy.analysis.working_points import (
+    ABS_THRESHOLD,
+    WP_TARGET_EFF,
+    threshold_for,
+    truth_from_event,
+    metrics_at,
+    quantum_metrics,
+    working_point_threshold,
+    metrics_at_wp,
+    quantum_metrics_wp,
+)
+
 __all__ = [
     # Validation
     "Match",
@@ -42,4 +55,14 @@ __all__ = [
     "fast_segment_metrics",
     "segment_truth_mask",
     "solver_segment_metrics",
+    # Working points
+    "ABS_THRESHOLD",
+    "WP_TARGET_EFF",
+    "threshold_for",
+    "truth_from_event",
+    "metrics_at",
+    "quantum_metrics",
+    "working_point_threshold",
+    "metrics_at_wp",
+    "quantum_metrics_wp",
 ]
