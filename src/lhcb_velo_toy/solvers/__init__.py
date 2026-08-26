@@ -21,6 +21,9 @@ from lhcb_velo_toy.solvers.hamiltonians import (
     Hamiltonian,
     SimpleHamiltonian,
     SimpleHamiltonianFast,
+    ExtendedHamiltonian,
+    ForkHamiltonian,
+    OccupancyHamiltonian,
 )
 
 # Reconstruction
