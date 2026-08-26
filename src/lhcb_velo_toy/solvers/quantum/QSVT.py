@@ -368,7 +368,49 @@ class QSVT:
         return sol[: self.original_dim], success
 
     # ------------------------------------------------------------------
-    # backend 2: the explicit circuit
+    # backend 2: exact per-component eigendecomposition
+    # ------------------------------------------------------------------
+    def solve_eigh(self, max_comp=20000):
+        """Exact spectral application via per-component eigendecomposition.
+
+        Same output convention (and, up to float round-off, the same values)
+        as :meth:`solve_statevector`: ``(|y|/||y||, ||y||^2)`` with
+        ``y = p(A) b_norm / ||c||_1``. Instead of the Chebyshev matvec
+        recursion it diagonalises each connected component of the
+        continuation graph once (dense eigh on small blocks; isolated
+        segments analytically), so many candidate responses can be evaluated
+        for free by reusing the decomposition — the Codesign /
+        Efficiency-Frontier evaluator, promoted as an official backend
+        (centralise-2.1 Phase 2).
+
+        The decomposition is cached on ``self._mode_system``.
+        """
+        from lhcb_velo_toy.solvers.quantum.spectral_filter import (
+            apply_response, mode_system,
+        )
+
+        if getattr(self, "_mode_system", None) is None:
+            self._mode_system = mode_system(self.A, self.b_norm,
+                                            max_comp=max_comp)
+        scaled = self.coeffs / self.l1
+        dom = (float(self.poly.domain[0]), float(self.poly.domain[1]))
+
+        def f(lam, coef=scaled, dom=dom):
+            u = (2.0 * np.asarray(lam, dtype=np.float64) - (dom[0] + dom[1])) \
+                / (dom[1] - dom[0])
+            from numpy.polynomial import chebyshev as _c
+            return _c.chebval(u, coef)
+
+        y = apply_response(self._mode_system, f, signed=True)
+        success = float(np.vdot(y, y).real)
+        self.solution_signed = y / max(np.linalg.norm(y), 1e-300)
+        sol = np.abs(y)
+        nrm = np.linalg.norm(sol)
+        sol = sol / nrm if nrm > 0 else sol
+        return sol[: self.original_dim], success
+
+    # ------------------------------------------------------------------
+    # backend 3: the explicit circuit
     # ------------------------------------------------------------------
     def _walk_eigh(self):
         """Eigendecomposition of the padded, rescaled X (cached).

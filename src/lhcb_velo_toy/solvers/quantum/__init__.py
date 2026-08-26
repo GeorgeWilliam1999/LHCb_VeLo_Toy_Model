@@ -13,6 +13,15 @@ from lhcb_velo_toy.solvers.quantum.HHL import HHLAlgorithm
 from lhcb_velo_toy.solvers.quantum.OneBQF import OneBQF
 from lhcb_velo_toy.solvers.quantum.QSVT import (QSVT, design_band_limited_inverse,
                                               design_line_comb_inverse, design_minimax_comb)
+from lhcb_velo_toy.solvers.quantum.matrixfree import solve_one_bit_matrixfree
+from lhcb_velo_toy.solvers.quantum.spectral_filter import (
+    apply_response,
+    binned_response,
+    chebyshev_realize,
+    continuation_components,
+    mode_system,
+    spectral_bounds,
+)
 
 # Backwards-compatible alias: previous code imported the 1-Bit HHL
 # implementation as ``OneBitHHL``. The verified reference class is
@@ -27,4 +36,11 @@ __all__ = [
     "design_band_limited_inverse",
     "design_line_comb_inverse",
     "design_minimax_comb",
+    "solve_one_bit_matrixfree",
+    "apply_response",
+    "binned_response",
+    "chebyshev_realize",
+    "continuation_components",
+    "mode_system",
+    "spectral_bounds",
 ]

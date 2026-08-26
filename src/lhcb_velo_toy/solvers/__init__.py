@@ -42,11 +42,23 @@ from lhcb_velo_toy.solvers.reconstruction import (
     get_all_possible_segments,
 )
 
+# Post-selection (solver-agnostic hit-uniqueness filter)
+from lhcb_velo_toy.solvers.postselect import (
+    hit_uniqueness_filter,
+    uniqueness_frontier,
+)
+
 __all__ = [
     # Hamiltonians
     "Hamiltonian",
     "SimpleHamiltonian",
     "SimpleHamiltonianFast",
+    "ExtendedHamiltonian",
+    "ForkHamiltonian",
+    "OccupancyHamiltonian",
+    # Post-selection
+    "hit_uniqueness_filter",
+    "uniqueness_frontier",
     # Reconstruction
     "Segment",
     "get_tracks",
