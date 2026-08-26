@@ -155,6 +155,39 @@ print(result.A.shape)         # Hamiltonian matrix
 print(result.metrics)         # Validation metrics
 ```
 
+### 6. New in 2.1.0 — the four solver lanes and working points
+
+```python
+from lhcb_velo_toy import ForkHamiltonian, OccupancyHamiltonian
+from lhcb_velo_toy.solvers.quantum import QSVT, solve_one_bit_matrixfree
+from lhcb_velo_toy.solvers.hough import hit_directions, run_point, validate_hough
+from lhcb_velo_toy.solvers import hit_uniqueness_filter
+from lhcb_velo_toy.analysis import threshold_for, metrics_at_wp, truth_from_event
+
+# Denby–Peterson physics as Hamiltonian subclasses
+ham = OccupancyHamiltonian(epsilon=0.01, gamma=3.0, delta=1.0, alpha=0.05)
+A, b = ham.construct_hamiltonian(generator)
+
+# 1BQF at high T without Aer (matrix-free statevector engine)
+sol_q, p_success, n_sys = solve_one_bit_matrixfree(A)
+
+# QSVT with the exact per-component eigendecomposition backend
+q = QSVT(A, b, degree=40)
+sol, p = q.solve_eigh()          # == q.solve_statevector(), reusable decomposition
+
+# Hough lane, validated by the same EventValidator as every other lane
+D, planes, _ = hit_directions(true_event)
+cands, _, _ = run_point(D, planes, n_bins=256)
+tracks, matches, metrics = validate_hough(cands, true_event)
+
+# Threshold policy as API: gamma-aware absolute cut + wp99 headline point
+tau = threshold_for(gamma=3.0, delta=1.0)          # 0.35
+headline = metrics_at_wp(sol_q, truth_from_event(generator))
+```
+
+See `CHANGELOG.md` for the full 2.1.0 inventory and the provenance of each
+promoted component.
+
 ## Package Structure
 
 ```

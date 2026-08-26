@@ -23,7 +23,7 @@ Example
 >>> from lhcb_velo_toy.analysis import EventValidator
 """
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 __author__ = "George William Scriven, Xenofon Chiotopoulos, Alain Chancé"
 
 # Core types
