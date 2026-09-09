@@ -122,7 +122,7 @@ pip install -e ".[all]"
 | `solvers.classical` | ✓ | ✓ | | | | | |
 | `solvers.hamiltonians.extended` | ✓ | ✓ | | | | | |
 | `solvers.quantum.HHL` (`hhl` shim) | ✓ | ✓ | ✓ | | ✓ | ✓ | |
-| `solvers.quantum.OneBQF` (`one_bit_hhl` shim) | ✓ | ✓ | | | ✓ | ✓ | ✓ |
+| `solvers.quantum.one_bqf` (`one_bit_hhl` shim) | ✓ | ✓ | | | ✓ | ✓ | ✓ |
 | `solvers.quantum.matrixfree` | ✓ | ✓ | | | | | |
 | `solvers.quantum.QSVT` | ✓ | ✓ | | | (circuit only) | | |
 | `solvers.quantum.spectral_filter` | ✓ | ✓ | | | | | |
@@ -183,13 +183,13 @@ solvers.hamiltonians.extended
 solvers.quantum.HHL            [lazy from solvers.quantum; hhl.py is a shim]
     ├── numpy, matplotlib, scipy.linalg (expm)
     ├── qiskit (QuantumCircuit, QuantumRegister, ClassicalRegister, transpile)
-    ├── qiskit.circuit.library (QFT, RYGate, UnitaryGate)
+    ├── qiskit.circuit.library (QFTGate, RYGate, UnitaryGate)
     └── qiskit_aer (AerSimulator)
 
-solvers.quantum.OneBQF         [lazy from solvers.quantum; one_bit_hhl.py is a shim]
+solvers.quantum.one_bqf        [lazy from solvers.quantum; one_bit_hhl.py is a shim]
     ├── numpy, scipy.sparse
     ├── qiskit (QuantumCircuit, QuantumRegister, ClassicalRegister, transpile)
-    ├── qiskit.circuit.library (QFT, RXGate)
+    ├── qiskit.circuit.library (QFTGate, RXGate)
     ├── qiskit_aer (AerSimulator), qiskit_aer.noise (NoiseModel)
     └── qiskit_ibm_runtime (QiskitRuntimeService)
 
@@ -434,19 +434,20 @@ persistence.study
 
 | Conflict | Description | Resolution |
 |----------|-------------|------------|
-| qiskit < 1.0 | API changes | Use qiskit ≥ 1.0 |
-| numpy 2.0 | ABI changes | Pin numpy < 2.0 if issues |
+| qiskit < 2.1 | `QFTGate`, `Gate.control(annotated=)` and `qiskit.transpiler.generate_preset_pass_manager` are unavailable or moved | Use qiskit ≥ 2.1 |
+| numpy 2.0 | ABI changes in third-party wheels | The package is developed and tested on numpy 2.3.5; pin only if a dependency forces it |
 | scipy.sparse | API deprecations | Use csr_array/csc_array for scipy ≥ 1.11 |
 
 ### Recommended Constraints
 
 ```txt
-# requirements.txt
-numpy>=1.20.0,<2.0.0
-scipy>=1.7.0,<1.14.0
-qiskit>=1.0.0,<2.0.0
-qiskit-aer>=0.14.0
-qiskit-ibm-runtime>=0.20.0
+# requirements.txt — matches pyproject.toml (tested: numpy 2.3.5, scipy 1.16.3,
+# qiskit 2.4.1, qiskit-aer 0.17.2, qiskit-ibm-runtime 0.47.0)
+numpy>=1.20
+scipy>=1.7
+qiskit>=2.1
+qiskit-aer>=0.17
+qiskit-ibm-runtime>=0.40
 ```
 
 ---

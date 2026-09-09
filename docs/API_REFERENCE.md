@@ -1272,7 +1272,7 @@ Module `analysis.segment_metrics` — the segment-level acceptance layer shared 
 
 | Function | Description |
 |---|---|
-| `compute_epsilon(sigma_res, sigma_scatt, scale=3.0, dz=33.0, theta_min=1.5e-5)` | the closed-form acceptance: `scale` × the RMS 3D kink (Rayleigh); the canonical defaults are pinned by the golden tests (`scale = 1.0` is a known landmine) |
+| `compute_epsilon(sigma_res, sigma_scatt, dz=33.0, scale=3.0, theta_min=1.5e-5)` | the closed-form acceptance: `scale` × the RMS 3D kink (Rayleigh); the canonical defaults are pinned by the golden tests (`scale = 1.0` is a known landmine) |
 | `segment_truth_mask(ham) -> bool array` | per-segment truth from the Hamiltonian's cached track ids |
 | `solver_segment_metrics(truth, sol, threshold) -> dict` | `segment_efficiency`, `segment_purity`, `segment_false_rate`, counts |
 | `fast_segment_metrics(event, epsilon)`, `compute_segment_metrics`, `collect_segment_pair_angles`, `pairwise_angle` | segment-count / angle diagnostics |
@@ -1314,7 +1314,7 @@ Module `analysis.working_points` — thresholds as API (metrics are a pure funct
 
 ### Run-3 adapter
 
-Module `generation.adapters.run3` (2.1.0): `load_run3_event(path_or_dict, ...)` — an Allen-JSON, duck-typed adapter producing an `Event` from real LHCb Run-3 VELO data, including the left / right half-detector geometry fix. The segment framework, working points and solvers then run unchanged.
+Module `generation.adapters.run3` (2.1.0): `load_run3_event(path)` — reads an Allen-format JSON file of real LHCb Run-3 VELO data and returns a **2-tuple** `(Run3Event, meta)`. `Run3Event` is a lightweight duck-typed stand-in for `Event` (it exposes `modules` and `get_hits_by_ids`, which is all `SimpleHamiltonianFast.construct_segments` touches), not an `Event` subclass; `meta` is a dict with `n_hits`, `n_modules`, `track_id`, `module_id`, `z_centres`, `n_left`, `n_right`. The left / right half-detector fix is applied while building it: the VELO's halves interleave in z, so the modules are split into the two sides and separated, and a track's hits then step through consecutive modules on one side. The segment framework, working points and solvers run unchanged on the result.
 
 ---
 

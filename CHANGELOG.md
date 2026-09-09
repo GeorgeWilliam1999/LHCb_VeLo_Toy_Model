@@ -16,10 +16,16 @@ unchanged.
   stored result changes.
 - **1BQF uncompute fixed.** `OneBQF._apply_direct_controlled_u(inverse=True)`
   and `solve_one_bit_matrixfree` now apply the inverse pair rotations in
-  reverse order (the exact inverse of the product). The readout no longer
-  depends on the segment labelling on multi-pair clusters (new test:
-  permutation invariance). The 6,008 stored 1BQF solutions in the qtrk store
-  and the paper's figures 10 and 12 predate the fix (Notion to-do to re-run).
+  reverse order, which makes the uncompute the exact inverse of the forward
+  pair product (`test_inverse_evolution_is_exact_inverse`: 1e-17, against
+  5e-2 for the old forward order). That removes the gross labelling artefact
+  — a true track no longer mirrors under reversed segment labels — and
+  brings the readout to a cosine of 0.99999 (clean) / 0.9996 (moderate) of
+  the exact-evolution readout. A residual label-order dependence of order
+  1e-2 in amplitude REMAINS: that is the forward per-pair product formula
+  for `exp(-iAt)`, not the uncompute, and it is not claimed to be fixed.
+  The 6,008 stored 1BQF solutions in the qtrk store and the paper's figures
+  10 and 12 predate the fix (Notion to-do to re-run).
 - **Qiskit 2.x.** `QFT` → `QFTGate`, controlled gates built with
   `annotated=False`, `CircuitInstruction` attribute access, HHL statevector
   path on `AerSimulator(method="statevector")`, preset pass manager from
@@ -29,6 +35,14 @@ unchanged.
   warning attributed to `lhcb_velo_toy` into a failure.
 
 ### Fixed
+- **`solvers/quantum/OneBQF.py` renamed to `one_bqf.py`** (the class stays
+  `OneBQF`). A submodule whose name matches a class exported from the package
+  is bound over that class by the import machinery, so
+  `from lhcb_velo_toy.solvers.quantum import OneBQF` returned the *module* —
+  not callable — once anything had imported the submodule first, which the
+  documented `one_bit_hhl` compatibility shim does. Regression test added.
+  Code importing `...quantum.OneBQF` directly must now import
+  `...quantum.one_bqf` (or, better, the class from the package).
 - **`OneBQF.get_success_probability()` restored**: the API reference documented
   it and `notebooks/quantum_1bqf_end_to_end.ipynb` called it, but the method did
   not exist on the class — the example could not run to completion. It returns
@@ -95,9 +109,11 @@ unchanged.
   circuit, phase sequence == LCU amplitudes with the predicted success
   ratio, moments == recursion, refit round trip.
   `tests/test_quantum_circuits.py`: OneBQF sampling vs statevector readout,
-  label-permutation invariance of the fixed 1BQF, HHL build / run /
-  statevector consistency, QSVT qiskit circuit == matrix-free backend, and a
-  no-deprecation guard for every circuit path. `tests/test_core_pipeline.py`:
+  the uncompute as an exact inverse (and that forward order is not), the
+  circuit against the exact-evolution readout, the restored
+  success-probability accessor, HHL build / run / statevector consistency,
+  QSVT qiskit circuit == matrix-free backend, and a no-deprecation guard for
+  every circuit path. `tests/test_core_pipeline.py`:
   seeded generation, noisy events, Simple == Fast Hamiltonians, tracks +
   EventValidator, persistence round trips, plotting smoke.
 - **Docs** — README, `docs/` (API reference, flow diagrams, dependencies,

@@ -14,8 +14,8 @@ Three solvers act on the segment linear system ``A x = b``:
   polynomial response ``p(A)`` applied as a linear combination of Chebyshev
   polynomials of the qubitization walk, of which the 1BQF cosine is the
   degree-one member.  Response families: ``design_line_comb_inverse`` (THE
-  QSVT of the papers, ``filter_design="comb"``), ``design_band_limited_inverse``
-  (retired first design, still the constructor default),
+  QSVT of the papers, ``filter_design="comb"`` — the constructor default),
+  ``design_band_limited_inverse`` (the retired first design),
   ``design_minimax_comb``, ``design_one_bit_cosine``,
   ``design_normalized_comb`` (+ ``normalized_coupling`` /
   ``solve_normalized_comb``), ``design_trig_comb`` (the QETU realisation's
@@ -84,13 +84,18 @@ from lhcb_velo_toy.solvers.quantum.spectral_filter import (
 
 # The two qiskit-based reference circuits are imported lazily (PEP 562) so the
 # numpy-only solvers above do not require the [quantum] extras.
+#
+# The 1BQF module is spelled ``one_bqf`` and NOT ``OneBQF``: a submodule whose
+# name matches a class exported here is bound over that class by the import
+# machinery, so ``from ...quantum import OneBQF`` returned the MODULE once
+# anything had imported the submodule first (e.g. the ``one_bit_hhl`` shim).
 _LAZY = {
     "HHLAlgorithm": ("lhcb_velo_toy.solvers.quantum.HHL", "HHLAlgorithm"),
-    "OneBQF": ("lhcb_velo_toy.solvers.quantum.OneBQF", "OneBQF"),
+    "OneBQF": ("lhcb_velo_toy.solvers.quantum.one_bqf", "OneBQF"),
     # Backwards-compatible alias: previous code imported the 1-Bit HHL
     # implementation as ``OneBitHHL``; the verified reference class is
     # called ``OneBQF`` and is functionally equivalent.
-    "OneBitHHL": ("lhcb_velo_toy.solvers.quantum.OneBQF", "OneBQF"),
+    "OneBitHHL": ("lhcb_velo_toy.solvers.quantum.one_bqf", "OneBQF"),
 }
 
 
@@ -105,15 +110,9 @@ def __getattr__(name):
                 f"{name} needs the quantum extras: pip install 'lhcb-velo-toy[quantum]' "
                 f"({exc})"
             ) from exc
-        # Importing the submodule ``...quantum.OneBQF`` makes the import
-        # machinery bind the MODULE to the package attribute ``OneBQF`` — the
-        # same name as the class.  Bind every lazy name that lives in this
-        # module now, so the class always wins regardless of which alias was
-        # requested first.
-        for other, (mod, at) in _LAZY.items():
-            if mod == module_name:
-                globals()[other] = getattr(module, at)
-        return globals()[name]
+        value = getattr(module, attr)
+        globals()[name] = value
+        return value
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 

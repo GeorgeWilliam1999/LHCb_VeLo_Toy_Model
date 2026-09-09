@@ -306,7 +306,7 @@ graph TD
         SH[hamiltonians/simple.py]
         SHF[hamiltonians/fast.py]
         HHL[quantum/HHL.py]
-        OBQ[quantum/OneBQF.py]
+        OBQ[quantum/one_bqf.py]
         MFR[quantum/matrixfree.py]
         QSV["quantum/QSVT.py + responses / qsp_phases / spectral_filter / refit"]
         EXT[hamiltonians/extended.py]

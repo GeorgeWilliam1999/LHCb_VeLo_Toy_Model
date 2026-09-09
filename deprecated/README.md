@@ -20,7 +20,7 @@ modular, installable `lhcb_velo_toy` package under `src/`.
 | `toy_validator.py` | `src/lhcb_velo_toy/analysis/validation/validator.py` |
 | `lhcb_tracking_plots.py` | `src/lhcb_velo_toy/analysis/plotting/` (split into `event_display.py`, `performance.py`) |
 | `HHL.py` | `src/lhcb_velo_toy/solvers/quantum/HHL.py` (canonical, byte-identical to the OneBQF_repo reference; `hhl.py` is a shim) |
-| `OneBQF.py` | `src/lhcb_velo_toy/solvers/quantum/OneBQF.py` (canonical; `one_bit_hhl.py` is a shim exporting it as `OneBitHHL`; large-T engine: `matrixfree.py`) |
+| `OneBQF.py` | `src/lhcb_velo_toy/solvers/quantum/one_bqf.py` (canonical; `one_bit_hhl.py` is a shim exporting it as `OneBitHHL`; large-T engine: `matrixfree.py`) |
 | *(no equivalent)* | `src/lhcb_velo_toy/solvers/quantum/QSVT.py` (+ `responses.py`, `qsp_phases.py`, `spectral_filter.py`, `refit.py`) — **new** QSVT polynomial-filter lane (2.1 / 2.2) |
 | *(no equivalent)* | `src/lhcb_velo_toy/solvers/hamiltonians/extended.py`, `solvers/hough/`, `solvers/postselect.py`, `analysis/working_points.py`, `generation/adapters/run3.py` — **new** in 2.1.0 |
 | *(no equivalent)* | `src/lhcb_velo_toy/persistence/` — **new** save/load module for pipeline state & parametric studies |

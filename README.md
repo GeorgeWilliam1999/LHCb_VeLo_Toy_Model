@@ -307,7 +307,7 @@ LHCb_VeLo_Toy_Model/
 | `hamiltonians.extended` | `ExtendedHamiltonian`, `ForkHamiltonian` (ε-windowed Denby–Peterson fork), `OccupancyHamiltonian` (per-hit occupancy, α = 0.05 verified point) |
 | `classical.solvers` | Direct (LU) and conjugate-gradient solvers |
 | `quantum.HHL` | Full HHL algorithm (reference circuit; `quantum.hhl` is a shim) |
-| `quantum.OneBQF` | The one-bit quantum filter, 1BQF (reference circuit; `quantum.one_bit_hhl` shim exports it as `OneBitHHL`) |
+| `quantum.one_bqf` | The one-bit quantum filter, 1BQF (reference circuit; `quantum.one_bit_hhl` shim exports it as `OneBitHHL`) |
 | `quantum.matrixfree` | `solve_one_bit_matrixfree` — the 1BQF without Aer, T = 1000 in seconds |
 | `quantum.QSVT` | `QSVT` solver (LCU of Chebyshev walk powers) + `design_line_comb_inverse` / `design_band_limited_inverse` / `design_minimax_comb` |
 | `quantum.responses` | normalized comb, one-bit cosine series, trigonometric (QETU) comb, `p4_lines` |

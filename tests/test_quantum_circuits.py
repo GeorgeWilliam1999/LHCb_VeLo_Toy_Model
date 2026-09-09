@@ -17,6 +17,9 @@ Contracts:
   separate Notion to-do and are NOT asserted here).
 - QSVT explicit qiskit circuit == matrix-free backend.
 """
+import subprocess
+import sys
+import textwrap
 import warnings
 
 import numpy as np
@@ -73,6 +76,33 @@ def test_circuits_raise_no_deprecations_from_our_code():
         q.run_circuit()
     ours = _our_warnings(w)
     assert not ours, "\n".join(f"{r.filename}:{r.lineno}: {r.message}" for r in ours)
+
+
+def test_package_class_survives_submodule_import_order():
+    """`from ...quantum import OneBQF` is the CLASS whatever was imported first.
+
+    Regression (2026-09-07): the module was named ``OneBQF.py``, the same name
+    as the class the package exports lazily. Importing the submodule — which
+    the documented ``one_bit_hhl`` compatibility shim does — made the import
+    machinery bind the MODULE over the class, so the documented import handed
+    back something that was not callable. The module is now ``one_bqf``.
+    Needs a fresh interpreter: this is about import order.
+    """
+    code = textwrap.dedent("""
+        from lhcb_velo_toy.solvers.quantum.one_bit_hhl import OneBitHHL   # shim FIRST
+        from lhcb_velo_toy.solvers.quantum import OneBQF, OneBitHHL as Alias
+        assert isinstance(OneBQF, type), f"expected class, got {type(OneBQF)}"
+        assert callable(OneBQF) and OneBQF is Alias is OneBitHHL
+        import lhcb_velo_toy.solvers.quantum.one_bqf                      # direct submodule
+        import lhcb_velo_toy.solvers.quantum as Q
+        assert isinstance(Q.OneBQF, type), f"clobbered: {type(Q.OneBQF)}"
+        import lhcb_velo_toy.solvers.quantum.QSVT                         # eager pair
+        assert isinstance(Q.QSVT, type), f"clobbered: {type(Q.QSVT)}"
+        print("ok")
+    """)
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    assert out.stdout.strip().endswith("ok")
 
 
 def test_alias_and_lazy_names():

@@ -21,7 +21,7 @@ order) in lock-step with ``OneBQF``; ``tests/test_quantum_lanes.py`` pins the
 equality.
 
 This is the documented large-T backend for the 1BQF lane; the
-:class:`~lhcb_velo_toy.solvers.quantum.OneBQF.OneBQF` circuit remains the
+:class:`~lhcb_velo_toy.solvers.quantum.one_bqf.OneBQF` circuit remains the
 reference implementation.
 
 Qubit order matches OneBQF: ``QuantumCircuit(time(1), system(n_sys),
