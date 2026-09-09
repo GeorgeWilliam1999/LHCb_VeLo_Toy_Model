@@ -13,6 +13,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
 import numpy as np
+import matplotlib
 
 if TYPE_CHECKING:
     import matplotlib.pyplot as plt
@@ -146,7 +147,7 @@ def plot_event_3d(
     unique_track_ids = sorted(
         {h.track_id for h in event.hits if h.track_id != -1}
     )
-    cmap = plt.cm.get_cmap("tab10", max(len(unique_track_ids), 1))
+    cmap = matplotlib.colormaps["tab10"].resampled(max(len(unique_track_ids), 1))
     if track_colors is None:
         track_colors = {
             tid: cmap(i) for i, tid in enumerate(unique_track_ids)
@@ -429,7 +430,7 @@ def plot_reco_vs_truth(
 
     fig = plt.figure(figsize=figsize)
 
-    cmap = plt.cm.get_cmap("tab10", 10)
+    cmap = matplotlib.colormaps["tab10"].resampled(10)
 
     # ── truth panel ──────────────────────────────────────────────
     ax_t = fig.add_subplot(121, projection="3d")

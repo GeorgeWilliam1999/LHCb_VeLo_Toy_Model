@@ -252,8 +252,13 @@ class SimpleHamiltonian(Hamiltonian):
                 )
             )
         else:
-            # Hard threshold: compatible if nearly collinear
-            if abs(cosine - 1.0) < self.epsilon:
+            # Hard threshold: compatible if the angle is strictly below epsilon,
+            # i.e. cos(angle) > cos(epsilon) — the same test as the canonical
+            # SimpleHamiltonianFast builder and the strict epsilon-boundary
+            # ruling.  (Until 2026-09-07 this compared 1 - cos(angle) with
+            # epsilon, an effective acceptance of sqrt(2 epsilon): 141 mrad at
+            # epsilon = 0.01 instead of 10 mrad.)
+            if cosine > np.cos(self.epsilon):
                 return 1.0
             return 0.0
     
