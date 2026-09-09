@@ -217,3 +217,4 @@ def quantum_metrics_wp(sol_Q_raw: np.ndarray, sol_C: np.ndarray,
     else:
         out["cos_QC"] = cos_sim(sol_Q, sol_C)
     return out
+

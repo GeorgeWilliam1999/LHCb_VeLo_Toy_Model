@@ -31,18 +31,56 @@ Resources: ceil(log2 n) system qubits + 1 block-encoding ancilla + m LCU qubits;
 d controlled walk-operator calls (the OneBQF is the d = 1 member of the same
 family, cos = T_1).  Success probability ||p(X) b||^2 / ||c||_1^2.
 
-Two backends:
+Response families (the ``filter_design`` selector, or pass any Chebyshev
+series as ``poly=``):
+
+  "comb"     design_line_comb_inverse -- THE QSVT of the papers ("the comb"):
+             narrow ~1/lambda passes at the four P4 true-track lines only,
+             degree 40, half-width 0.18.  THE DEFAULT.
+  "band"     design_band_limited_inverse -- the retired first design (~1/lambda
+             on a contiguous band with notches); fails at density: the
+             tangle/chain modes between the true lines fill the band.
+  "minimax"  design_minimax_comb -- the same comb fitted in the Chebyshev norm
+             (LP); reaches the metric floor at about half the degree.
+  "cosine"   responses.design_one_bit_cosine -- the one-bit filter's own
+             response |cos(pi lambda / 2s)| as a degree-60 series, so the 1BQF
+             and the comb run through one evaluator on identical events.
+  (responses.design_normalized_comb / solve_normalized_comb: the +-1/2 comb on
+  the degree-normalised coupling; responses.design_trig_comb: the QETU cosine
+  series over exp(-iAt); refit.refit_coefficients: coefficients refit to a
+  measured event -- see those modules.)
+
+Three realisations of the same response (paper section 4.2; `resources()`):
+
+  LCU of walk powers  -- the build above: 1 + m ancillas, 2^m - 1 walk steps
+                         (d with an optimal SELECT), success ||p(X)u||^2/||c||_1^2;
+                         no phases, every operator real.
+  phase sequence      -- QSVT proper (qsp_phases): d applications of the block
+                         encoding with phase rotations on one signal qubit;
+                         indefinite-parity polynomials split even/odd (+1
+                         ancilla, real-part trick +1): n_sys + 4 qubits, 4d
+                         calls, success ||q(X)u||^2/(alpha_e + alpha_o)^2 with
+                         q = p/max|p|.  `solve_phase_sequence()` runs it densely.
+  QETU trig comb      -- the comb as a cosine series over the 1BQF's own
+                         primitive exp(-iAt): n_sys + 2 qubits, K calls
+                         (responses.design_trig_comb; angles not synthesised).
+
+Backends that compute the LCU response exactly:
 
   solve_statevector()  -- exact matrix-free emulation of the circuit semantics
                           via the Chebyshev recursion (sparse matvecs only);
-                          scales to full events with tens of thousands of
-                          segments.
+                          scales to full events with millions of segments.
+  solve_eigh()         -- the same numbers from one per-component
+                          eigendecomposition (spectral_filter.mode_system),
+                          reusable across many candidate responses.
   build_circuit() /
   run_circuit()        -- the explicit qiskit circuit (StatePreparation + LCU +
                           controlled walk powers), simulated exactly with
                           qiskit.quantum_info.Statevector; for small systems.
                           Validates that the matrix-free backend is what the
-                          circuit computes.
+                          circuit computes.  (The only path that needs qiskit.)
+  solve_phase_sequence() -- the phase-sequence realisation, dense, small
+                          systems; validates the QSVT-proper circuit.
 
 The returned solution follows the OneBQF convention: (|amplitudes| normalised,
 success probability), truncated to the original dimension.
@@ -54,6 +92,18 @@ import numpy as np
 from numpy.polynomial import chebyshev as _cheb
 from scipy import sparse as _sp
 from scipy.sparse import linalg as _spla
+
+# Spectral structure of the segment Hamiltonian A = sI - C with s = gamma +
+# delta: the whole design is expressed as offsets from s, and the default
+# polynomial domain is s +- DESIGN_HALF_SPAN (= (0.2, 7.8) at s = 4).
+DESIGN_HALF_SPAN = 3.8
+
+# The response families selectable by name.  The default is "comb" -- THE QSVT
+# of the papers (George's ruling, 2026-09-07; before that the bare constructor
+# built the retired "band" design, which the golden baseline now pins only
+# under an explicit filter_design="band").
+DEFAULT_DESIGN = "comb"
+FILTER_DESIGNS = ("comb", "band", "minimax", "cosine")
 
 
 # --------------------------------------------------------------------------
@@ -238,15 +288,33 @@ class QSVT:
     poly : numpy.polynomial.chebyshev.Chebyshev, optional
         Override the designed filter with an arbitrary Chebyshev series.
         Its domain must contain the spectrum of A.
+    filter_design : {"comb", "band", "minimax", "cosine"}, optional
+        Which response family to design when ``poly`` is not given
+        (module docstring).  Default :data:`DEFAULT_DESIGN` = "comb", **the
+        QSVT of the papers** (the bare constructor built the retired band
+        design before 2026-09-07).
+    s : float, optional
+        The constant diagonal ``gamma + delta`` the design is centred on.
+        Default: read off ``A`` when its diagonal is constant (so a
+        gamma = 1 Hamiltonian gets its own lines), else 4.0.
     design_kwargs : dict, optional
-        Extra arguments for :func:`design_band_limited_inverse`.
+        Extra arguments for the chosen design function (e.g. ``hw``,
+        ``lines``, ``band``, ``notches``, ``domain``).
     spectrum_pad : float
         Fractional padding applied to the estimated spectral interval.
+    spectral_bounds : (lo, hi), optional
+        Known bounds on the spectrum of A; skips the Lanczos estimate
+        (:func:`~lhcb_velo_toy.solvers.quantum.spectral_filter.spectral_bounds`
+        computes them cheaply from rho(C)).
+
+    Attributes
+    ----------
+    poly, coeffs, l1, X, s, filter_design, total_qubits, solution_signed
     """
 
     def __init__(self, matrix_A, vector_b, degree=40, poly=None,
                  design_kwargs=None, spectrum_pad=0.02, spectral_bounds=None,
-                 debug=False):
+                 debug=False, filter_design=None, s=None):
         self.original_dim = matrix_A.shape[0]
         self.debug = debug
         self.degree = int(degree)
@@ -254,6 +322,14 @@ class QSVT:
         A = matrix_A.tocsr() if _sp.issparse(matrix_A) else _sp.csr_matrix(np.asarray(matrix_A, float))
         self.A = A
         n = self.original_dim
+
+        # --- the diagonal the design is centred on
+        diag = np.asarray(A.diagonal()).ravel()
+        const_diag = bool(diag.size) and bool(np.allclose(diag, diag[0]))
+        if s is None:
+            s = float(diag[0]) if const_diag else 4.0
+        self.s = float(s)
+        self.filter_design = None
 
         # --- spectral interval (needed so the Chebyshev argument is in [-1,1])
         if spectral_bounds is not None:
@@ -266,14 +342,31 @@ class QSVT:
 
         # --- the polynomial
         if poly is None:
+            design = DEFAULT_DESIGN if filter_design is None else str(filter_design)
+            if design not in FILTER_DESIGNS:
+                raise ValueError(f"filter_design must be one of {FILTER_DESIGNS}")
             kw = dict(design_kwargs or {})
             dom = kw.pop("domain", None)
             if dom is None:
                 # the design window must cover both the spectrum and the
-                # default band/notch structure
-                dom = (min(lam_lo, 0.2), max(lam_hi, 7.8))
-            poly = design_band_limited_inverse(degree=self.degree, domain=dom, **kw)
+                # line/band structure around s (= (0.2, 7.8) at s = 4)
+                dom = (min(lam_lo, self.s - DESIGN_HALF_SPAN),
+                       max(lam_hi, self.s + DESIGN_HALF_SPAN))
+            kw.setdefault("s", self.s)
+            if design == "band":
+                poly = design_band_limited_inverse(degree=self.degree, domain=dom, **kw)
+            elif design == "comb":
+                poly = design_line_comb_inverse(degree=self.degree, domain=dom, **kw)
+            elif design == "minimax":
+                poly = design_minimax_comb(degree=self.degree, domain=dom, **kw)
+            else:  # "cosine"
+                from lhcb_velo_toy.solvers.quantum.responses import design_one_bit_cosine
+                poly = design_one_bit_cosine(degree=self.degree, domain=dom, **kw)
+            self.filter_design = design
         else:
+            if filter_design is not None:
+                raise ValueError("pass either poly or filter_design, not both")
+            self.filter_design = "custom"
             dlo, dhi = poly.domain
             if lam_lo < dlo - 1e-9 or lam_hi > dhi + 1e-9:
                 raise ValueError(
@@ -313,6 +406,14 @@ class QSVT:
             print(f"total qubits = {self.total_qubits}")
             print(f"spectral interval [{lam_min:.3f}, {lam_max:.3f}]  "
                   f"poly domain [{dlo:.3f}, {dhi:.3f}]  ||c||_1 = {self.l1:.3f}")
+
+    # ------------------------------------------------------------------
+    @classmethod
+    def comb(cls, matrix_A, vector_b, degree=40, **kw):
+        """The QSVT of the papers: the degree-40 line comb on ``A`` (explicit
+        shorthand for ``QSVT(A, b, degree, filter_design="comb", **kw)``, the
+        default)."""
+        return cls(matrix_A, vector_b, degree=degree, filter_design="comb", **kw)
 
     # ------------------------------------------------------------------
     @staticmethod
@@ -551,14 +652,111 @@ class QSVT:
         return sol[: self.original_dim], success
 
     # ------------------------------------------------------------------
-    def resources(self):
-        """Logical resource accounting for this instance."""
-        return dict(
+    # backend 4: the phase-sequence realisation (QSVT proper), dense
+    # ------------------------------------------------------------------
+    def solve_phase_sequence(self, phases=None, max_dim=4096, **find_kw):
+        """Apply the polynomial by QSP phase sequences on the dilation.
+
+        The QSVT-proper realisation (paper section 4.2): the polynomial is
+        split into even and odd parts, phase factors are found for each
+        (:func:`~lhcb_velo_toy.solvers.quantum.qsp_phases.find_phase_factors`,
+        seconds at degree ~10, minutes at degree 40 — pass ``phases=
+        {"even": ..., "odd": ...}`` to reuse them), both sequences are run
+        as dense linear algebra on the dilation block encoding of ``X`` and
+        recombined.  Returns ``(solution, success)`` in the usual readout
+        convention, with ``success = ||q(X) b||^2 / (alpha_e + alpha_o)^2``,
+        ``q = p / max|p|`` — the phase sequence's own probability, larger
+        than the LCU's by ``(||c||_1 / max|p|)^2``.  The phases and the
+        scalar-identity errors are kept on ``self.phase_info``.
+
+        Dense: refuses systems above ``max_dim``.
+        """
+        from lhcb_velo_toy.solvers.quantum.qsp_phases import phase_sequence_solve
+
+        n = self.original_dim
+        if n > max_dim:
+            raise ValueError(f"n = {n} > max_dim = {max_dim}: the phase-sequence "
+                             "backend is dense; use solve_statevector/solve_eigh")
+        sol, success, info = phase_sequence_solve(self.X.toarray(), self.b_norm,
+                                                  self.coeffs, phases=phases,
+                                                  **find_kw)
+        self.phase_info = info
+        return sol[:n], success
+
+    # ------------------------------------------------------------------
+    def resources(self, realisation="lcu"):
+        """Logical resource accounting for this instance.
+
+        ``realisation`` selects the circuit that applies the response
+        (paper section 4.2, table of realisations; ancillas are beyond the
+        system register):
+
+        * ``"lcu"`` (the build): ``1 + m`` ancillas, ``2^m - 1`` walk steps
+          per shot as built (``d`` with an optimal SELECT), success
+          ``||p(X)u||^2 / ||c||_1^2``.
+        * ``"phase"``: the phase sequence — 4 ancillas (3 for a
+          definite-parity polynomial), ``4d`` calls (``2d``), success
+          ``||q(X)u||^2 / (alpha_e + alpha_o)^2``.
+        * ``"qetu"``: the trigonometric comb over ``exp(-iAt)`` — 2
+          ancillas, ``K`` (= ``walk_calls``) evolution calls.
+
+        Keys common to all: ``n, system_qubits, walk_calls (= degree), l1,
+        peak (max|p| on the domain), lcu_penalty ((l1/peak)^2), ancillas,
+        total_qubits, calls_per_shot, realisation``; the LCU entry keeps the
+        legacy ``be_ancilla`` / ``lcu_qubits`` keys.
+        """
+        d, m = self.degree, self.num_lcu_qubits
+        xg = np.linspace(-1.0, 1.0, 20001)
+        peak = float(np.max(np.abs(_cheb.chebval(xg, self.coeffs))))
+        base = dict(
             n=self.original_dim,
             system_qubits=self.num_system_qubits,
-            be_ancilla=self.num_be_ancilla,
-            lcu_qubits=self.num_lcu_qubits,
-            total_qubits=self.total_qubits,
-            walk_calls=self.degree,
+            walk_calls=d,
             l1=self.l1,
+            peak=peak,
+            lcu_penalty=(self.l1 / peak) ** 2 if peak > 0 else np.inf,
         )
+        parity = self._parity()
+        if realisation == "lcu":
+            base.update(
+                be_ancilla=self.num_be_ancilla,
+                lcu_qubits=m,
+                ancillas=self.num_be_ancilla + m,
+                total_qubits=self.total_qubits,
+                calls_per_shot=(1 << m) - 1,
+                calls_per_shot_optimal_select=d,
+                realisation="lcu",
+            )
+        elif realisation == "phase":
+            anc = 3 if parity != "mixed" else 4
+            base.update(
+                ancillas=anc,
+                total_qubits=self.num_system_qubits + anc,
+                calls_per_shot=(2 if parity != "mixed" else 4) * d,
+                parity=parity,
+                realisation="phase",
+            )
+        elif realisation == "qetu":
+            base.update(
+                ancillas=2,
+                total_qubits=self.num_system_qubits + 2,
+                calls_per_shot=d,
+                realisation="qetu",
+            )
+        else:
+            raise ValueError("realisation must be 'lcu', 'phase' or 'qetu'")
+        return base
+
+    def resource_table(self):
+        """``{realisation: resources(realisation)}`` for the three realisations."""
+        return {r: self.resources(r) for r in ("lcu", "phase", "qetu")}
+
+    def _parity(self, tol=1e-12):
+        c = self.coeffs
+        odd_zero = bool(np.all(np.abs(c[1::2]) <= tol))
+        even_zero = bool(np.all(np.abs(c[0::2]) <= tol))
+        if odd_zero and not even_zero:
+            return "even"
+        if even_zero and not odd_zero:
+            return "odd"
+        return "mixed"

@@ -11,7 +11,14 @@ hamiltonians
 classical
     Classical linear system solvers
 quantum
-    Quantum algorithm implementations (HHL, OneBitHHL)
+    Quantum solver lanes: HHL, the one-bit quantum filter (OneBQF /
+    OneBitHHL, + matrix-free engine) and the QSVT polynomial filter
+    ("the comb") with its response families and realisations
+hough
+    Direct Hough track finding (point / locus voting) with an
+    EventValidator adapter
+postselect
+    Solver-agnostic hit-uniqueness post-selection
 reconstruction
     Track extraction from solutions
 """
@@ -48,6 +55,16 @@ from lhcb_velo_toy.solvers.postselect import (
     uniqueness_frontier,
 )
 
+# QSVT polynomial filter (numpy-only; the qiskit circuits stay lazy in
+# lhcb_velo_toy.solvers.quantum)
+from lhcb_velo_toy.solvers.quantum.QSVT import (
+    QSVT,
+    design_band_limited_inverse,
+    design_line_comb_inverse,
+    design_minimax_comb,
+)
+from lhcb_velo_toy.solvers.quantum.matrixfree import solve_one_bit_matrixfree
+
 __all__ = [
     # Hamiltonians
     "Hamiltonian",
@@ -59,6 +76,12 @@ __all__ = [
     # Post-selection
     "hit_uniqueness_filter",
     "uniqueness_frontier",
+    # QSVT + 1BQF matrix-free engine
+    "QSVT",
+    "design_band_limited_inverse",
+    "design_line_comb_inverse",
+    "design_minimax_comb",
+    "solve_one_bit_matrixfree",
     # Reconstruction
     "Segment",
     "get_tracks",

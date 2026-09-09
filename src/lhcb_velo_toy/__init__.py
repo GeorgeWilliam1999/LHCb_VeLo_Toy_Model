@@ -2,15 +2,17 @@
 LHCb VELO Toy Model Package.
 
 A comprehensive framework for simulating particle tracking in the LHCb Vertex
-Locator detector and testing track reconstruction algorithms, including quantum
-approaches using HHL.
+Locator detector and testing track reconstruction algorithms, including the
+quantum solver lanes: HHL, the one-bit quantum filter (1BQF) and the QSVT
+polynomial spectral filter (the comb).
 
 Submodules
 ----------
 generation
     Data generation: event simulation, geometry, and data models
 solvers
-    Track reconstruction: Hamiltonians, classical/quantum solvers
+    Track reconstruction: Hamiltonians (+ fork / occupancy subclasses),
+    classical / quantum (HHL, 1BQF, QSVT) / Hough solvers, post-selection
 analysis
     Validation and plotting utilities
 persistence
@@ -21,9 +23,10 @@ Example
 >>> from lhcb_velo_toy.generation import PlaneGeometry, StateEventGenerator
 >>> from lhcb_velo_toy.solvers import SimpleHamiltonian, get_tracks
 >>> from lhcb_velo_toy.analysis import EventValidator
+>>> from lhcb_velo_toy import QSVT            # the polynomial filter (numpy-only)
 """
 
-__version__ = "2.1.0"
+__version__ = "2.2.0"
 __author__ = "George William Scriven, Xenofon Chiotopoulos, Alain Chancé"
 
 # Core types
@@ -63,6 +66,9 @@ from lhcb_velo_toy.solvers import (
     get_tracks_optimal,
     get_tracks_optimal_iterative,
     find_segments,
+    QSVT,
+    design_line_comb_inverse,
+    solve_one_bit_matrixfree,
 )
 
 # Segment from reconstruction (computed on-demand, not stored in Event)
@@ -128,6 +134,9 @@ __all__ = [
     "get_tracks_optimal",
     "get_tracks_optimal_iterative",
     "find_segments",
+    "QSVT",
+    "design_line_comb_inverse",
+    "solve_one_bit_matrixfree",
     # Reconstruction
     "Segment",
     "get_segments_from_event",
