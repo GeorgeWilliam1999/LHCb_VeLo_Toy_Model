@@ -5,6 +5,10 @@ These are the non-quantum lanes the Condor workers and notebooks rely on;
 they had no unit tests before 2026-09-07 (only the golden baselines and the
 integration script).
 """
+import subprocess
+import sys
+import textwrap
+
 import numpy as np
 import pytest
 
@@ -26,6 +30,11 @@ from lhcb_velo_toy.persistence import (  # noqa: E402
 from lhcb_velo_toy.solvers import SimpleHamiltonian, SimpleHamiltonianFast, get_tracks  # noqa: E402
 from lhcb_velo_toy.solvers.classical import solve_direct  # noqa: E402
 from tests.test_golden_baseline import build  # noqa: E402
+
+
+def pathlib_root():
+    import pathlib
+    return pathlib.Path(__file__).resolve().parents[1]
 
 
 def _gen(T, seed, me=0.0, cn=1e-8):
@@ -92,6 +101,47 @@ def test_clean_event_reconstructs_perfectly():
     assert metrics["efficiency"] == pytest.approx(1.0)
     assert metrics["ghost_rate"] == pytest.approx(0.0)
     assert metrics["mean_purity"] == pytest.approx(1.0)
+
+
+def test_package_imports_without_numba_and_kernels_agree():
+    """numba is an OPTIONAL accelerator, not a hidden hard dependency.
+
+    Regression (2026-09-09): ``analysis/segment_metrics.py`` imported numba at
+    module level and numba was declared nowhere, so ``import lhcb_velo_toy``
+    failed outright on any install without it. It is now guarded, with a pure
+    Python fallback that must give the SAME numbers as the compiled kernel.
+    Needs a fresh interpreter to hide numba.
+    """
+    code = textwrap.dedent("""
+        import sys, importlib.abc, json
+        class Block(importlib.abc.MetaPathFinder):
+            def find_spec(self, name, path=None, target=None):
+                if name == "numba" or name.startswith("numba."):
+                    raise ImportError("numba hidden for the test")
+                return None
+        sys.meta_path.insert(0, Block())
+        import lhcb_velo_toy                       # must not raise
+        from lhcb_velo_toy.analysis.segment_metrics import HAS_NUMBA, fast_segment_metrics
+        assert HAS_NUMBA is False
+        sys.path.insert(0, %r)
+        from tests.test_core_pipeline import _gen
+        from lhcb_velo_toy.analysis.segment_metrics import compute_epsilon
+        gen = _gen(8, 909, 0.01, 1e-4)
+        print(json.dumps(fast_segment_metrics(gen.true_event, compute_epsilon(0.01, 1e-4, dz=33.0))))
+    """) % str(pathlib_root())
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    import json as _json
+    without = _json.loads(out.stdout.strip().splitlines()[-1])
+
+    from lhcb_velo_toy.analysis.segment_metrics import (
+        HAS_NUMBA, compute_epsilon, fast_segment_metrics,
+    )
+    gen = _gen(8, 909, 0.01, 1e-4)
+    with_numba = fast_segment_metrics(gen.true_event, compute_epsilon(0.01, 1e-4, dz=33.0))
+    assert without == with_numba, (without, with_numba)
+    if HAS_NUMBA:                       # this env has it; prove the accelerator ran
+        assert with_numba["n_true"] > 0
 
 
 # ---------------------------------------------------------------------------

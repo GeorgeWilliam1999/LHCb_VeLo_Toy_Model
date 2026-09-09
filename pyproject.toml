@@ -54,13 +54,18 @@ quantum = [
 analysis = [
     "pandas>=1.4",
 ]
+# Optional accelerator for analysis.segment_metrics.fast_segment_metrics.
+# NOT required: without it the same kernel runs in pure Python (same results).
+fast = [
+    "numba>=0.57",
+]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "mypy>=1.0",
     "ruff>=0.1",
 ]
-all = ["lhcb-velo-toy[quantum,analysis,dev]"]
+all = ["lhcb-velo-toy[quantum,analysis,fast,dev]"]
 
 [project.urls]
 Homepage = "https://github.com/GeorgeWilliam1999/LHCb_VeLo_Toy_Model"

@@ -41,6 +41,17 @@ This document details all dependencies, input/output specifications, and require
 
 > **Lazy (2.2.0).** `lhcb_velo_toy.solvers.quantum` only imports qiskit when `HHLAlgorithm`, `OneBQF` / `OneBitHHL` are first accessed. `QSVT` (statevector / eigh / phase-sequence backends), `solve_one_bit_matrixfree`, `spectral_filter`, `responses`, `qsp_phases` and `refit` are numpy/scipy-only and work in a base install.
 
+### Acceleration Dependencies (Optional)
+
+| Package | Version | Purpose | Used By |
+|---------|---------|---------|---------|
+| `numba` | ≥0.57 | JIT kernel for `fast_segment_metrics` (~100x on large events) | `analysis.segment_metrics` |
+
+> **Optional, not required (fixed 2026-09-09).** `analysis/segment_metrics.py` used to
+> import numba at module level while declaring it nowhere, so `import lhcb_velo_toy` failed
+> on any install without it. The import is now guarded and the kernel falls back to
+> equivalent pure Python — same numbers, no speedup. `HAS_NUMBA` reports which one is live.
+
 ### Development Dependencies
 
 | Package | Version | Purpose |
@@ -78,6 +89,10 @@ analysis = [
     "pandas>=1.4",
 ]
 
+fast = [          # optional accelerator; the package works without it
+    "numba>=0.57",
+]
+
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
@@ -96,6 +111,9 @@ pip install lhcb-velo-toy
 
 # With validation and plotting
 pip install lhcb-velo-toy[analysis]
+
+# With the optional numba kernel for fast_segment_metrics
+pip install lhcb-velo-toy[fast]
 
 # With quantum algorithms
 pip install lhcb-velo-toy[quantum]
@@ -132,7 +150,7 @@ pip install -e ".[all]"
 | `solvers.hough` | ✓ | | | | | | |
 | `solvers.postselect` | ✓ | | | | | | |
 | `solvers.reconstruction` | ✓ | | | | | | |
-| `analysis.segment_metrics` | ✓ | ✓ | | | | | |
+| `analysis.segment_metrics` | ✓ | ✓ | | | | | | (+ optional `numba`) |
 | `analysis.working_points` | ✓ | | | | | | |
 | `generation.adapters.run3` | ✓ | | | | | | |
 | `analysis.validation` | ✓ | | | ✓ | | | |
@@ -225,7 +243,8 @@ solvers.postselect
     └── numpy, scipy.sparse
 
 analysis.segment_metrics
-    └── numpy, scipy
+    ├── numpy, scipy
+    └── numba (OPTIONAL — guarded; pure-Python fallback with identical results)
 
 analysis.working_points
     ├── numpy

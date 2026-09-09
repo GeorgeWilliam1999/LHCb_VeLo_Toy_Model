@@ -12,7 +12,8 @@ Public API
 - ``pairwise_angle(h_prev, h_mid, h_next)``
 - ``collect_segment_pair_angles(event)``
 - ``compute_segment_metrics(true_angles, false_angles, epsilon)``
-- ``fast_segment_metrics(event, epsilon)``  — Numba-accelerated
+- ``fast_segment_metrics(event, epsilon)``  — Numba-accelerated (optional;
+  falls back to an equivalent pure-Python kernel when numba is absent)
 - ``segment_truth_mask(ham)``                — truth labels per Hamiltonian segment
 - ``solver_segment_metrics(truth, scores, threshold)``  — metrics after thresholding
                                                           a solver's score vector
@@ -24,7 +25,26 @@ import math
 from typing import Iterable
 
 import numpy as np
-from numba import njit, prange
+
+try:                                    # numba is an OPTIONAL accelerator
+    from numba import njit, prange
+    HAS_NUMBA = True
+except ImportError:                     # pragma: no cover - depends on the install
+    # The kernels below are plain numeric loops over numpy arrays, so they run
+    # correctly undecorated — just slower.  Importing the package must never
+    # require numba: it is not a runtime dependency, only the ``[fast]`` extra.
+    HAS_NUMBA = False
+    prange = range
+
+    def njit(*args, **kwargs):
+        """No-op stand-in for ``numba.njit`` supporting @njit and @njit(...)."""
+        if len(args) == 1 and callable(args[0]) and not kwargs:
+            return args[0]
+
+        def _decorator(func):
+            return func
+
+        return _decorator
 
 
 # ---------------------------------------------------------------------------
@@ -148,7 +168,8 @@ def compute_segment_metrics(
 
 
 # ---------------------------------------------------------------------------
-# Numba-accelerated kernel (~100x speedup on large events)
+# Numba-accelerated kernel (~100x speedup on large events when numba is
+# installed; identical results, without the speedup, when it is not).
 # ---------------------------------------------------------------------------
 
 @njit(cache=True)
@@ -329,6 +350,7 @@ __all__ = [
     "collect_segment_pair_angles",
     "compute_segment_metrics",
     "fast_segment_metrics",
+    "HAS_NUMBA",
     "segment_truth_mask",
     "solver_segment_metrics",
     "DEFAULT_DZ",

@@ -35,6 +35,13 @@ unchanged.
   warning attributed to `lhcb_velo_toy` into a failure.
 
 ### Fixed
+- **numba is optional again.** `analysis/segment_metrics.py` imported numba at
+  module level while declaring it in no dependency list, so
+  `import lhcb_velo_toy` failed outright on any environment without it — the
+  package was uninstallable-in-practice from a clean `pip install`. The import
+  is now guarded with an equivalent pure-Python fallback (verified to give
+  identical counts), numba moves to a new optional `[fast]` extra, and
+  `HAS_NUMBA` reports which kernel is live. Regression test added.
 - **`solvers/quantum/OneBQF.py` renamed to `one_bqf.py`** (the class stays
   `OneBQF`). A submodule whose name matches a class exported from the package
   is bound over that class by the import machinery, so
@@ -48,6 +55,15 @@ unchanged.
   not exist on the class — the example could not run to completion. It returns
   P(ancilla = 1) from the sampled counts (the shot-free exact value is the
   second return of `get_solution_from_statevector`).
+- **Two false claims removed from the 1BQF example.** Its summary stated that
+  exact Givens rotations mean "no Trotter approximation error" and that shot
+  noise is the only error: the per-pair rotations are individually exact, but
+  rotations sharing a segment do not commute, so their product is a
+  first-order product formula and a residual ordering error of order 1e-2 in
+  amplitude survives (now measured in the notebook). It also called the 1BQF
+  "the recommended quantum approach ... combining quantum advantage claims";
+  that is superseded by the QSVT results and by the dequantisation finding
+  that every response here is classically computable.
 - **Example notebooks re-executed** against this release, so every committed
   output matches the current code: `demo_workflow.ipynb` and
   `notebooks/classical_end_to_end.ipynb` (the `SimpleHamiltonian` threshold fix),
@@ -102,7 +118,17 @@ unchanged.
 - **Example** — `notebooks/quantum_qsvt_end_to_end.ipynb` (executed):
   responses, three backends, three realisations, a moderate event with
   efficiency-first working points and tracks, scaling with T, the other
-  response families, the refit + transfer.
+  response families, the refit + transfer, the phase factors themselves
+  (`parity_split` / `find_phase_factors` / `apply_phase_sequence`, with the
+  parity penalty and the scalar-identity error), and a response fitted to the
+  event's own spectrum (`refit_binned` -> `binned_response` ->
+  `chebyshev_realize` at degrees 16/24/40).
+- **1BQF example** — `notebooks/quantum_1bqf_end_to_end.ipynb` gains a section
+  that shows the filter is *correct* and that it scales: the matrix-free engine
+  against the circuit (cosine 1.0000000000), the circuit against the exact
+  one-bit readout computed by diagonalising A, the uncompute demonstrated as an
+  exact inverse (3e-17, against 2.6e-1 for the old forward order), and a
+  6,400-segment solve in 0.01 s on a 0.5 MB statevector.
 - **Tests** — `tests/test_qsvt_models.py`: selector == pipeline path,
   default is the comb, s inference, qiskit-free import, normalized comb and
   one-bit cosine == originating study code, phase-factor scalar identity +

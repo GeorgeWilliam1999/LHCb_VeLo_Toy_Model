@@ -46,6 +46,9 @@ pip install -e .
 # Quantum algorithm support (Qiskit)
 pip install -e ".[quantum]"
 
+# Optional numba kernel for fast_segment_metrics (not required)
+pip install -e ".[fast]"
+
 # Development tools (pytest, mypy, ruff)
 pip install -e ".[dev]"
 
