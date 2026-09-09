@@ -1,10 +1,26 @@
+"""Full HHL reference circuit (multi-qubit phase estimation + controlled rotation).
+
+Provenance
+----------
+Byte-identical copy of ``OneBQF_repo/quantum_algorithms/HHL.py`` until
+2026-09-07, when the qiskit 2.x API update landed: ``QFT`` -> ``QFTGate``,
+controlled gates with ``annotated=False``, ``CircuitInstruction`` attribute
+access, and the statevector path on ``AerSimulator(method="statevector")``
+instead of the removed ``Aer.get_backend("statevector_simulator")``.
+
+Known physics defects (Notion to-do, deliberately NOT changed here): the
+rotation gain saturates (Frobenius-normalised matrix, gain 0.3), the clock
+keying does not match the inverse-QFT bit order, and the statevector readout
+offsets are off.  The QSVT paper's HHL comparison uses an independently
+validated spectral emulation, not this class.
+"""
 import numpy as np
 import math
 import matplotlib.pyplot as plt
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, transpile
 from qiskit.visualization import plot_histogram
 from qiskit_aer import AerSimulator
-from qiskit.circuit.library import QFT, RYGate, UnitaryGate
+from qiskit.circuit.library import QFTGate, RYGate, UnitaryGate
 from scipy.linalg import expm
 
 
@@ -61,10 +77,10 @@ class HHLAlgorithm:
         qc_clean = QuantumCircuit(self.time_qr, self.b_qr, self.ancilla_qr)
 
         # Copy only the quantum instructions
-        for instr, qargs, cargs in self.circuit.data:
-            if instr.name == 'measure':
+        for ci in self.circuit.data:
+            if ci.operation.name == 'measure':
                 continue  # Skip measurement
-            qc_clean.append(instr, qargs, cargs)
+            qc_clean.append(ci.operation, ci.qubits, ci.clbits)
 
         return qc_clean
 
@@ -75,12 +91,13 @@ class HHLAlgorithm:
 
     def apply_controlled_u(self, qc, matrix, control, target, power):
         U = expm(1j * matrix * self.t * power)
-        controlled_U = UnitaryGate(U).control(1)
+        controlled_U = UnitaryGate(U).control(1, annotated=False)
         qc.append(controlled_U, [control] + target)
         return qc
 
     def inverse_qft(self, n_qubits):
-        return QFT(n_qubits, do_swaps=True).inverse()
+        """Inverse QFT gate (``QFTGate``: the standard QFT including swaps)."""
+        return QFTGate(n_qubits).inverse()
 
     def phase_estimation(self, qc):
         for qubit in self.time_qr:
@@ -90,12 +107,10 @@ class HHLAlgorithm:
             power = 2 ** i
             self.apply_controlled_u(qc, self.A, self.time_qr[self.num_time_qubits - i - 1], list(self.b_qr), power)
 
-        iqft = self.inverse_qft(self.num_time_qubits).to_gate(label="IQFT")
-        qc.append(iqft, self.time_qr[:])
+        qc.append(self.inverse_qft(self.num_time_qubits), self.time_qr[:])
 
     def uncompute_phase_estimation(self, qc):
-        qft = QFT(self.num_time_qubits, do_swaps=True).to_gate(label="QFT")
-        qc.append(qft, self.time_qr[:])
+        qc.append(QFTGate(self.num_time_qubits), self.time_qr[:])
 
         for i in reversed(range(self.num_time_qubits)):
             power = 2 ** i
@@ -146,7 +161,7 @@ class HHLAlgorithm:
                 if bit == '0':
                     qc.x(self.time_qr[j])
 
-            cry = RYGate(angle).control(num_ctrl_qubits=self.num_time_qubits)
+            cry = RYGate(angle).control(num_ctrl_qubits=self.num_time_qubits, annotated=False)
             qc.append(cry, [*controls, self.ancilla_qr[0]])
 
             for j, bit in enumerate(bits):
@@ -209,9 +224,11 @@ class HHLAlgorithm:
         print(f"Results histogram saved as '{filename}'.")
 
     def simulate_statevector(self):
-        from qiskit_aer import Aer
-        backend = Aer.get_backend("statevector_simulator")
-        job = backend.run(transpile(self.circuit, backend))
+        """Exact statevector of the circuit before measurement (Aer statevector method)."""
+        qc = self.get_quantum_only_circuit()
+        qc.save_statevector()
+        backend = AerSimulator(method="statevector")
+        job = backend.run(transpile(qc, backend))
         statevector = job.result().get_statevector()
         return statevector
 

@@ -16,6 +16,9 @@ controlled two-level rotation touching O(1) amplitudes. Measured on the
 originating study: T=400 in 2.6 s / 0.7 GB, T=1000 in 12 s / 1.5 GB, vs
 Aer-GPU 365 s / Aer-CPU ~4 h. Validated bit-identical to the Aer path
 (cos = 1.000000000000, dP_anc ~1e-14) at T=10/20/50, clean and noisy.
+Carries the 2026-09-07 uncompute fix (inverse pair rotations in reverse
+order) in lock-step with ``OneBQF``; ``tests/test_quantum_lanes.py`` pins the
+equality.
 
 This is the documented large-T backend for the 1BQF lane; the
 :class:`~lhcb_velo_toy.solvers.quantum.OneBQF.OneBQF` circuit remains the
@@ -124,9 +127,11 @@ def solve_one_bit_matrixfree(A, b=None):
     low0[:, 0] = low1[:, 0]
     low1[:, 0] = tmp
 
-    # uncompute: QFT(1)=H(time); controlled-U^dagger; H(time)
+    # uncompute: QFT(1)=H(time); controlled-U^dagger; H(time).  The inverse of
+    # the pair product is the product of the inverses in REVERSE order (the
+    # 2026-09-07 uncompute fix, mirrored from OneBQF._apply_direct_controlled_u).
     _h_on_bit(psi, 0, n)
-    _controlled_U(psi, pairs, -theta, -phase, n_sys)
+    _controlled_U(psi, pairs[::-1], -theta, -phase, n_sys)
     _h_on_bit(psi, 0, n)
 
     # readout (== OneBQF.get_solution_from_statevector): sum |.|^2 over time, anc=1

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lhcb-velo-toy"
-version = "2.1.0"
+version = "2.2.0"
 description = "LHCb VELO detector simulation and track reconstruction with quantum algorithms"
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -20,6 +20,9 @@ keywords = [
     "track reconstruction",
     "quantum computing",
     "HHL",
+    "QSVT",
+    "quantum signal processing",
+    "spectral filter",
     "simulation",
 ]
 classifiers = [
@@ -44,9 +47,9 @@ dependencies = [
 
 [project.optional-dependencies]
 quantum = [
-    "qiskit>=1.0",
-    "qiskit-aer>=0.14",
-    "qiskit-ibm-runtime>=0.20",
+    "qiskit>=2.1",
+    "qiskit-aer>=0.17",
+    "qiskit-ibm-runtime>=0.40",
 ]
 analysis = [
     "pandas>=1.4",
@@ -116,3 +119,10 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v --cov=lhcb_velo_toy --cov-report=term-missing"
+# Any deprecation attributed to our own modules (qiskit deprecation decorators
+# point at the caller) fails the suite: the package must track the current
+# qiskit API.  Third-party deprecations stay warnings.
+filterwarnings = [
+    "error::DeprecationWarning:lhcb_velo_toy",
+    "error::PendingDeprecationWarning:lhcb_velo_toy",
+]

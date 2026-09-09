@@ -1,13 +1,34 @@
+"""The one-bit quantum filter (1BQF) reference circuit.
+
+Provenance
+----------
+Byte-identical copy of ``OneBQF_repo/quantum_algorithms/OneBQF.py`` (the
+TrackHHL paper's circuit) until 2026-09-07, when two things changed:
+
+* **Uncompute fix (George, 2026-09-07).** The inverse controlled evolution
+  applied the per-pair Givens rotations in FORWARD order; the exact inverse of
+  the product ``G_1 G_2 ... G_m`` is ``G_m^-1 ... G_1^-1``, so on any cluster
+  with two or more coupled pairs the readout depended on the segment
+  labelling (a true track came out at raw (0.465, 0.730, 0.584, 0.234) and
+  mirrored under reversed labels).  ``inverse=True`` now walks the pairs in
+  reverse.  The stored 1BQF solutions in the qtrk store (6,008 solves) and the
+  paper's figures 10 and 12 predate this fix (Notion to-do).
+* **Qiskit 2.x API.** ``QFT`` (deprecated in 2.1, removed in 3.0) replaced by
+  ``QFTGate``; controlled gates built with ``annotated=False`` (explicit
+  controlled circuits, the pre-2.3 behaviour); the preset pass manager is
+  imported from ``qiskit.transpiler``.
+
+``solve_one_bit_matrixfree`` (``matrixfree.py``) reproduces this circuit
+exactly without qiskit and is the documented large-T engine.
+"""
 import numpy as np
 import math
 from scipy import sparse as _sp
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, transpile
-from qiskit_aer import AerSimulator
-from qiskit.circuit.library import QFT, RXGate
+from qiskit.circuit.library import QFTGate, RXGate
 from qiskit_aer import AerSimulator
 from qiskit_aer.noise import NoiseModel
-from qiskit_ibm_runtime import QiskitRuntimeService
-from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
+
 
 class OneBQF:
     def __init__(self, matrix_A, vector_b, num_time_qubits=1, shots=1024, debug=False,
@@ -103,11 +124,16 @@ class OneBQF:
         """
         evolution_time = self.t * power
         theta = 2 * evolution_time
-        
+
+        # The inverse of a product of pair rotations is the product of the
+        # inverses in REVERSE order (fix 2026-09-07; forward order made the
+        # readout depend on the segment labelling on multi-pair clusters).
+        pairs = self.interaction_pairs
         if inverse:
             theta = -theta
+            pairs = list(reversed(pairs))
 
-        for i, j in self.interaction_pairs:
+        for i, j in pairs:
             xor_val = i ^ j
             differing_indices = [k for k in range(self.num_system_qubits) if (xor_val >> k) & 1]
             if not differing_indices: continue
@@ -136,7 +162,7 @@ class OneBQF:
                     qubits_to_flip.append(target_qubits[k])
 
             if qubits_to_flip: qc.x(qubits_to_flip)
-            mcrx = RXGate(theta).control(len(full_control_list))
+            mcrx = RXGate(theta).control(len(full_control_list), annotated=False)
             qc.append(mcrx, full_control_list + [target_qubits[pivot]])
             if qubits_to_flip: qc.x(qubits_to_flip)
             for k in reversed(rest_diff):
@@ -149,17 +175,18 @@ class OneBQF:
         self._apply_direct_controlled_u(qc, control_qubit, target_qubits, power, inverse=inverse)
 
     def inverse_qft(self, n_qubits):
-        return QFT(n_qubits, do_swaps=True).inverse()
+        """Inverse QFT gate (``QFTGate``: the standard QFT including swaps)."""
+        return QFTGate(n_qubits).inverse()
 
     def phase_estimation(self, qc):
         qc.h(self.time_qr)
         for i in range(self.num_time_qubits):
             power = 2**i
             self.apply_controlled_u(self.circuit, self.time_qr[self.num_time_qubits - 1 - i], list(self.b_qr), power)
-        qc.append(self.inverse_qft(self.num_time_qubits).to_gate(label="IQFT"), self.time_qr)
+        qc.append(self.inverse_qft(self.num_time_qubits), self.time_qr)
 
     def uncompute_phase_estimation(self, qc):
-        qc.append(QFT(self.num_time_qubits, do_swaps=True).to_gate(label="QFT"), self.time_qr)
+        qc.append(QFTGate(self.num_time_qubits), self.time_qr)
         for i in reversed(range(self.num_time_qubits)):
             power = 2**i
             self.apply_controlled_u(self.circuit, self.time_qr[self.num_time_qubits - 1 - i], list(self.b_qr), power, inverse=True)
@@ -198,7 +225,9 @@ class OneBQF:
         
         if use_noise_model:
             # Load your IBM account (make sure you've saved your API token)
-            
+            from qiskit.transpiler import generate_preset_pass_manager
+            from qiskit_ibm_runtime import QiskitRuntimeService
+
             service = QiskitRuntimeService()
             backend = service.backend(backend_name)
             noise_model = NoiseModel.from_backend(backend)
@@ -242,6 +271,27 @@ class OneBQF:
         solution_padded = np.sqrt(prob_dist)
         solution_padded /= np.linalg.norm(solution_padded)
         return solution_padded[:self.original_dim], total_success
+
+    def get_success_probability(self, counts=None):
+        """Post-selection success probability P(ancilla = 1) from sampled counts.
+
+        The documented companion of :meth:`get_solution` (which returns the
+        raw success COUNT): restored 2026-09-07 — it was named in the API
+        reference and used by ``notebooks/quantum_1bqf_end_to_end.ipynb`` but
+        never existed on this class, so the example could not run.  For the
+        exact, shot-free probability use
+        :meth:`get_solution_from_statevector`, whose second return value is
+        P(ancilla = 1) itself.
+        """
+        if counts:
+            self.counts = counts
+        if not self.counts:
+            raise ValueError("No measurement results available. Run run() first.")
+        total = sum(self.counts.values())
+        if total == 0:
+            return 0.0
+        success = sum(c for outcome, c in self.counts.items() if outcome[-1] == '1')
+        return success / total
 
     def get_solution_from_statevector(self, statevector):
         """Exact, shot-free solution extraction.
