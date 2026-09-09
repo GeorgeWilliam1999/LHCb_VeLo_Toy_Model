@@ -6,7 +6,9 @@ centralisation refactor cannot silently change results. Values captured
 determinism check.
 
 Conventions pinned here (do not change without a deliberate physics
-decision):
+decision; two were taken on 2026-09-07 and are re-pinned below — the QSVT
+default design is the comb, and the 1BQF uncompute applies the inverse pair
+rotations in reverse order):
 - geometry: 5 planes, dz = 33 mm, half-width 50 mm, z0 = 100 mm
 - Hamiltonian: gamma = 3, delta = 1  =>  A diagonal = +4, chain bulk
   activation delta/(delta+gamma-2) bounded by 1/2
@@ -121,9 +123,17 @@ def test_quantum_lanes_golden_clean():
     sim = AerSimulator(method="statevector")
     sv = sim.run(transpile(qc, sim)).result().get_statevector()
     amps_q, p_q = q.get_solution_from_statevector(sv)
-    assert p_q == pytest.approx(0.04478307067994487, rel=1e-6)
-    assert np.sum(amps_q) == pytest.approx(4.206959752194961, rel=1e-6)
+    # 1BQF with the exact-inverse uncompute (2026-09-07). The success
+    # probability is unchanged by the fix (4.4783e-2 before and after); the
+    # amplitude sum moved from 4.206959752194961 (forward-order uncompute).
+    assert p_q == pytest.approx(0.044783070679944914, rel=1e-6)
+    assert np.sum(amps_q) == pytest.approx(4.281635210208872, rel=1e-6)
 
+    # the bare constructor is the comb (the QSVT of the papers) since 2026-09-07
     amps_s, p_s = QSVT(A, b, degree=40).solve_statevector()
-    assert p_s == pytest.approx(0.03702804240383503, rel=1e-6)
-    assert np.sum(amps_s) == pytest.approx(4.57577599172363, rel=1e-6)
+    assert p_s == pytest.approx(0.08796160232901191, rel=1e-6)
+    assert np.sum(amps_s) == pytest.approx(4.530657664955381, rel=1e-6)
+    # the retired band design, pinned under its explicit name
+    amps_b, p_b = QSVT(A, b, degree=40, filter_design="band").solve_statevector()
+    assert p_b == pytest.approx(0.03702804240383503, rel=1e-6)
+    assert np.sum(amps_b) == pytest.approx(4.57577599172363, rel=1e-6)

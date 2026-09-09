@@ -3,7 +3,9 @@
 Equivalence contracts:
 - QSVT.solve_eigh == QSVT.solve_statevector (same y = p(A) b / ||c||_1,
   computed via per-component eigendecomposition vs Chebyshev recursion).
-- solve_one_bit_matrixfree == OneBQF circuit + exact statevector readout.
+- solve_one_bit_matrixfree == OneBQF circuit + exact statevector readout
+  (both carry the 2026-09-07 uncompute fix: inverse pair rotations in
+  reverse order).
 - solvers.postselect == the originating qtrk_pipeline.postselect (when the
   study tree is present).
 """
