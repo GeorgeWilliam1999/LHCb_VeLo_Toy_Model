@@ -1,6 +1,6 @@
 # LHCb VELO Toy Model - Documentation
 
-Welcome to the documentation for the **LHCb VELO Toy Model** package—a comprehensive framework for simulating particle tracking in the LHCb Vertex Locator detector and testing track reconstruction algorithms, including quantum approaches using HHL.
+Welcome to the documentation for the **LHCb VELO Toy Model** package—a comprehensive framework for simulating particle tracking in the LHCb Vertex Locator detector and testing track reconstruction algorithms, including the quantum solver lanes: HHL, the one-bit quantum filter (1BQF) and the QSVT polynomial spectral filter (the comb).
 
 ---
 
@@ -32,7 +32,15 @@ Welcome to the documentation for the **LHCb VELO Toy Model** package—a compreh
 | Generate simulated events | [StateEventGenerator API](API_REFERENCE.md#class-stateeventgenerator) |
 | Understand data structures | [Entities](API_REFERENCE.md#entities) |
 | Solve with classical methods | [Hamiltonians](API_REFERENCE.md#hamiltonians) |
-| Use quantum HHL | [Quantum Algorithms](API_REFERENCE.md#quantum-algorithms) |
+| Add the fork / occupancy terms | [Extended Hamiltonians](API_REFERENCE.md#extended-hamiltonians-fork--occupancy) |
+| Use quantum HHL or the 1BQF | [Quantum Algorithms](API_REFERENCE.md#quantum-algorithms) |
+| Run the QSVT comb (numpy-only) | [QSVT](API_REFERENCE.md#class-qsvt) |
+| Pick a response family / realisation | [QSVT response families](API_REFERENCE.md#qsvt-response-families) · [Realisations](API_REFERENCE.md#qsvt-realisations-phase-sequence) |
+| Refit the polynomial to an event | [Refit](API_REFERENCE.md#qsvt-coefficient-refit) |
+| Find tracks with the Hough lane | [Hough](API_REFERENCE.md#hough-lane) |
+| Post-select on hit uniqueness | [Post-selection](API_REFERENCE.md#post-selection) |
+| Choose thresholds / working points | [Working points](API_REFERENCE.md#working-points) |
+| Load a Run-3 Allen event | [Run-3 adapter](API_REFERENCE.md#run-3-adapter) |
 | Validate reconstruction | [EventValidator](API_REFERENCE.md#class-eventvalidator) |
 | Create plots | [Plotting](API_REFERENCE.md#plotting) |
 | Save/load pipeline state | [Persistence](API_REFERENCE.md#module-persistence) |
@@ -61,14 +69,19 @@ lhcb_velo_toy/
 │   └── generators/      # StateEventGenerator
 │
 ├── solvers/             # Solving algorithms
-│   ├── hamiltonians/    # Hamiltonian (ABC), SimpleHamiltonian, Fast
+│   ├── hamiltonians/    # Hamiltonian (ABC), Simple, Fast, Extended / Fork / Occupancy
 │   ├── classical/       # Conjugate gradient, direct solvers
-│   ├── quantum/         # HHL, OneBitHHL (1-Bit Quantum Filter)
+│   ├── quantum/         # HHL, OneBQF (1BQF) + matrix-free engine,
+│   │                    # QSVT + responses / qsp_phases / spectral_filter / refit
+│   ├── hough/           # Hough track finding + EventValidator adapter
+│   ├── postselect.py    # hit-uniqueness post-selection
 │   └── reconstruction/  # Segment (on-demand), get_tracks
 │
 ├── analysis/            # Analysis and validation
 │   ├── validation/      # EventValidator, Match
-│   └── plotting/        # LHCb-style performance plots
+│   ├── plotting/        # LHCb-style performance plots
+│   ├── segment_metrics.py   # epsilon formula, segment truth mask, segment metrics
+│   └── working_points.py    # thresholds, wp99, matched-efficiency frontier
 │
 └── persistence/         # Save / load utilities
     ├── pipeline.py      # Single-event pipeline state
@@ -94,7 +107,8 @@ Event (JSON-serializable)
 # Basic installation
 pip install lhcb-velo-toy
 
-# With quantum algorithms
+# With the qiskit reference circuits (HHL, OneBQF, QSVT.run_circuit)
+# — the QSVT solver itself and the 1BQF matrix-free engine are numpy-only
 pip install lhcb-velo-toy[quantum]
 
 # Full installation
@@ -158,10 +172,14 @@ graph LR
     subgraph Solving
         E --> H[Hamiltonian]
         H --> S{Solver}
-        S --> |Classical| CG[Conjugate Gradient]
-        S --> |Quantum| HHL[HHL/OneBitHHL]
+        S --> |Classical| CG[Conjugate Gradient / direct]
+        S --> |Quantum| HHL[HHL / 1BQF]
+        S --> |Quantum| Q[QSVT comb]
+        S --> |Hough| HG[Hough voting]
         CG --> X[Solution vector]
         HHL --> X
+        Q --> X
+        HG --> R
     end
 
     subgraph Analysis
@@ -190,7 +208,8 @@ graph LR
 
 - **LHCb Collaboration**: [LHCb VELO Technical Design Report](https://cds.cern.ch/record/1621894)
 - **HHL Algorithm**: [Harrow, Hassidim, Lloyd (2009)](https://arxiv.org/abs/0811.3171)
-- **Quantum Track Finding**: [arXiv papers on quantum approaches to particle tracking]
+- **Quantum track finding in the VELO**: Nicotra et al., JINST 18 P11028 (2023); TrackHHL / the one-bit quantum filter, [arXiv:2601.07766](https://arxiv.org/abs/2601.07766)
+- **QSVT**: [Gilyén, Su, Low, Wiebe (2019)](https://arxiv.org/abs/1806.01838); qubitization, [Low & Chuang (2019)](https://arxiv.org/abs/1610.06546); phase factors, [Dong, Meng, Whaley, Lin (2021)](https://arxiv.org/abs/2002.11649)
 
 ---
 

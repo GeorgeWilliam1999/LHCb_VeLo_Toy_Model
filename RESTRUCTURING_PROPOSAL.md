@@ -1,5 +1,12 @@
 # LHCb VELO Toy Model - Restructuring Proposal
 
+> **Historical document (v2.0.0).** This proposal was executed in the 2.0.0
+> restructuring. The current layout additionally has `solvers/hamiltonians/extended.py`,
+> the quantum lanes `solvers/quantum/{OneBQF, matrixfree, QSVT, responses, qsp_phases,
+> spectral_filter, refit}.py`, `solvers/hough/`, `solvers/postselect.py`,
+> `analysis/{segment_metrics, working_points}.py` and `generation/adapters/run3.py`
+> (2.1.0 / 2.2.0) — see `README.md` and `CHANGELOG.md`.
+
 ## Executive Summary
 
 This document proposes restructuring the `LHCb_VeLo_Toy_Model` repository into four clear submodules to improve modularity, maintainability, and usability.

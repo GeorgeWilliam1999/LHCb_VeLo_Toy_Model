@@ -1,7 +1,7 @@
 # LHCb VELO Toy Model - API Reference
 
 > **Package Name**: `lhcb-velo-toy`
-> **Version**: 2.0.0
+> **Version**: 2.2.0
 > **License**: MIT
 
 ---
@@ -15,12 +15,23 @@
    - [Event Generators](#event-generators)
 3. [Module: solvers](#module-solvers)
    - [Hamiltonians](#hamiltonians)
+   - [Extended Hamiltonians (fork / occupancy)](#extended-hamiltonians-fork--occupancy)
    - [Classical Solvers](#classical-solvers)
-   - [Quantum Algorithms](#quantum-algorithms)
+   - [Quantum Algorithms](#quantum-algorithms) — HHL, OneBQF, matrix-free 1BQF
+   - [class QSVT](#class-qsvt) — the polynomial filter
+   - [QSVT response families](#qsvt-response-families)
+   - [QSVT realisations (phase sequence)](#qsvt-realisations-phase-sequence)
+   - [Spectral-filter evaluator](#spectral-filter-evaluator)
+   - [QSVT coefficient refit](#qsvt-coefficient-refit)
+   - [Hough lane](#hough-lane)
+   - [Post-selection](#post-selection)
    - [Track Reconstruction](#track-reconstruction)
 4. [Module: analysis](#module-analysis)
    - [Validation](#validation)
+   - [Segment metrics](#segment-metrics)
+   - [Working points](#working-points)
    - [Plotting](#plotting)
+   - [Run-3 adapter](#run-3-adapter)
 5. [Module: persistence](#module-persistence)
    - [Pipeline Persistence](#pipeline-persistence)
    - [Study Persistence](#study-persistence)
@@ -37,7 +48,8 @@ The LHCb VELO Toy Model provides a complete framework for simulating particle tr
 # Basic installation
 pip install lhcb-velo-toy
 
-# With quantum algorithms support
+# With the qiskit reference circuits (HHL, OneBQF, QSVT.run_circuit);
+# the QSVT solver and the 1BQF matrix-free engine are numpy-only
 pip install lhcb-velo-toy[quantum]
 
 # Full installation with all dependencies
@@ -620,6 +632,8 @@ where $\mathbf{x}$ is the segment activation vector and the matrix $A$ encodes:
 
 #### `class SimpleHamiltonian(Hamiltonian)`
 
+> **2026-09-07.** The hard-threshold compatibility now tests `cos(angle) > cos(epsilon)` (angle strictly below ε), the same rule as `SimpleHamiltonianFast`; it previously compared `1 − cos(angle)` with ε, an effective acceptance of √(2ε). The two builders now agree entry for entry (`tests/test_core_pipeline.py`). `SimpleHamiltonianFast` is the canonical builder for every study result.
+
 Reference implementation of the track-finding Hamiltonian.
 
 ```python
@@ -703,6 +717,29 @@ class SimpleHamiltonianFast(Hamiltonian):
 
 ---
 
+### Extended Hamiltonians (fork / occupancy)
+
+Denby–Peterson physics composed onto `SimpleHamiltonianFast` (module `solvers.hamiltonians.extended`, 2.1.0). Adjacency for both terms is **same-role hit sharing**; the ε boundary is strict (`>`).
+
+```python
+class ExtendedHamiltonian(SimpleHamiltonianFast):
+    def __init__(self, epsilon, gamma, delta, theta_d=1e-4,
+                 beta: float = 0.0, eps_B: float | None = None,   # fork term
+                 alpha: float = 0.0)                              # occupancy term
+
+class ForkHamiltonian(ExtendedHamiltonian):        # beta required, alpha = 0
+class OccupancyHamiltonian(ExtendedHamiltonian):   # alpha = 0.05 default, beta = 0
+```
+
+| Term | Operator | Notes |
+|---|---|---|
+| fork (`beta`, `eps_B`) | `A = A0 + beta * B_fork`, `b` unchanged | ε-windowed competitors (`cohit_graph_eps`); the false attractor is kept |
+| occupancy (`alpha`) | `A = A0 + 4 alpha I + 2 alpha B_all`, `b = (delta + 4 alpha) 1` | Peterson's per-hit constraint (`cohit_graph`); NOT Denby's global count term (dense) |
+
+**Methods:** `construct_hamiltonian(event, convolution=False, erf_sigma=None)`, `working_point_tau(margin=0.10)` (attractor-aware fixed threshold: `(delta + 4 alpha)/(gamma + delta + 4 alpha) + margin`).
+
+---
+
 ### Classical Solvers
 
 #### `solve_conjugate_gradient(A, b, x0, tol, maxiter)`
@@ -780,6 +817,8 @@ def solve_classicaly(self) -> np.ndarray:
 
 ### Quantum Algorithms
 
+> **Import note (2.2.0).** `lhcb_velo_toy.solvers.quantum` imports `HHLAlgorithm`, `OneBQF` and the alias `OneBitHHL` **lazily**: they need the `[quantum]` extras (qiskit, qiskit-aer, qiskit-ibm-runtime) and raise an `ImportError` naming the extras on first access. `QSVT`, `solve_one_bit_matrixfree`, `spectral_filter`, `responses`, `qsp_phases` and `refit` are numpy/scipy-only and import in a base install.
+
 #### `class HHLAlgorithm`
 
 Full Harrow-Hassidim-Lloyd algorithm for solving linear systems.
@@ -827,7 +866,7 @@ class HHLAlgorithm:
 
 #### `class OneBitHHL`
 
-1-Bit Quantum Filter using Suzuki-Trotter decomposition.
+The one-bit quantum filter (exact per-pair Givens rotations for `e^{-iAt}`, one clock qubit). Canonical class `OneBQF` (`OneBitHHL` is the alias); reference circuit of the TrackHHL paper. **2026-09-07:** the uncompute step now applies the inverse pair rotations in reverse order (the exact inverse of the product); the readout no longer depends on the segment labelling. `readout="statevector"` builds a measurement-free circuit with `save_statevector()`; `get_solution_from_statevector(sv)` is the exact readout.
 
 ```python
 class OneBitHHL:
@@ -869,6 +908,166 @@ counts_noisy = hhl.run(use_noise_model=True, backend_name='ibm_fez')
 
 solution, success_count = hhl.get_solution(counts_noisy)
 ```
+
+---
+
+#### `solve_one_bit_matrixfree(A, b=None)`
+
+The 1BQF without qiskit (module `solvers.quantum.matrixfree`): reproduces exactly what `OneBQF.build_circuit()` + an exact statevector simulator produce, but never builds a circuit — the Aer `assemble_circuit` memory wall (24–119 GB at high T) is gone. Memory is the `2**n` statevector; T = 1000 in ~12 s / 1.5 GB. Requires a constant diagonal (the OneBQF assumption; `ValueError` otherwise).
+
+**Returns** `(sol, success, n_sys)`: unit-norm `|amplitude|` vector (float32), the ancilla post-selection probability, and the number of system qubits.
+
+---
+
+### `class QSVT`
+
+The polynomial (QSVT-family) spectral filter for `A x = b` (module `solvers.quantum.QSVT`; also exported as `lhcb_velo_toy.QSVT`). It applies a bounded polynomial response `p(A)` as a linear combination of Chebyshev polynomials `T_k(X)` of the qubitization walk operator, `<0|W^k|0> = T_k(X)`, with `X` the affinely rescaled Hamiltonian. The one-bit filter's cosine is the degree-one member of the same family. **"The QSVT" of the papers is the degree-40 line comb on the base Hamiltonian** (`filter_design="comb"`, `QSVT.comb(A, b)`).
+
+```python
+class QSVT:
+    def __init__(self, matrix_A, vector_b, degree: int = 40, poly=None,
+                 design_kwargs: dict | None = None, spectrum_pad: float = 0.02,
+                 spectral_bounds: tuple[float, float] | None = None, debug: bool = False,
+                 filter_design: str | None = None,   # "comb" (default) | "band" | "minimax" | "cosine"
+                 s: float | None = None)             # design centre gamma + delta; read off a constant diagonal
+
+    @classmethod
+    def comb(cls, matrix_A, vector_b, degree=40, **kw)   # == QSVT(A, b, degree, filter_design="comb")
+```
+
+| Parameter | Description |
+|---|---|
+| `degree` | polynomial degree `d` = walk-operator calls |
+| `poly` | any `numpy.polynomial.chebyshev.Chebyshev`; its domain must contain the (padded) spectrum; sets `filter_design = "custom"` |
+| `filter_design` | response family designed when `poly` is not given. **Default `"comb"`** = the QSVT of the papers (ruling 2026-09-07; before that the bare constructor built the band design); `"band"` = the retired first design; `"minimax"`; `"cosine"` (the one-bit cosine as a series) |
+| `s` | the constant diagonal `gamma + delta` the lines are placed around; inferred from `A` when its diagonal is constant (so a `gamma = 1` Hamiltonian gets its own lines), else 4.0 |
+| `design_kwargs` | forwarded to the design function (`hw`, `lines`, `band`, `notches`, `domain`, …) |
+| `spectral_bounds` | known `(lo, hi)` of the spectrum; skips the Lanczos estimate — use `spectral_filter.spectral_bounds(A)` |
+
+**Attributes:** `poly`, `coeffs`, `l1` (`||c||_1`), `X`, `s`, `filter_design`, `num_system_qubits`, `num_lcu_qubits`, `total_qubits`, `solution_signed` (after a solve), `phase_info` (after `solve_phase_sequence`), `_mode_system` (cached by `solve_eigh`).
+
+**Backends** — all return `(solution, success)` in the OneBQF readout convention: `solution = |y| / ||y||`, `y = p(X) b / ||c||_1`, truncated to the original dimension; `success` = probability that the LCU register and the block-encoding ancilla both post-select on 0 (`||y||^2`).
+
+| Method | What it computes | Reach | qiskit? |
+|---|---|---|---|
+| `solve_statevector()` | Chebyshev recursion, sparse matvecs only | T = 1000 (4M segments) in seconds | no |
+| `solve_eigh(max_comp=20000)` | one per-component eigendecomposition (cached), same numbers to 1e-9 | any event whose largest connected component is dense-eigh-able | no |
+| `run_circuit(streaming=False)` | the explicit LCU circuit; `streaming=True` applies the identical gate sequence one walk power at a time (bounded memory) | T ≈ 20 full / 40 streamed | `streaming=False` only |
+| `build_circuit()` | the qiskit circuit (StatePreparation, sign diagonal, controlled `W^(2^j)`, PREPARE†) | small systems | yes |
+| `solve_phase_sequence(phases=None, max_dim=4096, **find_kw)` | the phase-sequence realisation (QSVT proper), dense; `success = ||q(X) b||^2 / (alpha_e + alpha_o)^2`, `q = p / max|p|`; phases and errors on `phase_info` | a few thousand segments | no |
+
+**Resources**
+
+```python
+q.resources(realisation="lcu" | "phase" | "qetu") -> dict
+q.resource_table() -> {realisation: dict}
+```
+
+| realisation | ancillas | calls per shot | success probability |
+|---|---|---|---|
+| `"lcu"` (the build) | `1 + m`, `m = ceil(log2(d+1))` | `2^m - 1` as built (`d` with an optimal SELECT) | `||p(X)u||^2 / ||c||_1^2` |
+| `"phase"` | 4 (3 for definite parity) | `4d` (`2d`) | `||q(X)u||^2 / (alpha_e + alpha_o)^2` |
+| `"qetu"` | 2 | `K = d` | `||p_trig(A)u||^2` |
+
+Common keys: `n, system_qubits, walk_calls, l1, peak (max|p|), lcu_penalty ((l1/peak)^2), ancillas, total_qubits, calls_per_shot, realisation`; the LCU entry keeps the legacy `be_ancilla`, `lcu_qubits`.
+
+**Example**
+
+```python
+from lhcb_velo_toy import QSVT
+from lhcb_velo_toy.solvers.quantum import spectral_bounds
+
+q = QSVT.comb(A, b, degree=40, spectral_bounds=spectral_bounds(A))
+sol, p_success = q.solve_statevector()
+print(q.total_qubits, q.resources("phase")["calls_per_shot"])
+```
+
+---
+
+### QSVT response families
+
+Design functions return a `numpy.polynomial.chebyshev.Chebyshev` on a domain that **must contain the spectrum of A** (default `(s - 3.8, s + 3.8)` = `(0.2, 7.8)` at `s = 4`), rescaled to `max|p| <= 0.95` where needed (realisability). `s = gamma + delta`; the whole spectral structure — true-track lines `s - 2cos(k pi/5)`, isolated line `s`, pair lines `s ± 1`, triple lines `s ± sqrt 2`, hub lines `s ± sqrt m` — shifts rigidly with it.
+
+| Function (module) | Signature | Response |
+|---|---|---|
+| `design_line_comb_inverse` (`QSVT`) | `(degree=40, s=4.0, lines=None, hw=0.18, domain=None, invert=True, ngrid=6000)` | **the comb**: Gaussian passes of half-width `hw` at the four P4 lines, `1/lambda`-weighted, ~0 elsewhere |
+| `design_band_limited_inverse` (`QSVT`) | `(degree=40, s=4.0, domain=None, band=None, edge=0.12, notches=None, notch_hw=0.15, invert=True, iso_weight=40.0, ngrid=6000)` | `1/lambda` on a contiguous band with Gaussian notches at the failure modes; fails at density |
+| `design_minimax_comb` (`QSVT`) | `(degree=8, s=4.0, lines=None, hw=0.18, domain=None, invert=True, ngrid=1500)` | the comb target fitted in the Chebyshev norm by an LP (`scipy.optimize.linprog`); ~half the degree |
+| `design_one_bit_cosine` (`responses`) | `(degree=60, s=4.0, domain=None, t=None, ngrid=4000, signed=False)` | `|cos(pi lambda / 2s)|` (the `onebqf_cos` family) or the signed cosine |
+| `one_bit_response` (`responses`) | `(s=4.0, t=None, signed=False) -> callable` | the exact one-bit response for `apply_response` |
+| `design_normalized_comb` (`responses`) | `(degree=40, hw=0.10, ngrid=8000)` | ±½ comb on `[-1, 1]` for the degree-normalised coupling |
+| `normalized_coupling` (`responses`) | `(A) -> csr_matrix` | `D^{-1/2} |C| D^{-1/2}` of the off-diagonal support (spectrum in `[-1, 1]`) |
+| `solve_normalized_comb` (`responses`) | `(A, degree=40, hw=0.10, poly=None) -> (amplitudes, poly)` | `|p(D) 1|`, the Efficiency-Frontier `normalized_half_comb` family verbatim |
+| `design_trig_comb` (`responses`) | `(K=40, t=pi/7.9, s=4.0, hw=0.18, domain=None, lines=None, invert=True, ngrid=6000) -> TrigResponse` | cosine series `sum c_k cos(k lambda t)` fitted to the comb — the QETU realisation's response (not a Chebyshev series; apply with `apply_response`) |
+| `p4_lines` (`responses`) | `(s=4.0) -> tuple` | the four true-track lines |
+
+---
+
+### QSVT realisations (phase sequence)
+
+Module `solvers.quantum.qsp_phases` — the QSVT-proper circuit: `d` applications of the block encoding interleaved with phase rotations on one signal qubit. Phases are found by the symmetric-phase-factor method (Dong, Meng, Whaley, Lin 2021; L-BFGS-B on Chebyshev nodes) in the `"wx"` convention and converted to the `"reflection"` convention of the dilation block encoding (`phi_0 += (2d-1) pi/4`, `phi_k -= pi/2`, `phi_d -= pi/4`).
+
+| Function | Signature | Description |
+|---|---|---|
+| `parity_split` | `(coef, grid=20001) -> dict` | `c` rescaled to `max|p| = 1`; unit-peak even / odd parts `ce`, `co`; `alpha_e`, `alpha_o`, `scale`, `parity_penalty = (alpha_e + alpha_o)^2` |
+| `find_phase_factors` | `(coef, degree=None, convention="reflection", tol=1e-12, n_trials=6, seed=0, grid=4001, maxiter=20000) -> (phases, max_err)` | phases for a definite-parity series with `|q| <= 1`; seconds at degree ~10, minutes at degree 40 (odd part) |
+| `qsp_signal` | `(phis, x, convention="reflection") -> complex array` | `<0|U_Phi(x)|0>`; its real part is `q(x)` |
+| `wx_to_reflection` | `(phis) -> phis` | the convention conversion |
+| `apply_phase_sequence` | `(X, u, phis) -> complex state` | the dense dilation circuit; real part of the dilation-0 branch = `q(X) u` |
+| `phase_sequence_solve` | `(X, u, coef, phases=None, **find_kw) -> (amplitudes, success, info)` | even + odd sequences recombined: `q(X)u = alpha_e Re psi_e + alpha_o Re psi_o` |
+
+---
+
+### Spectral-filter evaluator
+
+Module `solvers.quantum.spectral_filter` — exact application of **any** scalar response `f(lambda)` by one per-component eigendecomposition (the Codesign / Efficiency-Frontier evaluator; the engine behind `QSVT.solve_eigh`).
+
+| Function | Signature | Description |
+|---|---|---|
+| `continuation_components` | `(M) -> (n_components, labels)` | connected components of the off-diagonal support |
+| `mode_system` | `(M, b, iso_lambda=None, max_comp=20000) -> dict` | eigenpairs per component (`U`, `lam`, `w = V^T b`), isolated mask, `lam_min/lam_max` |
+| `apply_response` | `(sysd, f, signed=False) -> ndarray` | `y = f(M) b` exactly (`|y|` by default) |
+| `binned_response` | `(p_bins, edges) -> callable` | piecewise-constant response |
+| `chebyshev_realize` | `(f_target, domain, degree, grid=4000) -> callable` | degree-limited Chebyshev realisation, rescaled to `max|p| <= 1` |
+| `spectral_bounds` | `(A, s=None, pad=0.10) -> (lo, hi)` | `s ± rho(C)` from one Lanczos `LA` on `C = sI - A` (Perron–Frobenius) |
+
+---
+
+### QSVT coefficient refit
+
+Module `solvers.quantum.refit` — the response's coefficients (or binned values) become the unknowns of a ridge-regularised least-squares fit on a measured event: false amplitudes pushed to zero, true amplitudes held to the classical profile, ridge strength selected by the efficiency at a false-rate target. **Supervised** (needs the event's truth). Its uses: measure what a degree can buy on a given spectrum, and the event-to-event transfer test. *Status: under audit (2026-09-03 catch-up); not a production filter.*
+
+| Function | Signature | Description |
+|---|---|---|
+| `chebyshev_moments` | `(A, b, domain, dmax, dtype=float32) -> M (n x dmax+1)` | `M[:, k] = T_k(X) b` |
+| `refit_coefficients` | `(M, truth, x_ref, degree, domain, mus=DEFAULT_MUS, far_target=0.01, reg=1e-10) -> RefitResult` | the `fitted_moment` family; `mu` selected by the best efficiency at `far <= far_target` |
+| `refit_binned` | `(sysd, truth, x_ref, bin_w=0.02, mus=None, far_target=0.01, s=None, delta=None, iso_weight_scale=30.0, reg=1e-8) -> (p_bins, edges, mu)` | the `fitted_ridge` family on a `mode_system` |
+| `RefitResult` | fields `coef, domain, mu, amplitudes, eff_at_far, far_target, degree`; property `poly` | `.poly` is QSVT-realisable (`QSVT(A2, b2, poly=res.poly)` = transfer) |
+| `DEFAULT_MUS` | `np.geomspace(3e-3, 30.0, 13)` | the study's ridge grid |
+
+---
+
+### Hough lane
+
+Module `solvers.hough` (2.1.0): direct track finding by directional voting — no coupling floor, a parameter space constant in T; validated by the same `EventValidator` as every other lane.
+
+| Function | Description |
+|---|---|
+| `hit_directions(event) -> (D, planes, ...)` | unit directions from the origin to every hit |
+| `run_point(D, planes, n_bins=256, ...)` | point voting into a `(theta, phi)` accumulator, smoothed peak finding |
+| `run_locus(...)` | locus voting with height-priority claiming |
+| `validate_hough(candidates, truth_event) -> (tracks, matches, metrics)` | candidates → `Track` objects → `EventValidator` |
+
+---
+
+### Post-selection
+
+Module `solvers.postselect` (2.1.0): a solver-agnostic hit-uniqueness filter on the active set — two active segments that claim the same hit in the same role compete; the stronger one wins.
+
+| Function | Description |
+|---|---|
+| `hit_uniqueness_filter(sol, seg_hits, active, mode="greedy", kappa=...)` | modes `greedy` / `strict` / `margin` / `anyrole`; returns the surviving active mask |
+| `uniqueness_frontier(sol, seg_hits, truth, taus)` | `(eff, far)` along a threshold scan after the filter |
 
 ---
 
@@ -1067,6 +1266,32 @@ This ensures globally optimal matching rather than first-come-first-served.
 
 ---
 
+### Segment metrics
+
+Module `analysis.segment_metrics` — the segment-level acceptance layer shared by every study.
+
+| Function | Description |
+|---|---|
+| `compute_epsilon(sigma_res, sigma_scatt, scale=3.0, dz=33.0, theta_min=1.5e-5)` | the closed-form acceptance: `scale` × the RMS 3D kink (Rayleigh); the canonical defaults are pinned by the golden tests (`scale = 1.0` is a known landmine) |
+| `segment_truth_mask(ham) -> bool array` | per-segment truth from the Hamiltonian's cached track ids |
+| `solver_segment_metrics(truth, sol, threshold) -> dict` | `segment_efficiency`, `segment_purity`, `segment_false_rate`, counts |
+| `fast_segment_metrics(event, epsilon)`, `compute_segment_metrics`, `collect_segment_pair_angles`, `pairwise_angle` | segment-count / angle diagnostics |
+
+### Working points
+
+Module `analysis.working_points` — thresholds as API (metrics are a pure function of `(solution, truth, threshold)`).
+
+| Function | Description |
+|---|---|
+| `ABS_THRESHOLD = 0.35`, `threshold_for(gamma=3, delta=1, margin=0.10)` | the γ-aware absolute cut: attractor `delta/(delta+gamma)` + margin (0.35 at γ = 3). A relative `tau * max(sol)` cut is a known bug |
+| `truth_from_event(event)` | truth mask without building `A` |
+| `rescale_to_signal(sol_Q_raw, sol_C, threshold)` | put a unit-norm quantum solution on the classical **signal** scale (norm-matching on the full vector is false-bulk dominated) |
+| `metrics_at(sol, truth, threshold)`, `quantum_metrics(sol_Q_raw, sol_C, truth, threshold)` | metrics at a fixed cut (+ `cos_QC` on the signal support) |
+| `working_point_threshold(sol, truth, target_eff=0.99)` | the **efficiency-first (wp99) threshold**: just below the `(1 − target)` quantile of the true amplitudes, floored at `WP_TAU_FLOOR` |
+| `metrics_at_wp(sol, truth, target_eff=0.99)`, `quantum_metrics_wp(sol_Q_raw, sol_C, truth, target_eff=0.99, signal_threshold=0.35)` | the **headline** per-solver operating point (adds `tau_wp`); other targets via `target_eff` |
+
+> Filtered solvers (1BQF, QSVT) are judged at their **own** efficiency-first working point, never at the classical cut: on a filtered spectrum the fixed cut chops genuine true segments (the "75 % plateau" artefact of the 1BQF).
+
 ### Plotting
 
 #### Core Plotting Functions
@@ -1084,6 +1309,12 @@ This ensures globally optimal matching rather than first-come-first-served.
 | `plot_reco_vs_truth(truth_event, reco_tracks, ...)` | Event, list[Track] | `Figure` | Side-by-side truth vs reco 3D comparison |
 | `save_event_animation(event, filename, fps=30, duration=5.0)` | Event, str, int, float | `None` | Save rotating 3D animation |
 | `set_lhcb_style()` | — | `None` | Apply LHCb publication style to matplotlib |
+
+---
+
+### Run-3 adapter
+
+Module `generation.adapters.run3` (2.1.0): `load_run3_event(path_or_dict, ...)` — an Allen-JSON, duck-typed adapter producing an `Event` from real LHCb Run-3 VELO data, including the left / right half-detector geometry fix. The segment framework, working points and solvers then run unchanged.
 
 ---
 
@@ -1298,7 +1529,10 @@ Reload a saved study directory into a `StudyResult` dataclass.
 | Exception | Raised When | Resolution |
 |-----------|-------------|------------|
 | `ValueError("Not initialised")` | Calling `solve_classicaly()` before `construct_hamiltonian()` | Call `construct_hamiltonian()` first |
-| `ImportError` | Missing optional dependency (e.g. Qiskit for quantum) | Install with `pip install -e ".[quantum]"` |
+| `ImportError` | Accessing `HHLAlgorithm` / `OneBQF` / `QSVT.run_circuit()` without qiskit | Install with `pip install -e ".[quantum]"` (the QSVT solver itself is numpy-only) |
+| `ValueError("spectrum [...] outside polynomial domain [...]")` | A `QSVT(poly=...)` whose domain does not contain the padded spectrum | Widen the domain (≥ 5 % of the span + 0.2 is the campaign rule) or pass `spectrum_pad=0.0` with exact `spectral_bounds` |
+| `ValueError("q must have definite parity")` | `find_phase_factors` on a mixed-parity series | Split with `parity_split` first (or use `QSVT.solve_phase_sequence`) |
+| `RuntimeError("connected component of size ... > max_comp")` | `mode_system` / `solve_eigh` on an event with a huge tangle | Use `solve_statevector` |
 | `AssertionError` | Invalid primary vertex count | Ensure `len(vertices) == events` |
 
 ---

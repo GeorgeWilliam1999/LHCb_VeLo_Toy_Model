@@ -20,9 +20,15 @@ the LHCb experiment at CERN's Large Hadron Collider. This toy model simulates:
 
 - **Particle collision events** with configurable detector geometry
 - **Multiple scattering effects** as particles traverse detector material
-- **Track reconstruction** using Hamiltonian-based optimization
-- **Quantum algorithms** (HHL and OneBitHHL) for solving the track-finding linear system
-- **Validation metrics** following LHCb conventions
+- **Track reconstruction** using Hamiltonian-based optimization, with the
+  Denby–Peterson fork and occupancy terms as Hamiltonian subclasses
+- **Quantum solver lanes** for the track-finding linear system: HHL, the
+  one-bit quantum filter (1BQF, `OneBQF`) and the **QSVT polynomial spectral
+  filter** ("the comb") with its response families and circuit realisations
+- **Hough track finding** (point and locus voting) as a classical reference lane
+- **Post-selection** (hit uniqueness) and **working-point policy** (the
+  efficiency-first per-solver threshold, the matched-efficiency frontier)
+- **Validation metrics** following LHCb conventions, at track and segment level
 
 ## Installation
 
@@ -155,7 +161,35 @@ print(result.A.shape)         # Hamiltonian matrix
 print(result.metrics)         # Validation metrics
 ```
 
-### 6. New in 2.1.0 — the four solver lanes and working points
+### 6. The QSVT polynomial filter (the comb) — numpy-only, no qiskit needed
+
+```python
+from lhcb_velo_toy import QSVT
+from lhcb_velo_toy.solvers.quantum import solve_one_bit_matrixfree, spectral_bounds
+from lhcb_velo_toy.analysis import truth_from_event, quantum_metrics_wp
+
+# "the QSVT" of the papers: the degree-40 line comb on the base Hamiltonian (the default)
+q = QSVT(A, b, degree=40, spectral_bounds=spectral_bounds(A))      # == QSVT.comb(A, b)
+sol_q, p_success = q.solve_statevector()      # exact, matrix-free, millions of segments
+sol_e, _ = q.solve_eigh()                     # same numbers from one per-component eigh
+sol_c, _ = q.run_circuit(streaming=True)      # the explicit LCU circuit, gate by gate
+print(q.resource_table())                     # LCU / phase sequence / QETU widths + calls
+
+# other response families by name
+QSVT(A, b, degree=40, filter_design="band")     # the retired first design
+QSVT(A, b, degree=8,  filter_design="minimax")
+QSVT(A, b, degree=60, filter_design="cosine")   # the one-bit cosine as a series
+
+# the phase-sequence realisation (QSVT proper), dense, small systems
+sol_p, p_phase = QSVT.comb(A, b, degree=12).solve_phase_sequence()
+
+# judge every solver at ITS OWN efficiency-first working point, never at the classical cut
+truth = truth_from_event(generator)
+sol_1b, p_1b, _ = solve_one_bit_matrixfree(A)
+print(quantum_metrics_wp(sol_q, solution, truth))        # wp99 headline point
+```
+
+### 7. The other 2.1.0 lanes — Hamiltonian subclasses, 1BQF at high T, Hough, post-selection
 
 ```python
 from lhcb_velo_toy import ForkHamiltonian, OccupancyHamiltonian
@@ -185,8 +219,31 @@ tau = threshold_for(gamma=3.0, delta=1.0)          # 0.35
 headline = metrics_at_wp(sol_q, truth_from_event(generator))
 ```
 
-See `CHANGELOG.md` for the full 2.1.0 inventory and the provenance of each
-promoted component.
+See `CHANGELOG.md` for the full 2.1.0 / 2.2.0 inventory and the provenance of
+each promoted component, and `docs/API_REFERENCE.md` for every signature.
+
+## Solver lanes
+
+| lane | what it is | entry points | needs qiskit? |
+|---|---|---|---|
+| **classical** | direct / conjugate-gradient inversion of `A x = b` | `Hamiltonian.solve_classicaly`, `solvers.classical` | no |
+| **HHL** | full HHL, multi-qubit phase estimation (reference circuit) | `solvers.quantum.HHLAlgorithm` | yes |
+| **1BQF** | one-bit quantum filter, response `cos(λt/2)` (reference circuit + matrix-free engine; uncompute order fixed 2026-09-07) | `solvers.quantum.OneBQF` (`OneBitHHL`), `solve_one_bit_matrixfree` | circuit yes, engine no |
+| **QSVT** | polynomial spectral filter `p(A)`; "the comb" = degree-40 line comb; families band / comb / minimax / cosine / normalized / trigonometric; realisations LCU / phase sequence / QETU; backends statevector / eigh / circuit / phase sequence; coefficient refit | `QSVT`, `solvers.quantum.{responses, qsp_phases, spectral_filter, refit}` | only `run_circuit()` |
+| **Hough** | direct point / locus voting, validated by the same `EventValidator` | `solvers.hough` | no |
+| **post-selection** | hit-uniqueness filter on any solver's active set | `solvers.postselect` | no |
+
+Response families of the QSVT lane (all `numpy.polynomial.Chebyshev` series unless noted):
+
+| `filter_design` / function | response | status |
+|---|---|---|
+| `"comb"` — `design_line_comb_inverse` | narrow `1/λ` passes at the four true-track lines `s − 2cos(kπ/5)` | **the QSVT of the papers** (degree 40, half-width 0.18); **the constructor default** |
+| `"band"` — `design_band_limited_inverse` | `1/λ` on a contiguous band with notches | retired first design, kept for comparison |
+| `"minimax"` — `design_minimax_comb` | the comb fitted in the Chebyshev norm (LP) | half the degree for the same floor |
+| `"cosine"` — `design_one_bit_cosine` | the 1BQF response `|cos(πλ/2s)|` as a degree-60 series | 1BQF and comb through one evaluator |
+| `design_normalized_comb` + `solve_normalized_comb` | ±½ comb on the degree-normalised coupling | the α = 1 block-encoding study |
+| `design_trig_comb` (cosine series, not Chebyshev) | the comb over the 1BQF's own primitive `exp(−iAt)` (QETU) | response only; angles not synthesised |
+| `refit.refit_coefficients` / `refit_binned` | coefficients refit to a measured event (supervised) | diagnostic; under audit |
 
 ## Package Structure
 
@@ -202,14 +259,20 @@ LHCb_VeLo_Toy_Model/
 │       │   ├── generators/     #   StateEventGenerator
 │       │   ├── geometry/       #   PlaneGeometry, RectangularVoidGeometry
 │       │   └── entities/       #   Hit, Track, Module, Event, PrimaryVertex
+│       ├── generation/adapters # Run-3 Allen-JSON event adapter
 │       ├── solvers/            # Track reconstruction
-│       │   ├── hamiltonians/   #   Hamiltonian ABC, Simple, Fast
+│       │   ├── hamiltonians/   #   Hamiltonian ABC, Simple, Fast, Extended/Fork/Occupancy
 │       │   ├── classical/      #   solve_direct, solve_conjugate_gradient
-│       │   ├── quantum/        #   HHL, OneBitHHL (1-Bit HHL)
+│       │   ├── quantum/        #   HHL, OneBQF (1BQF) + matrixfree engine,
+│       │   │                   #   QSVT + responses / qsp_phases / spectral_filter / refit
+│       │   ├── hough/          #   point / locus voting + EventValidator adapter
+│       │   ├── postselect.py   #   hit-uniqueness post-selection
 │       │   └── reconstruction/ #   track_finder, get_tracks
 │       ├── analysis/           # Validation & plots
 │       │   ├── validation/     #   EventValidator, Match
-│       │   └── plotting/       #   event_display, performance
+│       │   ├── plotting/       #   event_display, performance
+│       │   ├── segment_metrics.py  # epsilon formula, segment truth mask, segment metrics
+│       │   └── working_points.py   # thresholds, wp99, matched-efficiency frontier
 │       └── persistence/        # Save / load utilities
 │           ├── pipeline.py     #   save_pipeline, load_pipeline, save/load batch
 │           └── study.py        #   save_study, load_study (parametric sweeps)
@@ -219,6 +282,8 @@ LHCb_VeLo_Toy_Model/
 │   ├── HHL.py                  #   Standalone HHL script
 │   └── OneBQF.py               #   Standalone 1-bit HHL script
 ├── docs/                       # Documentation & presentation
+├── notebooks/                  # End-to-end examples (classical, HHL, 1BQF, QSVT)
+├── tests/                      # pytest suite (golden baselines, lanes, QSVT models)
 └── test_pipeline.py            # Integration test
 ```
 
@@ -238,10 +303,19 @@ LHCb_VeLo_Toy_Model/
 | Module | Description |
 |--------|-------------|
 | `hamiltonians.simple` | Reference Hamiltonian-based track finding |
-| `hamiltonians.fast` | Optimised vectorised implementation |
+| `hamiltonians.fast` | Optimised vectorised implementation (exact O(T²) cKDTree build; the canonical A-builder) |
+| `hamiltonians.extended` | `ExtendedHamiltonian`, `ForkHamiltonian` (ε-windowed Denby–Peterson fork), `OccupancyHamiltonian` (per-hit occupancy, α = 0.05 verified point) |
 | `classical.solvers` | Direct (LU) and conjugate-gradient solvers |
-| `quantum.hhl` | Full HHL algorithm for linear systems |
-| `quantum.one_bit_hhl` | OneBitHHL — 1-bit HHL with Suzuki-Trotter decomposition |
+| `quantum.HHL` | Full HHL algorithm (reference circuit; `quantum.hhl` is a shim) |
+| `quantum.OneBQF` | The one-bit quantum filter, 1BQF (reference circuit; `quantum.one_bit_hhl` shim exports it as `OneBitHHL`) |
+| `quantum.matrixfree` | `solve_one_bit_matrixfree` — the 1BQF without Aer, T = 1000 in seconds |
+| `quantum.QSVT` | `QSVT` solver (LCU of Chebyshev walk powers) + `design_line_comb_inverse` / `design_band_limited_inverse` / `design_minimax_comb` |
+| `quantum.responses` | normalized comb, one-bit cosine series, trigonometric (QETU) comb, `p4_lines` |
+| `quantum.qsp_phases` | phase factors + the phase-sequence realisation (QSVT proper) |
+| `quantum.spectral_filter` | per-component eigendecomposition evaluator (`mode_system`, `apply_response`, `spectral_bounds`, …) |
+| `quantum.refit` | Chebyshev moments and the coefficient / binned refit to a measured event |
+| `hough` | `hit_directions`, `run_point`, `run_locus`, `validate_hough` |
+| `postselect` | `hit_uniqueness_filter`, `uniqueness_frontier` |
 | `reconstruction.track_finder` | Extract tracks from solution vectors |
 
 ### Analysis (`lhcb_velo_toy.analysis`)
@@ -249,6 +323,8 @@ LHCb_VeLo_Toy_Model/
 | Module | Description |
 |--------|-------------|
 | `validation.validator` | LHCb-style track matching and metrics |
+| `segment_metrics` | `compute_epsilon` (the closed-form acceptance), `segment_truth_mask`, `solver_segment_metrics` |
+| `working_points` | `threshold_for` (γ-aware cut), `working_point_threshold` / `metrics_at_wp` / `quantum_metrics_wp` (efficiency-first wp99), `rescale_to_signal` |
 | `plotting.event_display` | 3D event visualisation with detector planes |
 | `plotting.performance` | Efficiency, ghost-rate, and purity plots |
 
@@ -337,11 +413,24 @@ global matching (not first-come-first-served).
 | `SimpleHamiltonian` | Reference implementation |
 | `SimpleHamiltonianFast` | Vectorised COO construction, auto solver selection |
 
-### Quantum (HHL) Limitations
+### Quantum lanes
 
-- Limited to small systems (< 16 segments for practical simulation)
-- Exponential circuit depth with system size
-- Useful for proof-of-concept and algorithm research
+| Solver | Exact simulation reach | Notes |
+|---|---|---|
+| `HHLAlgorithm` (qiskit) | < 16 segments | reference circuit; proof of concept |
+| `OneBQF` (qiskit / Aer) | ~T = 100 | Aer's circuit assembly is the memory wall |
+| `solve_one_bit_matrixfree` | T = 1000 in ~12 s, 1.5 GB | bit-identical to the Aer path |
+| `QSVT.solve_statevector` / `solve_eigh` | T = 1000 (4M segments) in seconds | d sparse matvecs; success probability ∝ 1/T |
+| `QSVT.run_circuit` | T ≈ 40 (20 qubits) | dense walk powers; validates the matrix-free backend |
+| `QSVT.solve_phase_sequence` | a few thousand segments | dense; validates the QSVT-proper circuit |
+
+**Working points.** Filtered solvers (1BQF, QSVT) must be judged at their own
+efficiency-first threshold (`quantum_metrics_wp`), never at the classical fixed
+cut 0.35: the cut chops genuine true segments on a filtered spectrum.
+
+**Qiskit.** The reference circuits track the current qiskit 2.x API (`QFTGate`,
+explicit controlled gates, `AerSimulator(method="statevector")`); the test
+suite turns any deprecation warning attributed to the package into a failure.
 
 ## Examples
 
@@ -350,6 +439,7 @@ global matching (not first-come-first-served).
 | `notebooks/classical_end_to_end.ipynb` | Full classical pipeline with scalability and noise scans |
 | `notebooks/quantum_hhl_end_to_end.ipynb` | HHL quantum solver with time-qubit sweep |
 | `notebooks/quantum_1bqf_end_to_end.ipynb` | OneBitHHL (1-Bit HHL) solver with shot study and circuit comparison |
+| `notebooks/quantum_qsvt_end_to_end.ipynb` | The QSVT comb: responses, three backends, three realisations, efficiency-first working points, scaling with T, the other response families, the coefficient refit and transfer |
 | `demo_workflow.ipynb` | Quick-start demo: generate → solve → validate → visualise |
 | `test_pipeline.py` | Automated integration test of the full pipeline |
 
@@ -372,6 +462,13 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 1. LHCb Collaboration, "LHCb VELO Technical Design Report", CERN-LHCC-2001-011
 2. Harrow, A. W., Hassidim, A., & Lloyd, S. (2009). "Quantum algorithm for linear systems of equations", Physical Review Letters, 103(15), 150502.
 3. Denby, B. (1988). "Neural networks and cellular automata in experimental high energy physics", Computer Physics Communications, 49(3), 429-448.
+4. Peterson, C. (1989). "Track finding with neural networks", Nucl. Instrum. Meth. A 279, 537.
+5. Nicotra, D. et al. (2023). "A quantum algorithm for track reconstruction in the LHCb vertex detector", JINST 18 P11028.
+6. Chiotopoulos, X., Nicotra, D., Scriven, G. et al. (2026). "TrackHHL: the one-bit quantum filter for track finding", Communications Physics (arXiv:2601.07766).
+7. Gilyén, A., Su, Y., Low, G. H., Wiebe, N. (2019). "Quantum singular value transformation and beyond", STOC 2019.
+8. Low, G. H., Chuang, I. L. (2019). "Hamiltonian simulation by qubitization", Quantum 3, 163.
+9. Dong, Y., Meng, X., Whaley, K. B., Lin, L. (2021). "Efficient phase-factor evaluation in quantum signal processing", Phys. Rev. A 103, 042419.
+10. Dong, Y., Lin, L., Tong, Y. (2022). "Ground-state preparation and energy estimation on early fault-tolerant quantum computers via quantum eigenvalue transformation of unitary matrices", PRX Quantum 3, 040305.
 
 ## Acknowledgments
 

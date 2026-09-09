@@ -22,7 +22,7 @@ This document details all dependencies, input/output specifications, and require
 | Package | Version | Purpose | Used By |
 |---------|---------|---------|---------|
 | `numpy` | ≥1.20.0 | Numerical arrays, linear algebra | All modules |
-| `scipy` | ≥1.7.0 | Sparse matrices, solvers, special functions | Hamiltonians, validation |
+| `scipy` | ≥1.7.0 | Sparse matrices, solvers, special functions, `linprog` (minimax comb), `eigsh` (spectral bounds), `minimize` (phase factors) | Hamiltonians, QSVT, spectral filter, refit |
 | `matplotlib` | ≥3.5.0 | Visualization, 3D plotting | Event plotting, analysis |
 
 ### Analysis Dependencies
@@ -35,9 +35,11 @@ This document details all dependencies, input/output specifications, and require
 
 | Package | Version | Purpose | Used By |
 |---------|---------|---------|---------|
-| `qiskit` | ≥1.0.0 | Quantum circuit construction | HHL, OneBQF |
-| `qiskit-aer` | ≥0.14.0 | Quantum simulation | HHL, OneBQF |
-| `qiskit-ibm-runtime` | ≥0.20.0 | IBM backend access, noise models | OneBQF |
+| `qiskit` | ≥2.1 | Quantum circuit construction (`QFTGate`, `StatePreparation`, `UnitaryGate`, `DiagonalGate`) | HHL, OneBQF, `QSVT.build_circuit` / `run_circuit(streaming=False)` |
+| `qiskit-aer` | ≥0.17 | Quantum simulation (`AerSimulator`, statevector method, noise models) | HHL, OneBQF |
+| `qiskit-ibm-runtime` | ≥0.40 | IBM backend access (noise-model source), imported only inside `OneBQF.run(use_noise_model=True)` | OneBQF |
+
+> **Lazy (2.2.0).** `lhcb_velo_toy.solvers.quantum` only imports qiskit when `HHLAlgorithm`, `OneBQF` / `OneBitHHL` are first accessed. `QSVT` (statevector / eigh / phase-sequence backends), `solve_one_bit_matrixfree`, `spectral_filter`, `responses`, `qsp_phases` and `refit` are numpy/scipy-only and work in a base install.
 
 ### Development Dependencies
 
@@ -57,7 +59,7 @@ This document details all dependencies, input/output specifications, and require
 ```toml
 [project]
 name = "lhcb-velo-toy"
-version = "2.0.0"
+version = "2.2.0"
 requires-python = ">=3.9"
 dependencies = [
     "numpy>=1.20",
@@ -67,9 +69,9 @@ dependencies = [
 
 [project.optional-dependencies]
 quantum = [
-    "qiskit>=1.0",
-    "qiskit-aer>=0.14",
-    "qiskit-ibm-runtime>=0.20",
+    "qiskit>=2.1",
+    "qiskit-aer>=0.17",
+    "qiskit-ibm-runtime>=0.40",
 ]
 
 analysis = [
@@ -118,9 +120,21 @@ pip install -e ".[all]"
 | `generation.generators` | ✓ | | | | | | |
 | `solvers.hamiltonians` | ✓ | ✓ | | | | | |
 | `solvers.classical` | ✓ | ✓ | | | | | |
-| `solvers.quantum.hhl` | ✓ | | | | ✓ | ✓ | |
-| `solvers.quantum.one_bit_hhl` | ✓ | | | | ✓ | ✓ | ✓ |
+| `solvers.hamiltonians.extended` | ✓ | ✓ | | | | | |
+| `solvers.quantum.HHL` (`hhl` shim) | ✓ | ✓ | ✓ | | ✓ | ✓ | |
+| `solvers.quantum.OneBQF` (`one_bit_hhl` shim) | ✓ | ✓ | | | ✓ | ✓ | ✓ |
+| `solvers.quantum.matrixfree` | ✓ | ✓ | | | | | |
+| `solvers.quantum.QSVT` | ✓ | ✓ | | | (circuit only) | | |
+| `solvers.quantum.spectral_filter` | ✓ | ✓ | | | | | |
+| `solvers.quantum.responses` | ✓ | ✓ | | | | | |
+| `solvers.quantum.qsp_phases` | ✓ | ✓ | | | | | |
+| `solvers.quantum.refit` | ✓ | ✓ | | | | | |
+| `solvers.hough` | ✓ | | | | | | |
+| `solvers.postselect` | ✓ | | | | | | |
 | `solvers.reconstruction` | ✓ | | | | | | |
+| `analysis.segment_metrics` | ✓ | ✓ | | | | | |
+| `analysis.working_points` | ✓ | | | | | | |
+| `generation.adapters.run3` | ✓ | | | | | | |
 | `analysis.validation` | ✓ | | | ✓ | | | |
 | `analysis.plotting` | ✓ | | ✓ | ✓ | | | |
 | `persistence.pipeline` | ✓ | ✓ | | | | | |
@@ -162,20 +176,60 @@ solvers.classical.solvers
     ├── numpy
     └── scipy.sparse.linalg (spsolve, cg)
 
-solvers.quantum.hhl
-    ├── numpy
-    ├── qiskit (QuantumCircuit, QuantumRegister, ClassicalRegister)
-    ├── qiskit.circuit.library (UnitaryGate)
-    ├── qiskit.quantum_info (Statevector)
+solvers.hamiltonians.extended
+    ├── numpy, scipy.sparse
+    └── solvers.hamiltonians.fast (SimpleHamiltonianFast)
+
+solvers.quantum.HHL            [lazy from solvers.quantum; hhl.py is a shim]
+    ├── numpy, matplotlib, scipy.linalg (expm)
+    ├── qiskit (QuantumCircuit, QuantumRegister, ClassicalRegister, transpile)
+    ├── qiskit.circuit.library (QFT, RYGate, UnitaryGate)
     └── qiskit_aer (AerSimulator)
 
-solvers.quantum.one_bit_hhl
-    ├── numpy
-    ├── qiskit (QuantumCircuit, QuantumRegister, ClassicalRegister)
-    ├── qiskit.circuit.library (UnitaryGate)
-    ├── qiskit_aer (AerSimulator)
-    ├── qiskit_aer.noise (NoiseModel)
+solvers.quantum.OneBQF         [lazy from solvers.quantum; one_bit_hhl.py is a shim]
+    ├── numpy, scipy.sparse
+    ├── qiskit (QuantumCircuit, QuantumRegister, ClassicalRegister, transpile)
+    ├── qiskit.circuit.library (QFT, RXGate)
+    ├── qiskit_aer (AerSimulator), qiskit_aer.noise (NoiseModel)
     └── qiskit_ibm_runtime (QiskitRuntimeService)
+
+solvers.quantum.matrixfree
+    └── numpy, scipy.sparse
+
+solvers.quantum.QSVT
+    ├── numpy (numpy.polynomial.chebyshev), scipy.sparse, scipy.sparse.linalg (eigsh)
+    ├── scipy.optimize (linprog)          — design_minimax_comb only
+    ├── solvers.quantum.spectral_filter   — solve_eigh
+    ├── solvers.quantum.responses         — filter_design="cosine"
+    ├── solvers.quantum.qsp_phases        — solve_phase_sequence
+    └── qiskit (QuantumCircuit, StatePreparation, DiagonalGate, UnitaryGate),
+        qiskit.quantum_info (Statevector) — build_circuit / run_circuit(streaming=False) ONLY
+
+solvers.quantum.spectral_filter
+    └── numpy, scipy.sparse, scipy.linalg (eigh), scipy.sparse.csgraph, scipy.sparse.linalg (eigsh)
+
+solvers.quantum.responses
+    └── numpy (numpy.polynomial.chebyshev), scipy.sparse
+
+solvers.quantum.qsp_phases
+    └── numpy, scipy.sparse, scipy.optimize (minimize)
+
+solvers.quantum.refit
+    └── numpy, scipy.sparse
+
+solvers.hough
+    ├── numpy
+    └── analysis.validation (EventValidator), generation.entities (Track)
+
+solvers.postselect
+    └── numpy, scipy.sparse
+
+analysis.segment_metrics
+    └── numpy, scipy
+
+analysis.working_points
+    ├── numpy
+    └── analysis.segment_metrics
 
 solvers.reconstruction.track_finder
     ├── numpy
@@ -361,14 +415,16 @@ persistence.study
 | lhcb-velo-toy | qiskit | qiskit-aer | qiskit-ibm-runtime | Notes |
 |---------------|--------|------------|-------------------|-------|
 | 1.x | 0.45 | 0.12 | 0.15 | Legacy |
-| 2.0 | ≥1.0 | ≥0.14 | ≥0.20 | Current |
+| 2.0 | ≥1.0 | ≥0.14 | ≥0.20 | Modular package |
+| 2.1 / 2.2 | ≥2.1 (tested 2.4.1) | ≥0.17 (tested 0.17.2) | ≥0.40 (tested 0.47.0) | Current; qiskit optional for QSVT / matrix-free 1BQF. Code uses `QFTGate`, `Gate.control(..., annotated=False)`, `qiskit.transpiler.generate_preset_pass_manager`; the pytest config fails on any deprecation attributed to `lhcb_velo_toy` |
 
 ### NumPy/SciPy Versions
 
 | lhcb-velo-toy | numpy | scipy | Notes |
 |---------------|-------|-------|-------|
 | 1.x | ≥1.19 | ≥1.6 | Legacy |
-| 2.0 | ≥1.20 | ≥1.7 | Current |
+| 2.0 | ≥1.20 | ≥1.7 | Modular package |
+| 2.1 / 2.2 | ≥1.20 | ≥1.7 (`linprog(method="highs")` needs ≥1.6; `minres(rtol=)` ≥1.12 in the studies only) | Current |
 
 ---
 

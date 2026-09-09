@@ -30,13 +30,16 @@ graph TB
     end
 
     subgraph solvers["Solvers Module"]
-        HAM[Hamiltonians]
+        HAM["Hamiltonians (+ fork / occupancy)"]
         CLS[Classical Solvers]
-        QUA[Quantum Algorithms]
+        QUA["Quantum: HHL, 1BQF, QSVT"]
+        HOU[Hough lane]
+        PSL[Post-selection]
     end
 
     subgraph analysis["Analysis Module"]
         VAL[Validators]
+        WPS["Working points / segment metrics"]
         PLT[Plotting]
     end
 
@@ -48,10 +51,16 @@ graph TB
     GEO --> EVG
     DAT --> EVG
     EVG --> HAM
+    EVG --> HOU
     HAM --> CLS
     HAM --> QUA
+    CLS --> PSL
+    QUA --> PSL
     CLS --> VAL
     QUA --> VAL
+    HOU --> VAL
+    CLS --> WPS
+    QUA --> WPS
     VAL --> PLT
 
     EVG --> PIP
@@ -81,14 +90,15 @@ flowchart LR
         HAM[SimpleHamiltonian]
         MAT["A matrix + b vector"]
         SOL{Solver}
-        CG[Conjugate Gradient]
+        CG[Conjugate Gradient / direct]
         HHL[HHL Algorithm]
-        ONEBQF[1-Bit Filter]
+        ONEBQF["1-Bit Filter (circuit or matrix-free)"]
+        QSVT["QSVT comb p(A) b"]
         VEC[solution vector]
     end
 
     subgraph Reconstruction
-        FILT[Threshold Filter]
+        FILT["Threshold (per-solver, efficiency-first)"]
         GRP[Segment Grouping]
         TRK[Reconstructed Tracks]
     end
@@ -111,9 +121,11 @@ flowchart LR
     SOL --> CG
     SOL --> HHL
     SOL --> ONEBQF
+    SOL --> QSVT
     CG --> VEC
     HHL --> VEC
     ONEBQF --> VEC
+    QSVT --> VEC
 
     VEC --> FILT
     FILT --> GRP
@@ -293,8 +305,13 @@ graph TD
         HAM[hamiltonians/base.py]
         SH[hamiltonians/simple.py]
         SHF[hamiltonians/fast.py]
-        HHL[quantum/hhl.py]
-        OBQ[quantum/one_bit_hhl.py]
+        HHL[quantum/HHL.py]
+        OBQ[quantum/OneBQF.py]
+        MFR[quantum/matrixfree.py]
+        QSV["quantum/QSVT.py + responses / qsp_phases / spectral_filter / refit"]
+        EXT[hamiltonians/extended.py]
+        HGH[hough/]
+        PST[postselect.py]
         CLS2[classical/solvers.py]
         REC[reconstruction/]
     end
@@ -302,6 +319,8 @@ graph TD
     subgraph analysis
         TV[validation/validator.py]
         LTP[plotting/]
+        WP[working_points.py]
+        SM[segment_metrics.py]
     end
 
     %% External dependencies
@@ -316,7 +335,16 @@ graph TD
     NP --> LTP
     NP --> HHL
     NP --> OBQ
+    NP --> MFR
+    NP --> QSV
+    NP --> EXT
+    NP --> HGH
+    NP --> PST
     NP --> REC
+    SP --> QSV
+    SP --> EXT
+    SP --> PST
+    SHF --> EXT
 
     SP --> SH
     SP --> SHF
@@ -328,11 +356,12 @@ graph TD
     PD --> TV
     PD --> LTP
 
-    QK --> HHL
-    QK --> OBQ
-    AER --> HHL
-    AER --> OBQ
-    IBM --> OBQ
+    QK -.->|lazy| HHL
+    QK -.->|lazy| OBQ
+    QK -.->|run_circuit only| QSV
+    AER -.->|lazy| HHL
+    AER -.->|lazy| OBQ
+    IBM -.->|lazy| OBQ
 
     %% Internal dependencies
     ENT --> GEN2
@@ -345,6 +374,9 @@ graph TD
     ENT --> TV
     SH --> TV
     TV --> LTP
+    TV --> HGH
+    SM --> WP
+    WP --> QSV
 
     %% Persistence module
     PER_PIP[persistence/pipeline.py]
@@ -549,7 +581,7 @@ flowchart TD
     EXTRACT --> SOL[Solution vector]
 ```
 
-### 1-Bit Quantum Filter (OneBQF)
+### 1-Bit Quantum Filter (OneBQF; `solve_one_bit_matrixfree` reproduces this circuit without Aer)
 
 ```mermaid
 flowchart TD
@@ -588,6 +620,68 @@ flowchart TD
     MEAS --> POST
     POST --> SOL[Solution vector]
 ```
+
+---
+
+### QSVT polynomial filter (the comb)
+
+```mermaid
+flowchart TD
+    subgraph Input
+        A[Matrix A]
+        B[Vector b]
+    end
+
+    subgraph Design["Response design (classical, milliseconds)"]
+        SB["spectral bounds: s ± rho(C)"]
+        TGT["target f(λ): passes at the true-track lines s − 2cos(kπ/5), ~0 elsewhere"]
+        FIT["Chebyshev fit of degree d (least squares / minimax LP)"]
+        BND["rescale so |p| ≤ 1 (realisability)"]
+        SB --> TGT --> FIT --> BND
+    end
+
+    subgraph Realisation["Realisation (the circuit)"]
+        X["X = (2A − (lo+hi)I)/(hi−lo)"]
+        U["dilation block encoding U = [[X, √(I−X²)], [√(I−X²), −X]]"]
+        W["walk W = (Z⊗I)U: ⟨0|W^k|0⟩ = T_k(X)"]
+        LCU["LCU: PREP √(|c_k|/‖c‖₁) · SELECT controlled-W^(2^j) · PREP†"]
+        PH["phase sequence: d × (U · e^{iφ_k Z}), one signal qubit"]
+        QE["QETU: K controlled e^{∓iAt} + rotations"]
+        X --> U --> W --> LCU
+        U --> PH
+        A --> QE
+    end
+
+    subgraph Evaluate["Exact evaluation"]
+        SV["solve_statevector: Chebyshev recursion, sparse matvecs"]
+        EI["solve_eigh: per-component eigendecomposition"]
+        RC["run_circuit: the explicit circuit (qiskit / streamed)"]
+        PS["solve_phase_sequence: dense dilation circuit"]
+    end
+
+    subgraph Readout
+        POST["post-select LCU = 0, ancilla = 0"]
+        AMP["|p(X) b| / ‖·‖, success = ‖p(X)b‖²/‖c‖₁²"]
+        WP["per-solver efficiency-first threshold (wp99)"]
+        POST --> AMP --> WP
+    end
+
+    A --> SB
+    B --> X
+    BND --> LCU
+    BND --> PH
+    LCU --> SV
+    LCU --> EI
+    LCU --> RC
+    PH --> PS
+    SV --> POST
+    EI --> POST
+    RC --> POST
+    PS --> POST
+    WP --> SOL[active segments → tracks]
+```
+
+**Reading the diagram.** The 1BQF is the `d = 1` member of the same family on a different primitive (`cos(λt/2)` of the evolution `e^{−iAt}` instead of `T_1(X)` of the walk). Only `run_circuit(streaming=False)` needs qiskit; every other path is numpy/scipy. The design step is where the physics lives: the comb passes only the geometry-pinned true-track lines, which is what keeps the false rate at ~0 at high density where the band design fails.
 
 ---
 

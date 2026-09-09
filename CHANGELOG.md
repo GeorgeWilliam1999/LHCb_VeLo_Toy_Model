@@ -1,5 +1,114 @@
 # Changelog
 
+## 2.2.0 — 2026-09-07 (centralise-2.1, unreleased)
+
+The QSVT lane becomes a complete, discoverable solver family: every response
+family, realisation and evaluator used by the QSVT studies and the QSVT VeLo
+paper is now in the package, importable without qiskit, tested against the
+originating study code, and documented. Additive; the golden baselines are
+unchanged.
+
+### Changed (deliberate physics decisions, George 2026-09-07)
+- **QSVT default design is the comb.** `QSVT(A, b)` now builds the degree-40
+  line comb — the QSVT of the papers — instead of the retired band design.
+  The band remains available as `filter_design="band"`; the golden baseline
+  pins both. Pipeline callers always passed the polynomial explicitly, so no
+  stored result changes.
+- **1BQF uncompute fixed.** `OneBQF._apply_direct_controlled_u(inverse=True)`
+  and `solve_one_bit_matrixfree` now apply the inverse pair rotations in
+  reverse order (the exact inverse of the product). The readout no longer
+  depends on the segment labelling on multi-pair clusters (new test:
+  permutation invariance). The 6,008 stored 1BQF solutions in the qtrk store
+  and the paper's figures 10 and 12 predate the fix (Notion to-do to re-run).
+- **Qiskit 2.x.** `QFT` → `QFTGate`, controlled gates built with
+  `annotated=False`, `CircuitInstruction` attribute access, HHL statevector
+  path on `AerSimulator(method="statevector")`, preset pass manager from
+  `qiskit.transpiler`; `qiskit-ibm-runtime` imported only when a noise model
+  is requested. Extras now require `qiskit>=2.1`, `qiskit-aer>=0.17`,
+  `qiskit-ibm-runtime>=0.40`. The pytest configuration turns any deprecation
+  warning attributed to `lhcb_velo_toy` into a failure.
+
+### Fixed
+- **`OneBQF.get_success_probability()` restored**: the API reference documented
+  it and `notebooks/quantum_1bqf_end_to_end.ipynb` called it, but the method did
+  not exist on the class — the example could not run to completion. It returns
+  P(ancilla = 1) from the sampled counts (the shot-free exact value is the
+  second return of `get_solution_from_statevector`).
+- **Example notebooks re-executed** against this release, so every committed
+  output matches the current code: `demo_workflow.ipynb` and
+  `notebooks/classical_end_to_end.ipynb` (the `SimpleHamiltonian` threshold fix),
+  `notebooks/quantum_1bqf_end_to_end.ipynb` (the uncompute fix) and
+  `notebooks/quantum_hhl_end_to_end.ipynb`.
+- **`SimpleHamiltonian` hard threshold** (reference builder): the step
+  compatibility compared `1 - cos(angle)` with `epsilon` — an effective
+  acceptance of `sqrt(2 epsilon)` (141 mrad at epsilon = 0.01) — and so
+  coupled segment pairs far outside the window. It now tests
+  `cos(angle) > cos(epsilon)` like `SimpleHamiltonianFast`; the two builders
+  agree entry for entry (new test). Results produced with `SimpleHamiltonian`
+  (the README quick start, `demo_workflow.ipynb`, `test_pipeline.py`) change;
+  every study result was produced with the fast builder and is unaffected.
+- **Plotting**: `get_cmap` (removed in matplotlib 3.11) replaced by
+  `matplotlib.colormaps.get_cmap`.
+
+### Added
+- **QSVT design selector** — `QSVT(A, b, degree, filter_design=...)` with
+  `"comb"` (default, **the QSVT of the papers**: the degree-40 line comb),
+  `"band"` (the retired first design), `"minimax"`, `"cosine"`;
+  `QSVT.comb(A, b)` shorthand; the design centre `s = gamma + delta` is now
+  read off a constant diagonal (a gamma = 1 Hamiltonian gets its own lines;
+  explicit `s=` overrides).
+- **Response families** — `solvers/quantum/responses.py`:
+  `design_normalized_comb` / `normalized_coupling` / `solve_normalized_comb`
+  (the +-1/2 comb on the degree-normalised coupling, Block-Encoding III),
+  `one_bit_response` / `design_one_bit_cosine` (the one-bit filter's exact
+  cosine response as a degree-60 series, the `onebqf_cos` family),
+  `design_trig_comb` / `TrigResponse` (the QETU cosine series over
+  `exp(-iAt)`), `p4_lines`. From `QSVT/Efficiency_Frontier/*.py` and
+  `QSVT/Paper_planning/section4_qsvt/02_resource_model.py`.
+- **Phase-sequence realisation (QSVT proper)** — `solvers/quantum/qsp_phases.py`:
+  `parity_split`, `find_phase_factors` (symmetric phase factors, Dong et al.
+  2021, with the wx -> reflection convention conversion), `qsp_signal`,
+  `apply_phase_sequence` (dense dilation circuit), `phase_sequence_solve`;
+  `QSVT.solve_phase_sequence()` as a fourth backend. From
+  `QSVT/Paper_planning/section4_qsvt/01_phase_factors.py` + `01b_convention_check.py`.
+- **Resources by realisation** — `QSVT.resources(realisation="lcu"|"phase"|"qetu")`
+  and `QSVT.resource_table()` (ancillas, calls per shot, the LCU one-norm
+  penalty `(||c||_1 / max|p|)^2`), the paper's table of realisations.
+- **Coefficient refit** — `solvers/quantum/refit.py`: `chebyshev_moments`,
+  `refit_coefficients` (`fitted_moment`), `refit_binned` (`fitted_ridge`),
+  `RefitResult` (with a QSVT-realisable `.poly` for the transfer test). A
+  supervised diagnostic, flagged as under audit (2026-09-03 catch-up). From
+  `QSVT/Efficiency_Frontier/01-03*.py`, `QSVT/Codesign/04,06*.py`.
+- **Lazy qiskit** — `lhcb_velo_toy.solvers.quantum` imports `HHLAlgorithm`,
+  `OneBQF` / `OneBitHHL` on first access (PEP 562); `QSVT`, `spectral_filter`,
+  `responses`, `qsp_phases`, `refit` and `solve_one_bit_matrixfree` are
+  numpy/scipy-only and now import in a base install. `QSVT`,
+  `design_line_comb_inverse`, `solve_one_bit_matrixfree` exported at the
+  top level and from `lhcb_velo_toy.solvers`.
+- **Example** — `notebooks/quantum_qsvt_end_to_end.ipynb` (executed):
+  responses, three backends, three realisations, a moderate event with
+  efficiency-first working points and tracks, scaling with T, the other
+  response families, the refit + transfer.
+- **Tests** — `tests/test_qsvt_models.py`: selector == pipeline path,
+  default is the comb, s inference, qiskit-free import, normalized comb and
+  one-bit cosine == originating study code, phase-factor scalar identity +
+  circuit, phase sequence == LCU amplitudes with the predicted success
+  ratio, moments == recursion, refit round trip.
+  `tests/test_quantum_circuits.py`: OneBQF sampling vs statevector readout,
+  label-permutation invariance of the fixed 1BQF, HHL build / run /
+  statevector consistency, QSVT qiskit circuit == matrix-free backend, and a
+  no-deprecation guard for every circuit path. `tests/test_core_pipeline.py`:
+  seeded generation, noisy events, Simple == Fast Hamiltonians, tracks +
+  EventValidator, persistence round trips, plotting smoke.
+- **Docs** — README, `docs/` (API reference, flow diagrams, dependencies,
+  workflow) rewritten to cover every 2.1.0 / 2.2.0 lane.
+
+### Notes
+- `resources()` keeps its legacy keys and gains `ancillas`, `calls_per_shot`,
+  `peak`, `lcu_penalty`, `realisation`.
+- Golden baselines re-pinned for the two physics changes above (comb default,
+  1BQF uncompute); the classical values are unchanged.
+
 ## 2.1.0 — 2026-08-26 (centralise-2.1)
 
 The package becomes the centralised producer of results: every algorithm in

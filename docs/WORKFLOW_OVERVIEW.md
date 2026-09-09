@@ -22,9 +22,10 @@ The **LHCb VELO Toy Model** is a simulation and reconstruction framework for par
 | Component | Purpose |
 |-----------|---------|
 | **Event Generation** | Simulate particle collisions and detector responses |
-| **Hamiltonian Solvers** | Formulate track reconstruction as an optimization problem |
-| **Quantum Algorithms** | Explore HHL algorithm for linear system solving |
-| **Validation Tools** | Measure reconstruction performance using LHCb metrics |
+| **Hamiltonian Solvers** | Formulate track reconstruction as a linear system `A x = b` (+ fork / occupancy terms) |
+| **Quantum Algorithms** | Three quantum lanes for `A x = b`: HHL, the one-bit quantum filter (1BQF), the QSVT polynomial filter (the comb) |
+| **Hough lane** | Direct track finding by voting, as a classical reference with no coupling floor |
+| **Validation Tools** | Measure reconstruction performance using LHCb metrics, at track and segment level, at per-solver efficiency-first working points |
 | **Persistence** | Save/load pipeline state and parametric sweep results |
 
 ---
@@ -40,8 +41,11 @@ The **LHCb VELO Toy Model** is a simulation and reconstruction framework for par
 │  │   🔵 GENERATION │───▶│   🟢 SOLVERS   │───▶│   🟡 ANALYSIS  │         │
 │  │                 │     │                 │    │                 │         │
 │  │ • Geometry      │     │ • Hamiltonians  │    │ • Validation    │         │
-│  │ • Entities      │     │ • Classical     │    │ • Plotting      │         │
-│  │ • Generators    │     │ • Quantum       │    │                 │         │
+│  │ • Entities      │     │ • Classical     │    │ • Segment metr. │         │
+│  │ • Generators    │     │ • Quantum       │    │ • Working points│         │
+│  │ • Run-3 adapter │     │   HHL/1BQF/QSVT │    │ • Plotting      │         │
+│  │                 │     │ • Hough         │    │                 │         │
+│  │                 │     │ • Post-selection│    │                 │         │
 │  │                 │     │ • Reconstruction│    │                 │         │
 │  └─────────────────┘     └─────────────────┘    └─────────────────┘         │
 │           │                     │                     │                     │
@@ -82,17 +86,20 @@ graph TB
 
         subgraph SOL["solvers"]
             S1["hamiltonians/"]
-            S1a["SimpleHamiltonian, SimpleHamiltonianFast"]
+            S1a["SimpleHamiltonian, SimpleHamiltonianFast, Fork / Occupancy"]
             S2["classical/"]
             S2a["CG Solver, Direct Solver"]
             S3["quantum/"]
-            S3a["HHL Algorithm, OneBitHHL"]
+            S3a["HHL, OneBQF (+ matrix-free), QSVT (+ responses, phases, refit)"]
             S4["reconstruction/"]
             S4a["Segment, get_segments_from_event"]
+            S5["hough/ · postselect.py"]
+            S5a["Hough voting, hit-uniqueness post-selection"]
             S1 --- S1a
             S2 --- S2a
             S3 --- S3a
             S4 --- S4a
+            S5 --- S5a
         end
 
         subgraph ANA["analysis"]
@@ -100,8 +107,11 @@ graph TB
             A1a["Match, EventValidator"]
             A2["plotting/"]
             A2a["Event Display, Performance Plots"]
+            A3["segment_metrics.py · working_points.py"]
+            A3a["compute_epsilon, truth mask, wp99, matched-efficiency frontier"]
             A1 --- A1a
             A2 --- A2a
+            A3 --- A3a
         end
 
         subgraph PER["persistence"]
@@ -552,9 +562,15 @@ Where:
 | **Hamiltonian** | `hamiltonians/base.py` | Abstract base class |
 | **SimpleHamiltonian** | `hamiltonians/simple.py` | Reference implementation |
 | **SimpleHamiltonianFast** | `hamiltonians/fast.py` | Optimized sparse version |
+| **ExtendedHamiltonian / ForkHamiltonian / OccupancyHamiltonian** | `hamiltonians/extended.py` | Denby–Peterson fork (ε-windowed) and per-hit occupancy terms |
 | **Classical Solvers** | `classical/solvers.py` | Conjugate gradient, direct |
-| **HHL** | `quantum/hhl.py` | Full HHL quantum algorithm |
-| **OneBitHHL** | `quantum/one_bit_hhl.py` | Simplified 1-qubit phase est. |
+| **HHL** | `quantum/HHL.py` | Full HHL quantum algorithm (reference circuit) |
+| **OneBQF / OneBitHHL** | `quantum/OneBQF.py` | The one-bit quantum filter (reference circuit) |
+| **solve_one_bit_matrixfree** | `quantum/matrixfree.py` | The 1BQF without Aer (T = 1000 in seconds) |
+| **QSVT** | `quantum/QSVT.py` | The polynomial spectral filter — "the comb" — with its designs |
+| **responses / qsp_phases / spectral_filter / refit** | `quantum/` | Response families, the phase-sequence realisation, the exact evaluator, the coefficient refit |
+| **Hough** | `hough/` | Point / locus voting, EventValidator adapter |
+| **hit_uniqueness_filter** | `postselect.py` | Post-selection on any solver's active set |
 | **Segment** | `reconstruction/segment.py` | Track segment (computed on-demand) |
 | **get_segments_from_event** | `reconstruction/segment.py` | Generate segments from tracks |
 | **get_tracks** | `reconstruction/track_finder.py` | Extract tracks from solution |
@@ -565,10 +581,14 @@ Where:
 |--------|------------|------|------|
 | **Direct** | O(n³) | Exact solution | Memory intensive |
 | **Conjugate Gradient** | O(n²) | Sparse-friendly | Requires SPD matrix |
-| **HHL** | O(log n) | Exponential speedup* | Circuit depth, noise |
-| **OneBitHHL** | O(log n) | Simpler circuit | Lower precision |
+| **HHL** | O(log n)* | Full inverse response `1/λ` | Multi-qubit clock, deep circuits, small systems only |
+| **1BQF (OneBQF)** | width `n_sys + 2`, 2 calls | One clock qubit; zeroes the isolated false line; exact at T = 1000 with the matrix-free engine | One zero only: pair / triple / hub failure modes survive; cosine halving costs true segments at a fixed cut |
+| **QSVT comb** | width `n_sys + 7` (LCU) / `+4` (phase) / `+2` (QETU), `d = 40` calls | Any bounded polynomial response; zeroes every failure-mode line, keeps the true profile tight; ~0 false rate at density | Success probability ∝ 1/T (amplitude amplification ~√T rounds); needs a block encoding |
+| **Hough** | O(hits × bins) | No coupling floor; parameter space constant in T | Resolution wall at high T |
 
-*Theoretical quantum advantage for well-conditioned systems
+*Theoretical quantum advantage for well-conditioned systems; the classical
+Chebyshev evaluator runs the comb response in `d` sparse matvecs, so the
+quantum claim of the QSVT lane is the resource profile, not the response.
 
 #### Solvers Module - Function Input/Output Diagram
 
@@ -593,7 +613,7 @@ flowchart TB
     subgraph SOLVE["Solving"]
         direction LR
         SOL_IN["INPUT:<br/>A: matrix<br/>b: vector"]
-        SOL_FN["solve_classicaly()<br/>OR HHL.solve()"]
+        SOL_FN["solve_classicaly()<br/>OR solve_one_bit_matrixfree(A)<br/>OR QSVT.comb(A, b).solve_statevector()"]
         SOL_OUT["OUTPUT:<br/>x: solution vector<br/>(segment activations)"]
         SOL_IN --> SOL_FN --> SOL_OUT
     end
@@ -655,8 +675,31 @@ classDiagram
         +get_success_probability() float
     }
 
+    class QSVT {
+        +Chebyshev poly
+        +str filter_design
+        +float s
+        +int total_qubits
+        +comb(A, b, degree)$ QSVT
+        +solve_statevector() tuple
+        +solve_eigh() tuple
+        +run_circuit(streaming) tuple
+        +solve_phase_sequence() tuple
+        +resources(realisation) dict
+    }
+
+    class ExtendedHamiltonian {
+        +float beta
+        +float eps_B
+        +float alpha
+        +working_point_tau(margin) float
+    }
+
     Hamiltonian <|-- SimpleHamiltonian
     Hamiltonian <|-- SimpleHamiltonianFast
+    SimpleHamiltonianFast <|-- ExtendedHamiltonian
+    ExtendedHamiltonian <|-- ForkHamiltonian
+    ExtendedHamiltonian <|-- OccupancyHamiltonian
 
     class Segment {
         +Hit hit_start
@@ -685,11 +728,19 @@ flowchart TD
         F --> G["Output: |x⟩"]
     end
 
-    subgraph ONEBIT["OneBitHHL (Simplified)"]
-        H["Input: A, b"] --> I["Single-qubit<br/>phase estimation"]
-        I --> J["Approximate<br/>eigenvalue"]
-        J --> K["Classical<br/>post-processing"]
+    subgraph ONEBIT["1BQF (one-bit quantum filter)"]
+        H["Input: A, b"] --> I["One clock qubit:<br/>H · controlled e^{-iAt} · H"]
+        I --> J["Response cos(λt/2):<br/>one zero at λ = s"]
+        J --> K["Post-select,<br/>read |amplitudes|"]
         K --> L["Output: x"]
+    end
+
+    subgraph QSVTF["QSVT (the comb)"]
+        M["Input: A, b"] --> N["Design p(λ): passes at the<br/>true-track lines, ~0 elsewhere"]
+        N --> O["Block-encode X = affine(A);<br/>walk W: ⟨0|W^k|0⟩ = T_k(X)"]
+        O --> P["LCU of walk powers<br/>(or phase sequence / QETU)"]
+        P --> Q["Post-select,<br/>read |p(X) b|"]
+        Q --> R["Output: x"]
     end
 ```
 
@@ -1121,3 +1172,54 @@ save_pipeline(
 ---
 
 *Last updated: February 2026*
+
+### QSVT workflow example (numpy-only)
+
+```python
+# ═══════════════════════════════════════════════════════════════════════════
+# The QSVT lane: the comb on a moderate-noise event, judged at its own
+# efficiency-first working point, then tracks.
+# ═══════════════════════════════════════════════════════════════════════════
+import numpy as np
+from lhcb_velo_toy.generation import PlaneGeometry, StateEventGenerator
+from lhcb_velo_toy.solvers import SimpleHamiltonianFast, get_tracks, QSVT, solve_one_bit_matrixfree
+from lhcb_velo_toy.solvers.quantum import spectral_bounds
+from lhcb_velo_toy.analysis import (EventValidator, compute_epsilon, truth_from_event,
+                                    quantum_metrics_wp)
+from lhcb_velo_toy.analysis.working_points import rescale_to_signal
+
+# STEP 1: a seeded 50-track event, 10 µm resolution, multiple scattering
+geo = PlaneGeometry(module_id=list(range(5)), lx=[50.0]*5, ly=[50.0]*5,
+                    z=[100.0 + 33.0*i for i in range(5)])
+gen = StateEventGenerator(geo, events=1, n_particles=[50], measurement_error=0.01,
+                          collision_noise=1e-4, seed=202)
+gen.generate_random_primary_vertices({"x": 0.1, "y": 0.1, "z": 50.0})
+gen.generate_particles([[{"type": "pion", "mass": 139.6, "q": 1}] * 50])
+gen.generate_complete_events()
+
+# STEP 2: the Hamiltonian at the closed-form acceptance, gamma = 3, delta = 1
+ham = SimpleHamiltonianFast(epsilon=compute_epsilon(0.01, 1e-4, dz=33.0), gamma=3.0, delta=1.0)
+A, b = ham.construct_hamiltonian(gen)
+truth = truth_from_event(gen)
+
+# STEP 3: three solvers
+x_cls = np.abs(ham.solve_classicaly())
+x_1b, p_1b, _ = solve_one_bit_matrixfree(A)
+q = QSVT(A, b, degree=40, spectral_bounds=spectral_bounds(A))   # the comb, the default (== QSVT.comb)
+x_q, p_q = q.solve_statevector()
+
+# STEP 4: per-solver efficiency-first working points (never the classical cut)
+print(quantum_metrics_wp(x_1b, x_cls, truth))      # 1BQF at its wp99
+print(quantum_metrics_wp(x_q, x_cls, truth))       # QSVT at its wp99
+
+# STEP 5: tracks from the QSVT solution at its own threshold
+tau = quantum_metrics_wp(x_q, x_cls, truth)["tau_wp"]
+tracks = get_tracks(ham, rescale_to_signal(x_q, x_cls), gen, threshold=tau)
+matches, metrics = EventValidator(gen.true_event, tracks).match_tracks(purity_min=0.7)
+print(metrics["efficiency"], metrics["ghost_rate"])
+
+# STEP 6: what the circuit costs, per realisation
+print(q.resource_table())
+```
+
+See `notebooks/quantum_qsvt_end_to_end.ipynb` for the executed version with figures.
