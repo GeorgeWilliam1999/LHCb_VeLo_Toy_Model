@@ -90,7 +90,7 @@ from lhcb_velo_toy.solvers.quantum.spectral_filter import (
 # machinery, so ``from ...quantum import OneBQF`` returned the MODULE once
 # anything had imported the submodule first (e.g. the ``one_bit_hhl`` shim).
 _LAZY = {
-    "HHLAlgorithm": ("lhcb_velo_toy.solvers.quantum.HHL", "HHLAlgorithm"),
+    "HHLAlgorithm": ("lhcb_velo_toy.solvers.quantum.hhl", "HHLAlgorithm"),
     "OneBQF": ("lhcb_velo_toy.solvers.quantum.one_bqf", "OneBQF"),
     # Backwards-compatible alias: previous code imported the 1-Bit HHL
     # implementation as ``OneBitHHL``; the verified reference class is

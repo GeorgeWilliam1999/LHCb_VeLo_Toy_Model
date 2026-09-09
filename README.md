@@ -282,7 +282,7 @@ LHCb_VeLo_Toy_Model/
 ├── deprecated/                 # Old monolithic code (reference only)
 │   ├── README.md               #   Migration guide
 │   ├── LHCB_Velo_Toy_Models/   #   Original flat package
-│   ├── HHL.py                  #   Standalone HHL script
+│   ├── hhl.py                  #   Standalone HHL script
 │   └── OneBQF.py               #   Standalone 1-bit HHL script
 ├── docs/                       # Documentation & presentation
 ├── notebooks/                  # End-to-end examples (classical, HHL, 1BQF, QSVT)
@@ -309,7 +309,7 @@ LHCb_VeLo_Toy_Model/
 | `hamiltonians.fast` | Optimised vectorised implementation (exact O(T²) cKDTree build; the canonical A-builder) |
 | `hamiltonians.extended` | `ExtendedHamiltonian`, `ForkHamiltonian` (ε-windowed Denby–Peterson fork), `OccupancyHamiltonian` (per-hit occupancy, α = 0.05 verified point) |
 | `classical.solvers` | Direct (LU) and conjugate-gradient solvers |
-| `quantum.HHL` | Full HHL algorithm (reference circuit; `quantum.hhl` is a shim) |
+| `quantum.hhl` | Full HHL algorithm (reference circuit) |
 | `quantum.one_bqf` | The one-bit quantum filter, 1BQF (reference circuit; `quantum.one_bit_hhl` shim exports it as `OneBitHHL`) |
 | `quantum.matrixfree` | `solve_one_bit_matrixfree` — the 1BQF without Aer, T = 1000 in seconds |
 | `quantum.QSVT` | `QSVT` solver (LCU of Chebyshev walk powers) + `design_line_comb_inverse` / `design_band_limited_inverse` / `design_minimax_comb` |

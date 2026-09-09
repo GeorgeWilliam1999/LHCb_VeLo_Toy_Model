@@ -564,7 +564,7 @@ Where:
 | **SimpleHamiltonianFast** | `hamiltonians/fast.py` | Optimized sparse version |
 | **ExtendedHamiltonian / ForkHamiltonian / OccupancyHamiltonian** | `hamiltonians/extended.py` | Denby–Peterson fork (ε-windowed) and per-hit occupancy terms |
 | **Classical Solvers** | `classical/solvers.py` | Conjugate gradient, direct |
-| **HHL** | `quantum/HHL.py` | Full HHL quantum algorithm (reference circuit) |
+| **HHL** | `quantum/hhl.py` | Full HHL quantum algorithm (reference circuit) |
 | **OneBQF / OneBitHHL** | `quantum/one_bqf.py` | The one-bit quantum filter (reference circuit) |
 | **solve_one_bit_matrixfree** | `quantum/matrixfree.py` | The 1BQF without Aer (T = 1000 in seconds) |
 | **QSVT** | `quantum/QSVT.py` | The polynomial spectral filter — "the comb" — with its designs |

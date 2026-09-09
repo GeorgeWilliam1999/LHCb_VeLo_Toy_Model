@@ -35,6 +35,17 @@ unchanged.
   warning attributed to `lhcb_velo_toy` into a failure.
 
 ### Fixed
+- **`solvers/quantum/HHL.py` and `hhl.py` merged into `hhl.py`.** The
+  implementation module and a back-compat shim re-exporting it differed only
+  in case, so a clone on a case-insensitive filesystem (macOS, Windows)
+  collapsed them into one file and silently lost one. `hhl.py` is now the
+  single canonical module; its content is unchanged and still byte-identical
+  to the `OneBQF_repo` reference. `from lhcb_velo_toy.solvers.quantum import
+  HHLAlgorithm` and `...quantum.hhl import HHLAlgorithm` both work;
+  `...quantum.HHL` no longer resolves on a case-sensitive filesystem — no
+  caller used it. Same class of defect as the `OneBQF.py` collision below,
+  one level down (the filesystem rather than the import machinery). A test
+  now asserts no two modules in the package differ only by case.
 - **numba is optional again.** `analysis/segment_metrics.py` imported numba at
   module level while declaring it in no dependency list, so
   `import lhcb_velo_toy` failed outright on any environment without it — the

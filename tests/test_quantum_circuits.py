@@ -20,6 +20,7 @@ Contracts:
 import subprocess
 import sys
 import textwrap
+from pathlib import Path
 import warnings
 
 import numpy as np
@@ -103,6 +104,35 @@ def test_package_class_survives_submodule_import_order():
     out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
     assert out.returncode == 0, out.stderr
     assert out.stdout.strip().endswith("ok")
+
+
+def test_no_module_names_differ_only_by_case():
+    """Two modules whose names differ only in case collapse into one file on a
+    case-insensitive filesystem (macOS, Windows), so a clone there silently
+    loses one of them.
+
+    Regression (2026-09-09): ``HHL.py`` (the implementation) sat beside
+    ``hhl.py`` (a back-compat shim re-exporting it). They are now one module,
+    ``hhl.py``. This is the same class of defect as the ``OneBQF.py`` /
+    ``OneBQF`` collision above, one level down: the filesystem rather than the
+    import machinery.
+    """
+    root = Path(__file__).resolve().parent.parent / "src" / "lhcb_velo_toy"
+    clashes = []
+    for d in {p.parent for p in root.rglob("*.py")}:
+        seen = {}
+        for f in d.glob("*.py"):
+            seen.setdefault(f.name.lower(), []).append(f.name)
+        clashes += [(str(d.relative_to(root)), names)
+                    for names in seen.values() if len(names) > 1]
+    assert not clashes, f"module names differing only by case: {clashes}"
+
+
+def test_hhl_import_paths():
+    """The documented HHL import works, and the retired shim path is gone."""
+    from lhcb_velo_toy.solvers.quantum import HHLAlgorithm
+    from lhcb_velo_toy.solvers.quantum.hhl import HHLAlgorithm as Direct
+    assert HHLAlgorithm is Direct and isinstance(HHLAlgorithm, type)
 
 
 def test_alias_and_lazy_names():

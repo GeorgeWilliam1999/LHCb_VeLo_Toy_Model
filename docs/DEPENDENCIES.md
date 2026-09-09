@@ -139,7 +139,7 @@ pip install -e ".[all]"
 | `solvers.hamiltonians` | ✓ | ✓ | | | | | |
 | `solvers.classical` | ✓ | ✓ | | | | | |
 | `solvers.hamiltonians.extended` | ✓ | ✓ | | | | | |
-| `solvers.quantum.HHL` (`hhl` shim) | ✓ | ✓ | ✓ | | ✓ | ✓ | |
+| `solvers.quantum.hhl` | ✓ | ✓ | ✓ | | ✓ | ✓ | |
 | `solvers.quantum.one_bqf` (`one_bit_hhl` shim) | ✓ | ✓ | | | ✓ | ✓ | ✓ |
 | `solvers.quantum.matrixfree` | ✓ | ✓ | | | | | |
 | `solvers.quantum.QSVT` | ✓ | ✓ | | | (circuit only) | | |
@@ -198,7 +198,7 @@ solvers.hamiltonians.extended
     ├── numpy, scipy.sparse
     └── solvers.hamiltonians.fast (SimpleHamiltonianFast)
 
-solvers.quantum.HHL            [lazy from solvers.quantum; hhl.py is a shim]
+solvers.quantum.hhl            [lazy from solvers.quantum]
     ├── numpy, matplotlib, scipy.linalg (expm)
     ├── qiskit (QuantumCircuit, QuantumRegister, ClassicalRegister, transpile)
     ├── qiskit.circuit.library (QFTGate, RYGate, UnitaryGate)
