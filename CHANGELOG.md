@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased — 2026-10-13 (centralise-2.1)
+
+### Added
+- **Pruning of decoupled segments** (`solvers/hamiltonians/pruning.py`,
+  `Hamiltonian.prune()`, `Hamiltonian.expand()`, and a `prune=` option on
+  `SimpleHamiltonianFast`, `SimpleHamiltonian` and `ExtendedHamiltonian`
+  `.construct_hamiltonian`). A segment with no compatible neighbour is a
+  1 x 1 block of the block-diagonal operator, so dropping it (or any whole
+  small component, `min_component_size`) leaves the classical, one-bit and
+  QSVT solutions on the remaining segments unchanged while shrinking the
+  register to `ceil(log2 n_kept)` and raising the post-selection
+  probability. `ExtendedHamiltonian` prunes the final operator, after its
+  penalty terms. `segment_truth_mask(ham, full_space=True)` gives the truth
+  over the original index space of a pruned Hamiltonian. Suggested by a
+  colleague of George's; the study is
+  `Quantum_Track_Reconstruction/QSVT/Segment_pruning/`.
+  `tests/test_pruning.py` pins the kept set against a brute-force recount
+  and the three solvers against the full solve restricted to the kept
+  segments (classical 1e-12, one-bit 1e-6 with the success probability
+  scaling exactly by the register ratio, QSVT 1e-9).
+
 ## 2.2.0 — 2026-09-07 (centralise-2.1, unreleased)
 
 The QSVT lane becomes a complete, discoverable solver family: every response

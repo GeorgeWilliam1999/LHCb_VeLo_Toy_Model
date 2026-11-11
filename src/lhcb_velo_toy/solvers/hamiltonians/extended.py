@@ -162,7 +162,17 @@ class ExtendedHamiltonian(SimpleHamiltonianFast):
         self.alpha = float(alpha)
         self.term_info: dict = {}
 
-    def construct_hamiltonian(self, event, convolution=False, erf_sigma=None):
+    def construct_hamiltonian(self, event, convolution=False, erf_sigma=None,
+                              prune=False):
+        """Build the base system, add the enabled penalty terms, then prune.
+
+        ``prune`` is applied to the FINAL operator (after the terms), never to
+        the base system: the occupancy term couples every co-hit pair, so a
+        segment that is decoupled in ``A0`` is not decoupled in the operator
+        actually solved, and pruning it first would change the physics.  With
+        ``alpha != 0`` the prune therefore removes (almost) nothing; with the
+        fork term alone it removes exactly what the base prune removes.
+        """
         A, b = super().construct_hamiltonian(
             event, convolution=convolution, erf_sigma=erf_sigma
         )
@@ -191,7 +201,8 @@ class ExtendedHamiltonian(SimpleHamiltonianFast):
         self.term_info = info
         A = A.tocsc()
         self.A, self.b = A, b
-        return A, b
+        self._maybe_prune(prune)
+        return self.A, self.b
 
     def working_point_tau(self, margin: float = 0.10) -> float:
         """Attractor-aware absolute threshold: isolated attractor + margin.

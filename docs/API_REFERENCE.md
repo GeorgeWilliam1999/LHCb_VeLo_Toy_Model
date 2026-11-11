@@ -676,6 +676,35 @@ $$A_{ij} = 1 + \text{erf}\left(\frac{\epsilon - \theta_{ij}}{\theta_d \sqrt{2}}\
 
 ---
 
+#### Pruning decoupled segments (2026-10-13)
+
+Every builder accepts `prune=True` (or a dict of options) on
+`construct_hamiltonian`, and every built Hamiltonian has `.prune(min_degree=1,
+min_component_size=1)` and `.expand(vec, fill=0.0)`:
+
+```python
+ham = SimpleHamiltonianFast(epsilon=eps, gamma=3.0, delta=1.0)
+A, b = ham.construct_hamiltonian(event, prune=True)   # decoupled segments dropped
+ham.kept_index        # original index of every kept segment
+ham.n_segments_full   # size of the full system
+ham.prune_info        # n_full, n_kept, n_pruned, component census, qubits_full/kept
+x_full = ham.expand(x_kept)           # scatter back; pruned positions = 0
+truth = segment_truth_mask(ham, full_space=True)
+```
+
+A segment with no compatible neighbour is a 1 x 1 block of the block-diagonal
+operator `A = sI - C`; every solver is a matrix function of `A` applied to
+`b`, so the solution on the kept segments is unchanged (classical, one-bit
+filter, QSVT — `tests/test_pruning.py`). Only the register width
+`ceil(log2 n)`, the post-selection probability and the number of controls on
+the one-bit pair gates change. `min_component_size=3` also drops lone
+compatible pairs (still exact). `ExtendedHamiltonian` prunes the final
+operator after its penalty terms, so the occupancy term (which couples every
+co-hit pair) leaves nothing to prune. Module:
+`lhcb_velo_toy.solvers.hamiltonians.pruning` (`decoupled_mask`,
+`prune_system`, `expand_solution`, `segment_degree`, `coupling_pattern`,
+`qubits_for`).
+
 #### `class SimpleHamiltonianFast(Hamiltonian)`
 
 Optimized implementation with vectorized operations.

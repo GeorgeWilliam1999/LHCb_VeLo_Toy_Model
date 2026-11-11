@@ -296,11 +296,32 @@ def fast_segment_metrics(event, epsilon: float) -> dict:
 # Truth labels per Hamiltonian segment + solver metrics after thresholding
 # ---------------------------------------------------------------------------
 
-def segment_truth_mask(ham) -> np.ndarray:
+def segment_truth_mask(ham, full_space: bool = False) -> np.ndarray:
     """
     Boolean mask of length ``ham.n_segments``: True iff the segment connects
     two hits sharing the same (non-negative) ``track_id``.
+
+    On a pruned Hamiltonian (``ham.kept_index`` set) the mask covers the
+    kept segments; pass ``full_space=True`` for the mask over all
+    ``ham.n_segments_full`` original segments (the honest denominator for
+    efficiency, since pruned true segments are misses).
     """
+    if full_space and getattr(ham, "kept_index", None) is not None:
+        arr = getattr(ham, "_segment_track_ids_full", None)
+        if arr is not None:
+            return ((arr[:, 0] == arr[:, 1]) & (arr[:, 0] >= 0)).astype(bool)
+        segs = getattr(ham, "segments_full", None)
+        if segs:
+            return np.asarray(
+                [
+                    (s.hit_start.track_id == s.hit_end.track_id)
+                    and (s.hit_start.track_id is not None)
+                    and (s.hit_start.track_id >= 0)
+                    for s in segs
+                ],
+                dtype=bool,
+            )
+        raise ValueError("pruned Hamiltonian carries no full-space segment data")
     arr = getattr(ham, "_segment_track_ids", None)
     if arr is not None and len(arr) == ham.n_segments:
         return ((arr[:, 0] == arr[:, 1]) & (arr[:, 0] >= 0)).astype(bool)

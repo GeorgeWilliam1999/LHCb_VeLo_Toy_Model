@@ -10,6 +10,14 @@ from lhcb_velo_toy.solvers.hamiltonians.extended import (
     cohit_graph,
     cohit_graph_eps,
 )
+from lhcb_velo_toy.solvers.hamiltonians.pruning import (
+    coupling_pattern,
+    segment_degree,
+    decoupled_mask,
+    prune_system,
+    expand_solution,
+    qubits_for,
+)
 
 __all__ = [
     "Hamiltonian",
@@ -20,4 +28,10 @@ __all__ = [
     "OccupancyHamiltonian",
     "cohit_graph",
     "cohit_graph_eps",
+    "coupling_pattern",
+    "segment_degree",
+    "decoupled_mask",
+    "prune_system",
+    "expand_solution",
+    "qubits_for",
 ]

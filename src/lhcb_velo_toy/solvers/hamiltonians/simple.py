@@ -158,6 +158,7 @@ class SimpleHamiltonian(Hamiltonian):
         self,
         event: "Event | StateEventGenerator",
         convolution: bool = False,
+        prune: "bool | dict" = False,
     ) -> tuple[csc_matrix, np.ndarray]:
         """
         Construct the Hamiltonian matrix and bias vector.
@@ -169,6 +170,9 @@ class SimpleHamiltonian(Hamiltonian):
         convolution : bool, default False
             If True, use ERF-smoothed compatibility.
             If False, use hard threshold.
+        prune : bool or dict, default False
+            If true, drop the decoupled segments after the build (see
+            :meth:`~lhcb_velo_toy.solvers.hamiltonians.base.Hamiltonian.prune`).
         
         Returns
         -------
@@ -216,7 +220,8 @@ class SimpleHamiltonian(Hamiltonian):
 
         A = A.tocsc()
         self.A, self.b = -A, b
-        return -A, b
+        self._maybe_prune(prune)
+        return self.A, self.b
     
     def _compute_compatibility(
         self,

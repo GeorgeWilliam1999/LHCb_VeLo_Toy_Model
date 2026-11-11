@@ -268,6 +268,7 @@ class SimpleHamiltonianFast(Hamiltonian):
         event: "Event | StateEventGenerator",
         convolution: bool = False,
         erf_sigma: Optional[float] = None,
+        prune: "bool | dict" = False,
     ) -> tuple[csc_matrix, np.ndarray]:
         """
         Construct the Hamiltonian using vectorized operations.
@@ -282,6 +283,13 @@ class SimpleHamiltonianFast(Hamiltonian):
             Override ERF smoothing width for this call.  When *None*,
             ``self.theta_d`` is used.  Passing a value here does **not**
             mutate ``self.theta_d``.
+        prune : bool or dict, default False
+            If true, drop the decoupled segments after the build
+            (:meth:`~lhcb_velo_toy.solvers.hamiltonians.base.Hamiltonian.prune`);
+            a dict is passed as keyword arguments (``min_degree``,
+            ``min_component_size``).  The returned ``(A, b)`` are then the
+            pruned system and ``self.kept_index`` maps back to the full
+            segment index space.
         
         Returns
         -------
@@ -451,7 +459,8 @@ class SimpleHamiltonianFast(Hamiltonian):
         b = np.ones(n) * self.delta
 
         self.A, self.b = -A, b
-        return -A, b
+        self._maybe_prune(prune)
+        return self.A, self.b
     
     def _build_hit_to_segments_map(self) -> dict[int, list[int]]:
         """
