@@ -62,9 +62,25 @@ def _slot_ids(seg_hits: np.ndarray) -> np.ndarray:
     return slots
 
 
+def round_significant(x: np.ndarray, sig_digits: int) -> np.ndarray:
+    """Round every value to ``sig_digits`` significant digits (zeros stay zero).
+
+    Two exact evaluations of the same solver output agree to ~1e-14 but not
+    bit for bit; rounding makes exactly tied amplitudes (symmetric chains
+    are common) compare equal again, so a tie-break key can decide them.
+    """
+    x = np.asarray(x, dtype=np.float64)
+    out = np.zeros_like(x)
+    nz = x != 0
+    e = np.floor(np.log10(np.abs(x[nz]))) - (int(sig_digits) - 1)
+    out[nz] = np.round(x[nz] / 10.0 ** e) * 10.0 ** e
+    return out
+
+
 def hit_uniqueness_filter(sol: np.ndarray, seg_hits: np.ndarray,
                           active: np.ndarray, mode: str = "greedy",
-                          kappa: float = 0.8) -> np.ndarray:
+                          kappa: float = 0.8,
+                          sig_digits: int | None = None) -> np.ndarray:
     """Prune an active set so each (hit, role) slot is used at most once.
 
     Parameters
@@ -74,10 +90,20 @@ def hit_uniqueness_filter(sol: np.ndarray, seg_hits: np.ndarray,
     active   : boolean mask of the pre-filter active set (e.g. |sol| > tau).
     mode     : "greedy" (default) | "strict" | "margin" | "anyrole" (control).
     kappa    : margin mode only — drop a segment iff |x| < kappa * slot winner.
+    sig_digits : if set, |sol| is rounded to this many significant digits
+               before ranking, and greedy ties are broken by the segment's
+               (start hit id, end hit id), a key that does not depend on the
+               segment order. The result is then the same for any segment
+               order and for any noise below the rounding (2026-11-12: exact
+               amplitude ties are common on Run 3 events and round-off picked
+               the winner). None keeps the original behaviour (ties by
+               segment index).
 
     Returns the pruned boolean active mask (never adds segments).
     """
     x = np.abs(np.asarray(sol, dtype=np.float64).ravel())
+    if sig_digits is not None:
+        x = round_significant(x, sig_digits)
     active = np.asarray(active, dtype=bool).copy()
     idx = np.flatnonzero(active)
     if idx.size == 0:
@@ -102,7 +128,11 @@ def hit_uniqueness_filter(sol: np.ndarray, seg_hits: np.ndarray,
 
     if mode != "greedy":
         raise ValueError(f"unknown mode {mode!r}")
-    order = idx[np.argsort(-x[idx], kind="stable")]
+    if sig_digits is None:
+        order = idx[np.argsort(-x[idx], kind="stable")]
+    else:
+        sh = np.asarray(seg_hits, dtype=np.int64)
+        order = idx[np.lexsort((sh[idx, 1], sh[idx, 0], -x[idx]))]
     claimed: set[int] = set()
     out = np.zeros_like(active)
     osl = slots[order]

@@ -101,3 +101,52 @@ def test_matches_get_tracks_when_every_shared_hit_is_coupled():
     seg_hits = np.array([[0, 1], [1, 2], [2, 3]])
     A = _ham(3, [(0, 1), (1, 2)])
     assert _sets(coupled_hit_groups(A, seg_hits, np.ones(3, bool))) == [(0, 1, 2, 3)]
+
+
+# ── deterministic tie-break (2026-11-12) ────────────────────────────────────
+def _permuted(A, seg_hits, x, perm):
+    P = sp.csr_matrix((np.ones(len(perm)), (np.arange(len(perm)), perm)), shape=(len(perm),) * 2)
+    return (P @ A @ P.T).tocsr(), seg_hits[perm], x[perm]
+
+
+def test_exact_tie_is_order_independent():
+    # hit 1 has two outgoing segments with EXACTLY equal scores: the winner must not depend
+    # on the segment order
+    seg_hits = np.array([[0, 1], [1, 2], [1, 3], [2, 4], [3, 5]])
+    A = _ham(5, [(0, 1), (0, 2), (1, 3), (2, 4)])
+    x = np.array([0.5, 0.4, 0.4, 0.5, 0.5])
+    act = np.ones(5, bool)
+    ref = _sets(coupled_hit_groups(A, seg_hits, act, solution=x, uniqueness="greedy"))
+    for perm in ([4, 3, 2, 1, 0], [2, 0, 4, 1, 3], [1, 2, 0, 3, 4]):
+        Ap, shp, xp = _permuted(A, seg_hits, x, np.array(perm))
+        assert _sets(coupled_hit_groups(Ap, shp, act, solution=xp, uniqueness="greedy")) == ref
+    # round-off below the precision does not change the winner
+    for eps in (1e-14, -1e-14):
+        xn = x.copy()
+        xn[2] += eps
+        assert _sets(coupled_hit_groups(A, seg_hits, act, solution=xn, uniqueness="greedy")) == ref
+
+
+def test_event_tracks_invariant_under_permutation_and_noise(event):
+    ham = SimpleHamiltonianFast(epsilon=EPS, gamma=GAMMA, delta=DELTA)
+    ham.construct_segments(event, materialize_segments=False)
+    ham.construct_hamiltonian(event)
+    A = ham.A.tocsr()
+    sh = np.asarray(ham._segment_to_hit_ids)
+    x = np.abs(np.linalg.solve(A.toarray(), np.ones(A.shape[0])))
+    act = x > 0.3
+    ref = _sets(coupled_hit_groups(A, sh, act, solution=x, uniqueness="greedy"))
+    rng = np.random.default_rng(3)
+    for _ in range(3):
+        perm = rng.permutation(A.shape[0])
+        Ap, shp, xp = _permuted(A, sh, x, perm)
+        noisy = xp * (1 + 1e-14 * rng.standard_normal(len(xp)))
+        assert _sets(coupled_hit_groups(Ap, shp, act[perm], solution=noisy, uniqueness="greedy")) == ref
+
+
+def test_round_significant():
+    from lhcb_velo_toy.solvers.postselect import round_significant
+    v = np.array([0.0, 1.23456789012345, -2.5e-7 * (1 + 1e-14), 9.9999999999e3])
+    r = round_significant(v, 9)
+    assert r[0] == 0.0 and r[1] == pytest.approx(1.23456789, abs=1e-15)
+    assert r[2] == pytest.approx(-2.5e-7, rel=1e-15)

@@ -49,6 +49,7 @@ def coupled_hit_groups(
     uniqueness: Optional[str] = None,
     kappa: float = 0.8,
     min_hits: int = 2,
+    sig_digits: Optional[int] = 9,
 ) -> list[np.ndarray]:
     """
     Group active segments along the Hamiltonian couplings and return their hits.
@@ -72,6 +73,12 @@ def coupled_hit_groups(
         Margin for ``uniqueness="margin"``.
     min_hits : int, default 2
         Drop groups with fewer hits.  2 keeps every group, as ``get_tracks`` does.
+    sig_digits : int or None, default 9
+        Significant digits of |solution| used by the uniqueness ranking; ties
+        are then broken by (start hit id, end hit id), so the tracks do not
+        depend on the segment order or on round-off below this precision.
+        None restores the original ranking (ties by segment index; round-off
+        can pick the winner among exact ties).
 
     Returns
     -------
@@ -92,7 +99,8 @@ def coupled_hit_groups(
         if solution is None:
             raise ValueError("uniqueness needs the solution amplitudes")
         from lhcb_velo_toy.solvers.postselect import hit_uniqueness_filter
-        active = hit_uniqueness_filter(solution, seg_hits, active, mode=uniqueness, kappa=kappa)
+        active = hit_uniqueness_filter(solution, seg_hits, active, mode=uniqueness, kappa=kappa,
+                                       sig_digits=sig_digits)
     idx = np.flatnonzero(active)
     if idx.size == 0:
         return []
@@ -122,6 +130,7 @@ def get_tracks_coupled(
     uniqueness: Optional[str] = "greedy",
     kappa: float = 0.8,
     min_hits: int = 2,
+    sig_digits: Optional[int] = 9,
 ) -> list["Track"]:
     """
     Extract tracks by following the Hamiltonian couplings (see module docstring).
@@ -145,6 +154,8 @@ def get_tracks_coupled(
         Margin for ``uniqueness="margin"``.
     min_hits : int, default 2
         Minimum hits per track.
+    sig_digits : int or None, default 9
+        See :func:`coupled_hit_groups`.
 
     Returns
     -------
@@ -165,6 +176,7 @@ def get_tracks_coupled(
     groups = coupled_hit_groups(
         hamiltonian.A, hamiltonian._segment_to_hit_ids, solution > threshold,
         solution=solution, uniqueness=uniqueness, kappa=kappa, min_hits=min_hits,
+        sig_digits=sig_digits,
     )
     z = {h.hit_id: h.z for h in event.hits}
     return [
