@@ -11,6 +11,7 @@ including:
 - get_all_possible_segments: Generate all hit-to-hit segment candidates
 - get_tracks: Extract tracks from Hamiltonian solutions
 - get_tracks_fast: Optimized track extraction
+- get_tracks_coupled: Tracks along the Hamiltonian couplings, with hit uniqueness
 - find_segments: Find connected segments for track building
 - construct_event: Build reconstructed event from tracks and hits
 
@@ -34,6 +35,10 @@ from lhcb_velo_toy.solvers.reconstruction.track_finder import (
     construct_event,
     get_all_possible_segments,
 )
+from lhcb_velo_toy.solvers.reconstruction.coupled_readout import (
+    coupled_hit_groups,
+    get_tracks_coupled,
+)
 
 __all__ = [
     # Segment class and generation
@@ -48,6 +53,8 @@ __all__ = [
     "get_tracks_layered",
     "get_tracks_optimal",
     "get_tracks_optimal_iterative",
+    "get_tracks_coupled",
+    "coupled_hit_groups",
     "find_segments",
     "construct_event",
 ]
