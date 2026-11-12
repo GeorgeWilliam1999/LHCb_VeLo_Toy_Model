@@ -84,6 +84,12 @@ from lhcb_velo_toy.solvers.quantum.responses import (
     p4_lines,
     solve_normalized_comb,
 )
+from lhcb_velo_toy.solvers.quantum.shots import (
+    ShotSampler,
+    on_items,
+    output_distribution,
+    shot_grid,
+)
 from lhcb_velo_toy.solvers.quantum.spectral_filter import (
     apply_response,
     binned_response,
@@ -180,4 +186,9 @@ __all__ = [
     "one_bit_clique",
     "filter_hit_operator",
     "tracks_from_filtered_hits",
+    # measurement shots from an exact output state
+    "output_distribution",
+    "ShotSampler",
+    "on_items",
+    "shot_grid",
 ]
