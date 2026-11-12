@@ -24,7 +24,9 @@ Three solvers act on the segment linear system ``A x = b``:
   ``QSVT.solve_phase_sequence``), QETU.  Exact evaluators:
   ``QSVT.solve_statevector`` (Chebyshev recursion), ``QSVT.solve_eigh`` /
   ``spectral_filter`` (per-component eigendecomposition; any response
-  callable through ``apply_response``).  Supervised refit of the
+  callable through ``apply_response``).  Hit-register filters on the
+  vertex-conditioned hit operator (cliques, not segment chains):
+  ``clique_filters``.  Supervised refit of the
   coefficients to a measured event: ``refit`` (``chebyshev_moments``,
   ``refit_coefficients``, ``refit_binned``).
 
@@ -47,6 +49,15 @@ from lhcb_velo_toy.solvers.quantum.QSVT import (
     design_band_limited_inverse,
     design_line_comb_inverse,
     design_minimax_comb,
+)
+from lhcb_velo_toy.solvers.quantum.clique_filters import (
+    design_step_polynomial,
+    filter_hit_operator,
+    ideal_line_projector,
+    ideal_step,
+    one_bit_clique,
+    soft_band,
+    tracks_from_filtered_hits,
 )
 from lhcb_velo_toy.solvers.quantum.matrixfree import solve_one_bit_matrixfree
 from lhcb_velo_toy.solvers.quantum.qsp_phases import (
@@ -161,4 +172,12 @@ __all__ = [
     "continuation_components",
     "mode_system",
     "spectral_bounds",
+    # hit-register clique filters
+    "ideal_line_projector",
+    "ideal_step",
+    "soft_band",
+    "design_step_polynomial",
+    "one_bit_clique",
+    "filter_hit_operator",
+    "tracks_from_filtered_hits",
 ]
