@@ -106,15 +106,20 @@ def component_givens_price(M, comps: list[np.ndarray], register_index: np.ndarra
     U.eliminate_zeros()
     ri = np.asarray(register_index)
     out = {key: np.zeros(len(comps)) for key in ("m", "n_s", "k", "dH", "cx_step")}
+    out["n_s"][:] = 1
+    out["dH"][:] = 1.0
     for c, idx in enumerate(comps):
         m = len(idx)
-        ns = max(1, math.ceil(math.log2(m))) if m > 1 else 1
+        out["m"][c] = m
+        if m == 1:                               # no pair: nothing to price
+            continue
+        ns = max(1, math.ceil(math.log2(m)))
         local = np.empty(m, int)
         local[np.argsort(ri[idx], kind="stable")] = np.arange(m)
         sub = U[idx][:, idx].tocoo()
         dH = popcount_mean(local[sub.row], local[sub.col])
         k = sub.nnz
-        out["m"][c], out["n_s"][c], out["k"][c], out["dH"][c] = m, ns, k, dH
+        out["n_s"][c], out["k"][c], out["dH"][c] = ns, k, dH
         out["cx_step"][c] = k * (2 * (dH - 1) + mcrx_cx(ns)) if k else 0.0
     return out
 
